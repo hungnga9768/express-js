@@ -1,0 +1,190 @@
+<%- include('header')%> <%- include('aside')%>
+
+<!-- =============================================== -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Main content -->
+  <section class="content">
+    <!-- Default box -->
+    <div class="box">
+      <div class="box-body card card-primary">
+        <div class="card">
+          <div class="card-header"><%= title %></div>
+          <div class="card-body">
+            <form
+              id="checkForm"
+              method="POST"
+              action="/admin/khoahoc/add-khoahoc"
+              enctype="multipart/form-data"
+            >
+              <div class="form-group">
+                <label for="title">Tên khóa học</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="title"
+                  name="title"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="description">Mô tả</label>
+                <textarea
+                  class="form-control noidung"
+                  id="description"
+                  name="description"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Ảnh đại diện hiện tại</label><br />
+                <!-- Ảnh xem trước -->
+                <img
+                  data-group="uploadImage"
+                  data-role="preview"
+                  src="/dist/img/avatar4.png"
+                  width="150"
+                  class="thumbnail_url"
+                />
+              </div>
+
+              <div class="form-group">
+                <!-- Tên ảnh -->
+                <p data-group="uploadImage" data-role="filename">avatar4.png</p>
+
+                <label for="avatar">Cập nhật ảnh đại diện</label>
+                <!-- Input ảnh từ máy -->
+                <input
+                  type="file"
+                  class="form-control"
+                  id="thumbnail_url"
+                  name="thumbnail_url"
+                  accept="image/*"
+                  data-group="uploadImage"
+                  onchange="showImage(event, this)"
+                />
+
+                <!-- Nút chọn từ thư viện -->
+                <button
+                  type="button"
+                  class="btn btn-secondary mt-2"
+                  data-group="uploadImage"
+                  onclick="openImageModal(this)"
+                >
+                  Chọn từ thư viện
+                </button>
+                <input
+                  type="hidden"
+                  name="selected_image"
+                  data-group="uploadImage"
+                  data-role="selectedInput"
+                />
+                <input
+                  type="hidden"
+                  name="old_thumbnail_url"
+                  value="/dist/img/avatar4.png"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="exampleSelect">Chọn cấp độ HSK</label>
+                <select
+                  class="form-control"
+                  id="exampleSelect"
+                  name="difficulty_level"
+                  required
+                >
+                  <option value="">-- Chọn cấp độ --</option>
+                  <option value="HSK1">HSK 1</option>
+                  <option value="HSK2">HSK 2</option>
+                  <option value="HSK3">HSK 3</option>
+                  <option value="HSK4">HSK 4</option>
+                  <option value="HSK5">HSK 5</option>
+                  <option value="HSK6">HSK 6</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="estimated_duration">Thời lượng (giờ)</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="estimated_duration"
+                  name="estimated_duration"
+                  min="1"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="is_free">Khóa học miễn phí?</label>
+                <select
+                  class="form-control"
+                  id="is_free"
+                  name="is_free"
+                  required
+                >
+                  <option value="1">Có</option>
+                  <option value="0" selected>Không</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="price">Giá (VNĐ)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  id="price"
+                  name="price"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="instructor_id">ID Giảng viên</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="instructor_id"
+                  name="instructor_id"
+                  required
+                />
+              </div>
+              <div class="box-footer">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fa fa-plus"></i> Thêm khóa học
+                </button>
+                <a
+                  href="/admin/khoahoc/danhsach"
+                  class="btn btn btn-default pull-right"
+                >
+                  <i class="fa fa-reply"></i> quay lại
+                </a>
+              </div>
+            </form>
+          </div>
+          <div class="card-footer text-muted"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<%- include('modalimage')%> <%- include('footer')%>

@@ -1,0 +1,61 @@
+<%- include('header') %>
+<%- include('aside') %>
+
+<div class="content-wrapper">
+   <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="content">
+    <div class="box">
+      <div class="box-body card card-primary">
+        <div class="card">
+          <div class="card-header">Tạo Bài Tập Lớn & Danh Sách Câu Hỏi</div>
+          <div class="card-body">
+
+            <!-- Form Tạo/Sửa Bài Tập Lớn -->
+            <form method="POST" action="/admin/baitap/add">
+              <input type="hidden" name="exercise_set_id" value="<%= exerciseSet ? exerciseSet.exercise_set_id : '' %> " required >
+
+              <div class="form-group">
+                <label for="lesson_id">Bài học</label>
+                <select class="form-control" name="lesson_id" required>
+                  <% lessons.forEach(lesson => { %>
+                    <option value="<%= lesson.lesson_id %>" <%= exerciseSet && exerciseSet.lesson_id === lesson.lesson_id ? 'selected' : '' %>>
+                      <%= lesson.title %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="title">Tiêu đề</label>
+                <input type="text" class="form-control" name="title" value="<%= exerciseSet ? exerciseSet.title : '' %>" required>
+              </div>
+
+              <div class="form-group">
+                <label for="description">Mô tả</label>
+                <textarea class="form-control" name="description"><%= exerciseSet ? exerciseSet.description : '' %></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Lưu Bài Tập Lớn</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer') %>

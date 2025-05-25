@@ -1,0 +1,135 @@
+<%- include('header') %> <%- include('aside') %>
+
+<div class="content-wrapper" style="min-height: 1604.44px">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="box mb-4">
+      <form method="GET" class="form-inline" role="form">
+        <div class="form-group">
+          <input
+            type="text"
+            name="search"
+            class="form-control"
+            placeholder="Tìm kiếm tiêu đề..."
+            value="<%= search %>"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary ml-2">
+          <i class="fa fa-search"></i> Tìm kiếm
+        </button>
+        <a href="/admin/setting/banner/add" class="btn btn-success ml-2">
+          <i class="fa fa-plus"></i> Thêm mới banner
+        </a>
+      </form>
+    </div>
+
+    <div class="card-body p-0">
+      <table class="table projects table-bordered table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Tiêu đề</th>
+            <th>Mô tả</th>
+            <th>Hình ảnh banner</th>
+            <th>Đường dẫn khi click banner</th>
+            <th>Thứ tự hiển thị</th>
+            <th>trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% data.forEach((banner) => { %>
+          <tr>
+            <td><%= banner.id %></td>
+            <td><%= banner.title %></td>
+            <td><%= banner.description %></td>
+            <td>
+              <% if (banner.image_url) { %>
+              <img
+                src="<%= banner.image_url %>"
+                style="width: 50px; height: 50px; object-fit: cover"
+              />
+              <% } else { %> - <% } %>
+            </td>
+            <td><%= banner.link_url || '' %></td>
+            <td><%= banner.display_order %></td>
+            <td>
+              <% if (banner.is_active) { %>
+              <span class="badge badge-success">Hiển thị</span>
+              <% } else { %>
+              <span class="badge badge-secondary">Không hiển thị</span>
+              <% } %>
+            </td>
+            <td>
+              <a
+                href="/admin/setting/banner/edit/<%= banner.id %>"
+                class="btn btn-info btn-sm"
+              >
+                <i class="fas fa-pencil-alt"></i> Sửa
+              </a>
+              <form
+                action="/admin/setting/banner/delete/<%= banner.id %>"
+                method="POST"
+                style="display: inline"
+                onsubmit="return confirm('Bạn có chắc muốn xóa banner này không?');"
+              >
+                <button class="btn btn-danger btn-sm" type="submit">
+                  <i class="fas fa-trash"></i> Xóa
+                </button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PHÂN TRANG -->
+    <div class="box-footer text-center">
+      <ul class="pagination justify-content-center">
+        <li class="page-item <%= Page === 1 ? 'disabled' : '' %>">
+          <a
+            class="page-link"
+            href="?page=<%= Page - 1 %><%= search ? '&search=' + search : '' %>"
+            >Trước</a
+          >
+        </li>
+
+        <% for (let i = 1; i <= totalPage; i++) { %>
+        <li class="page-item <%= i === Page ? 'active' : '' %>">
+          <a
+            class="page-link"
+            href="?page=<%= i %><%= search ? '&search=' + search : '' %>"
+            ><%= i %></a
+          >
+        </li>
+        <% } %>
+
+        <li class="page-item <%= Page === totalPage ? 'disabled' : '' %>">
+          <a
+            class="page-link"
+            href="?page=<%= Page + 1 %><%= search ? '&search=' + search : '' %>"
+            >Sau</a
+          >
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<%- include('footer') %>

@@ -1,0 +1,188 @@
+<%- include('header')%> <%- include('aside')%>
+
+<div class="content-wrapper" style="min-height: 1604.44px">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <!-- Default box -->
+    <div class="box mb-4">
+      <form action="" method="GET" class="form-inline" role="form">
+        <div class="form-group">
+          <label class="sr-only" for="">label</label>
+          <input class="form-control" name="search" placeholder="Tìm kiếm " />
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa fa-search"></i> Tìm kiếm
+        </button>
+        <a href="/admin/admins/add" class="btn btn-success pull-right">
+          <i class="fa fa-plus"></i> Thêm mới</a
+        >
+      </form>
+    </div>
+
+    <div class="card-body">
+      <table class="table projects table-bordered table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th style="width: 1%">#</th>
+            <th style="width: 10%">Tên đăng nhập</th>
+            <th style="width: 15%">Email</th>
+            <th>Họ và tên đầy đủ</th>
+            <th style="width: 10%" class="text-center">Ảnh đại diện</th>
+            <th style="width: 10%" class="text-center">Trạng thái tài khoản</th>
+            <th style="width: 10%" class="text-center">Loại tài khoản</th>
+            <th style="width: 20%" class="text-center">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% data.forEach((ds) => { %>
+          <tr>
+            <td><%= ds.admin_id %></td>
+
+            <td>
+              <a><%= ds.username %></a>
+              <br />
+              <small>Đăng ký: <%= ds.created_at.toLocaleString() %></small>
+            </td>
+
+            <td><%= ds.email %></td>
+            <td><%= ds.full_name || '-' %></td>
+
+            <td class="text-center">
+              <% if (ds.avatar) { %>
+              <img
+                alt="Avatar"
+                class="table-avatar"
+                src="<%= ds.avatar %>"
+                style="
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  object-fit: cover;
+                "
+              />
+              <% } else { %>
+              <img
+                alt="Avatar"
+                class="table-avatar"
+                src="/dist/img/avatar4.png"
+                style="
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  object-fit: cover;
+                "
+              />
+              <% } %>
+            </td>
+
+            <td class="text-center">
+              <% if (ds.status === 'active') { %>
+              <span class="badge badge-success">Hoạt động</span>
+              <% } else if (ds.status === 'inactive') { %>
+              <span class="badge badge-warning">Tạm khóa</span>
+              <% } %>
+            </td>
+
+            <td class="text-center">
+              <% if (ds.role === 'super_admin') { %>
+              <span class="badge badge-danger">super_admin</span>
+              <% } else if (ds.role === 'content_manager') { %>
+              <span class="badge badge-primary">content_manager</span>
+              <% } else { %>
+              <span class="badge badge-secondary">support</span>
+              <% } %>
+            </td>
+
+            <td class="project-actions text-right">
+              <a
+                class="btn btn-info btn-sm"
+                href="/admin/admins/edit/<%= ds.admin_id %>"
+              >
+                <i class="fas fa-pencil-alt"></i> Edit
+              </a>
+              <form
+                action="/admin/admins/delete/<%= ds.admin_id %>"
+                method="POST"
+                style="display: inline-block"
+                onsubmit="return confirm('Bạn có chắc muốn xóa bài học này không?');"
+              >
+                <button class="btn btn-danger btn-sm" type="submit">
+                  <i class="fa fa-trash"></i> Xóa
+                </button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <!-- /.card-body -->
+
+    <div class="box-footer text-center">
+      <ul class="pagination d-flex justify-content-center">
+        <!-- Previous -->
+        <li
+          class="paginate_button page-item previous <%= baihocPage === 1 ? 'disabled' : '' %>"
+        >
+          <a
+            href="?page=<%= baihocPage > 1 ? baihocPage - 1 : 1 %><%= search ? '&search=' + search : '' %>"
+            aria-controls="example2"
+            data-dt-idx="0"
+            tabindex="0"
+            class="page-link"
+            >Previous</a
+          >
+        </li>
+
+        <!-- Page numbers -->
+        <% for (let i = 1; i <= totalPage; i++) { %>
+        <li
+          class="paginate_button page-item <%= i === baihocPage ? 'active' : '' %>"
+        >
+          <a
+            href="?page=<%= i %><%= search ? '&search=' + search : '' %>"
+            aria-controls="example2"
+            data-dt-idx="<%= i %>"
+            tabindex="0"
+            class="page-link"
+            ><%= i %></a
+          >
+        </li>
+        <% } %>
+
+        <!-- Next -->
+        <li
+          class="paginate_button page-item next <%= baihocPage === totalPage ? 'disabled' : '' %>"
+        >
+          <a
+            href="?page=<%= baihocPage < totalPage ? baihocPage + 1 : totalPage %><%= search ? '&search=' + search : '' %>"
+            aria-controls="example2"
+            data-dt-idx="<%= totalPage + 1 %>"
+            tabindex="0"
+            class="page-link"
+            >Next</a
+          >
+        </li>
+      </ul>
+    </div>
+  </section>
+  <!-- /.content -->
+</div>
+<%- include('footer')%>

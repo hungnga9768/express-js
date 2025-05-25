@@ -1,0 +1,176 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="box">
+      <div class="box-body card card-primary">
+        <div class="card">
+          <div class="card-header"><%= title %></div>
+          <div class="card-body">
+            <form method="POST" action="/admin/tailieu/edit/<%= document.document_id %>" enctype="multipart/form-data">
+              <div class="card-body">
+
+                <div class="form-group">
+                  <label for="title">Tiêu đề</label>
+                  <input type="text" class="form-control" id="title" name="title" value="<%= document.title %>" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="description">Mô tả</label>
+                  <textarea class="form-control noidung" id="description" name="description"><%= document.description %></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="content_type">Loại tài liệu</label>
+                  <select class="form-control" id="content_type" name="content_type" required>
+                    <option value="pdf" <%= document.content_type === 'pdf' ? 'selected' : '' %>>PDF</option>
+                    <option value="video" <%= document.content_type === 'video' ? 'selected' : '' %>>Video</option>
+                    <option value="audio" <%= document.content_type === 'audio' ? 'selected' : '' %>>Audio</option>
+                    <option value="text" <%= document.content_type === 'text' ? 'selected' : '' %>>Text</option>
+                    <option value="image" <%= document.content_type === 'image' ? 'selected' : '' %>>Image</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="content_url">Đường dẫn nội dung</label>
+                  <input type="text" class="form-control" id="content_url" name="content_url" value="<%= document.content_url %>" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="difficulty_level">Mức độ khó</label>
+                  <select class="form-control" id="difficulty_level" name="difficulty_level" required>
+                    <option value="beginner" <%= document.difficulty_level === 'beginner' ? 'selected' : '' %>>Beginner</option>
+                    <option value="intermediate" <%= document.difficulty_level === 'intermediate' ? 'selected' : '' %>>Intermediate</option>
+                    <option value="advanced" <%= document.difficulty_level === 'advanced' ? 'selected' : '' %>>Advanced</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="hsk_level">HSK Level</label>
+                  <input type="number" class="form-control" id="hsk_level" name="hsk_level" value="<%= document.hsk_level %>" />
+                </div>
+
+                <div class="form-group">
+                  <label for="category">Chủ đề</label>
+                  <select class="form-control" id="category" name="category" required>
+                    <option value="grammar" <%= document.category === 'grammar' ? 'selected' : '' %>>Ngữ pháp</option>
+                    <option value="vocabulary" <%= document.category === 'vocabulary' ? 'selected' : '' %>>Từ vựng</option>
+                    <option value="reading" <%= document.category === 'reading' ? 'selected' : '' %>>Đọc hiểu</option>
+                    <option value="listening" <%= document.category === 'listening' ? 'selected' : '' %>>Nghe</option>
+                    <option value="writing" <%= document.category === 'writing' ? 'selected' : '' %>>Viết</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="word_count">Số từ</label>
+                  <input type="number" class="form-control" id="word_count" name="word_count" value="<%= document.word_count %>" />
+                </div>
+
+                <div class="form-group">
+                  <label for="duration">Thời lượng (phút)</label>
+                  <input type="number" class="form-control" id="duration" name="duration" value="<%= document.duration %>" />
+                </div>
+
+            <div class="form-group">
+              <label>Ảnh đại diện hiện tại</label><br />
+              <!-- Ảnh xem trước -->
+              <img
+                data-group="uploadImage"
+                data-role="preview"
+                src="<%= document.thumbnail_url ? document.thumbnail_url : '/dist/img/avatar4.png' %>"
+                width="150"
+                class="thumbnail_url"
+              />
+            </div>
+
+            <div class="form-group">
+              <!-- Tên ảnh -->
+              <p data-group="uploadImage" data-role="filename"><%= document.thumbnail_url ? document.thumbnail_url.split('/').pop() : 'avatar4.png' %></p>
+
+              <label for="avatar">Cập nhật ảnh đại diện</label>
+              <!-- Input ảnh từ máy -->
+              <input
+                type="file"
+                class="form-control"
+                id="thumbnail_url"
+                name="thumbnail_url"
+                accept="image/*"
+                data-group="uploadImage"
+                onchange="showImage(event, this)"
+              />
+
+              <!-- Nút chọn từ thư viện -->
+              <button
+                type="button"
+                class="btn btn-secondary mt-2"
+                data-group="uploadImage"
+                onclick="openImageModal(this)"
+              >
+                Chọn từ thư viện
+              </button>
+              <input
+                type="hidden"
+                name="selected_image"
+                data-group="uploadImage"
+                data-role="selectedInput"
+              />
+              <input
+                type="hidden"
+                name="old_thumbnail_url"
+                value="<%= document.thumbnail_url || '/dist/img/avatar4.png' %>"
+              />
+            </div>
+             
+
+                <div class="form-group">
+                  <label for="is_free">Tài liệu miễn phí?</label>
+                  <select class="form-control" id="is_free" name="is_free">
+                    <option value="1" <%= document.is_free ? 'selected' : '' %>>Miễn phí</option>
+                    <option value="0" <%= !document.is_free ? 'selected' : '' %>>Trả phí</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="price">Giá (nếu có)</label>
+                  <input type="number" step="0.01" class="form-control" id="price" name="price" value="<%= document.price %>" />
+                </div>
+
+                <div class="box-footer mt-3">
+                  <button type="submit" class="btn btn-success">
+                    <i class="fa fa-save"></i> Cập nhật tài liệu
+                  </button>
+                  <a href="/admin/document/danhsach" class="btn btn-default float-right">
+                    <i class="fa fa-reply"></i> Quay lại danh sách
+                  </a>
+                </div>
+
+              </div>
+            </form>
+          </div>
+          <div class="card-footer text-muted"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<!-- Modal -->
+
+<%- include('modalimage')%> 
+<%- include('footer')%>

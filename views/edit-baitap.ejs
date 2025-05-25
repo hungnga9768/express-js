@@ -1,0 +1,168 @@
+<%- include('header') %>
+<%- include('aside') %>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="content">
+    <div class="box">
+      <div class="box-body card card-primary">
+        <div class="card">
+          <div class="card-header">Tạo Bài Tập Lớn & Danh Sách Câu Hỏi</div>
+          <div class="card-body">
+
+            <!-- Form Tạo/Sửa Bài Tập Lớn -->
+            <form method="POST" action="/admin/baitap/edit/<%= baitap.exercise_set_id%>">
+              <div class="form-group">
+                <label for="lesson_id">bai hoc</label>
+                <select
+                  class="form-control"
+                  id="lesson_id"
+                  name="lesson_id"
+                  required
+                >
+                  <% baihoc.forEach(function(data) { %>
+                  <option value="<%= data.lesson_id %>"
+                    <%= (data.lesson_id === baitap.lesson_id) ? 'selected' : '' %>>
+                    <%= data.title %>
+                  </option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="title">Tiêu đề</label>
+                <input type="text" class="form-control" name="title" value="<%= baitap.title %>" required>
+              </div>
+
+              <div class="form-group">
+                <label for="description">Mô tả</label>
+                <textarea class="form-control" name="description"><%= baitap.description %></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Lưu Bài Tập Lớn</button>
+            </form>
+            <div class="container-fluid">
+              <div class="row">
+                <div class="col-md-12">
+                  <h4 class="mb-4"> Danh sách câu hỏi trong bài tập: "<%= baitap.title %>"</h4>
+            
+                  <% listcauhoi.forEach((cauhoi, index) => {
+                    let options = [];
+                    try { options = JSON.parse(cauhoi.options); } catch (e) {}
+                  %>
+                    <div class="card mb-4">
+                      <div class="card-header bg-primary text-white">
+                        <strong>Câu <%= index + 1 %> - 
+                          <%= cauhoi.exercise_type === 'multiple_choice' ? 'Trắc nghiệm' :
+                              cauhoi.exercise_type === 'fill_blank' ? 'Điền chỗ trống' :
+                              cauhoi.exercise_type === 'matching' ? 'Ghép đôi' : 'Viết' %>
+                        </strong>
+                      </div>
+                      <div class="card-body">
+                        <p><strong>Câu hỏi:</strong> <%= cauhoi.question %></p>
+            
+                        <% if (cauhoi.exercise_type === 'multiple_choice' && options.length > 0) { %>
+                          <ul class="list-group mb-3">
+                            <% options.forEach((opt, i) => { %>
+                              <li class="list-group-item">
+                                <strong><%= String.fromCharCode(65 + i) %>.</strong> <%= opt %>
+                              </li>
+                            <% }) %>
+                          </ul>
+                        <% } else if (cauhoi.exercise_type === 'fill_blank') { %>
+                          <p class="text-muted"><em>(Người học sẽ điền từ vào chỗ trống)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'matching') { %>
+                          <p class="text-muted"><em>(Hiển thị cặp ghép dựa vào dữ liệu JSON)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'writing') { %>
+                          <p class="text-muted"><em>(Người học sẽ viết câu trả lời)</em></p>
+                        <% } %>
+            
+                        <p><strong> Đáp án đúng:</strong> <%= cauhoi.correct_answer %></p>
+            
+                        <% if (cauhoi.explanation) { %>
+                          <p><strong> Giải thích:</strong> <%= cauhoi.explanation %></p>
+                        <% } %>
+                      </div>
+                      <form method="POST" action="/admin/baitap/cauhoi/delete/<%= cauhoi.exercise_id %>" onsubmit="return confirm('Bạn có chắc muốn xoá câu hỏi này?')" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
+                      </form>
+                      
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+            
+            <hr />
+            <h4>➕ Thêm Câu Hỏi Mới Cho Bài Tập: "<%= baitap.title %>"</h4>
+              <form method="POST" action="/admin/baitap/cauhoi/add">
+  <input type="hidden" name="exercise_set_id" value="<%= baitap.exercise_set_id %>">
+
+  <div class="form-group">
+    <label>Loại câu hỏi</label>
+    <select name="exercise_type" class="form-control" required>
+      <option value="multiple_choice">Trắc nghiệm</option>
+      <option value="fill_blank">Điền vào chỗ trống</option>
+      <option value="matching">Ghép đôi</option>
+      <option value="writing">Viết</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Câu hỏi</label>
+    <textarea name="question" class="form-control" rows="3" required></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Đáp án đúng</label>
+    <input type="text" name="correct_answer" class="form-control" required>
+  </div>
+
+  <!-- Các lựa chọn: Option A -> D -->
+  <div class="form-group">
+    <label>Lựa chọn A</label>
+    <input type="text" name="optionA" class="form-control">
+  </div>
+  <div class="form-group">
+    <label>Lựa chọn B</label>
+    <input type="text" name="optionB" class="form-control">
+  </div>
+  <div class="form-group">
+    <label>Lựa chọn C</label>
+    <input type="text" name="optionC" class="form-control">
+  </div>
+  <div class="form-group">
+    <label>Lựa chọn D</label>
+    <input type="text" name="optionD" class="form-control">
+  </div>
+
+  <div class="form-group">
+    <label>Giải thích</label>
+    <textarea name="explanation" class="form-control" rows="2"></textarea>
+  </div>
+
+  <button type="submit" class="btn btn-success">💾 Lưu Câu Hỏi</button>
+                </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer') %>
