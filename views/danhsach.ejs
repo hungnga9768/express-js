@@ -1,0 +1,151 @@
+<%- include('header')%> <%- include('aside')%>
+
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <!-- Default box -->
+    <div class="box">
+      <div class="box-body">
+        <form action="" method="GET" class="form-inline" role="form">
+          <div class="form-group">
+            <label class="sr-only" for="">label</label>
+            <input class="form-control" name="search" placeholder="Tìm kiếm " />
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="fa fa-search"></i> Tìm kiếm
+          </button>
+          <a
+            href="/admin/khoahoc/add-khoahoc"
+            class="btn btn-success pull-right"
+          >
+            <i class="fa fa-plus"></i> Thêm mới</a
+          >
+        </form>
+      </div>
+      <div class="box-body">
+        <div class="box mt-4">
+          <table class="table table-bordered table-hover">
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Tên khóa học</th>
+                <th scope="col">Độ khó</th>
+                <th scope="col">Thời lượng</th>
+                <th scope="col">Giá</th>
+                <th scope="col">Trạng thái</th>
+                <th scope="col">Hành động</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <!-- 1 dòng ví dụ -->
+              <% data.forEach(function(value){%>
+              <tr>
+                <td><%= value.course_id %></td>
+                <td><%= value.title %></td>
+                <td><%= value.difficulty_level %></td>
+                <td><%= value.estimated_duration %></td>
+                <td><%= value.price %></td>
+                <td>
+                  <% if (value.is_free) { %>
+                  <span class="badge badge-info">Miễn phí</span>
+                  <% } else { %>
+                  <span class="badge badge-success">Không miễn phí</span>
+                  <% } %>
+                </td>
+
+                <td>
+                  <a
+                    href="/admin/khoahoc/edit-khoahoc/<%= value.course_id %>"
+                    class="btn btn-sm btn-warning"
+                  >
+                    <i class="fa fa-edit"></i> Sửa</a
+                  >
+                  <form
+                    action="/admin/khoahoc/delete-khoahoc/<%= value.course_id %>"
+                    method="POST"
+                    style="display: inline-block"
+                    onsubmit="return confirm('Bạn có chắc muốn xóa?');"
+                  >
+                    <button type="submit" class="btn btn-sm btn-danger">
+                      <i class="fa fa-remove"></i> Xóa
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <%} ) %>
+
+              <!-- Nhân các dòng khác -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="box-footer text-center">
+        <ul class="pagination d-flex justify-content-center">
+          <!-- Previous -->
+          <li
+            class="paginate_button page-item previous <%= currentPage === 1 ? 'disabled' : '' %>"
+          >
+            <a
+              href="?page=<%= currentPage > 1 ? currentPage - 1 : 1 %><%= search ? '&search=' + search : '' %>"
+              aria-controls="example2"
+              data-dt-idx="0"
+              tabindex="0"
+              class="page-link"
+              >Previous</a
+            >
+          </li>
+
+          <!-- Page numbers -->
+          <% for (let i = 1; i <= totalPage; i++) { %>
+          <li
+            class="paginate_button page-item <%= i === currentPage ? 'active' : '' %>"
+          >
+            <a
+              href="?page=<%= i %><%= search ? '&search=' + search : '' %>"
+              aria-controls="example2"
+              data-dt-idx="<%= i %>"
+              tabindex="0"
+              class="page-link"
+              ><%= i %></a
+            >
+          </li>
+          <% } %>
+
+          <!-- Next -->
+          <li
+            class="paginate_button page-item next <%= currentPage === totalPage ? 'disabled' : '' %>"
+          >
+            <a
+              href="?page=<%= currentPage < totalPage ? currentPage + 1 : totalPage %><%= search ? '&search=' + search : '' %>"
+              aria-controls="example2"
+              data-dt-idx="<%= totalPage + 1 %>"
+              tabindex="0"
+              class="page-link"
+              >Next</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+<%- include('footer')%>

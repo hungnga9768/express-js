@@ -1,0 +1,144 @@
+<%- include('header')%> <%- include('aside')%>
+
+<!-- =============================================== -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+    <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <!-- Default box -->
+    <div class="box">
+      <div class="box-body">
+        <form method="POST" action="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>">
+          <!-- Các trường thông tin khóa học -->
+          <div class="form-group">
+            <label for="course_id">Khóa học</label>
+            <select
+              class="form-control"
+              id="course_id"
+              name="course_id"
+              required
+            >
+              <% courses.forEach(function(course) { %>
+              <option value="<%= course.course_id %>"
+                <%= (course.course_id === lesson.course_id) ? 'selected' : '' %>>
+                <%= course.title %>
+              </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="title">Tên bài học</label>
+            <input
+              type="text"
+              class="form-control"
+              id="title"
+              name="title"
+              value="<%= lesson.title %>"
+              required
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Mô tả bài học</label>
+            <textarea
+              class="form-control noidung"
+              id="description"
+              name="description"
+              rows="3"
+            ><%= lesson.description %></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="content_type">Loại nội dung</label>
+            <select class="form-control" id="content_type" name="content_type">
+              <option value="video" <%= lesson.content_type == 'video' ? 'selected' : '' %>>Video</option>
+              <option value="text" <%= lesson.content_type == 'text' ? 'selected' : '' %>>Text</option>
+              <option value="quiz" <%= lesson.content_type == 'quiz' ? 'selected' : '' %>>Quiz</option>
+              <option value="interactive" <%= lesson.content_type == 'interactive' ? 'selected' : '' %>>Interactive</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="content_url">Đường dẫn nội dung</label>
+            <input
+              type="url"
+              class="form-control"
+              id="content_url"
+              name="content_url"
+              value="<%= lesson.content_url %>"
+            />
+          </div>
+    
+          <div class="form-group">
+            <label for="duration">Thời lượng bài học (phút)</label>
+            <input
+              type="number"
+              class="form-control"
+              id="duration"
+              name="duration"
+              value="<%= lesson.duration %>"
+            />
+          </div>
+        <div class="form-group">
+              <label for="module_order">Bài học của module số</label>
+              <input
+                type="number"
+                class="form-control"
+                id="module_order"
+                name="module_order"
+                 value="<%= lesson.module_order %>"
+                required
+                min="1"
+                step="1"
+              />
+          <div class="form-group">
+            <label for="display_order">Thứ tự hiển thị</label>
+            <input
+              type="number"
+              class="form-control"
+              id="display_order"
+              name="display_order"
+              value="<%= lesson.display_order %>"
+            />
+          </div>
+    
+          <div class="form-group">
+            <label for="is_preview">Hiển thị trước khi đăng?</label>
+            <select class="form-control" id="is_preview" name="is_preview">
+              <option value="1" <%= lesson.is_preview == 1 ? 'selected' : '' %>>Có</option>
+              <option value="0" <%= lesson.is_preview == 0 ? 'selected' : '' %>>Không</option>
+            </select>
+          </div>
+    
+          <div class="box-footer">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-save"></i> Lưu thay đổi
+            </button>
+            <a href="/quanlykhoahoc" class="btn btn-default pull-right">
+              <i class="fa fa-reply"></i> Quay lại
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+  </section>
+</div>
+<%- include('footer')%>

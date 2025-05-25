@@ -1,0 +1,170 @@
+<%- include('header')%> <%- include('aside')%>
+
+<!-- =============================================== -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+   <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <!-- Default box -->
+    <div class="box">
+      <div class="box-body card card-primary">
+        <div class="card">
+          <div class="card-header"><%= title %></div>
+          <div class="card-body">
+            <form
+            method="POST"
+            action="/admin/admins/edit/<%= admin.admin_id %>"
+            enctype="multipart/form-data"
+          >
+            <div class="card-body">
+              <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  name="username"
+                  value="<%= admin.username %>"
+                  required
+                />
+              </div>
+          
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  value="<%= admin.email %>"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="full_name">Họ và tên đầy đủ</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="full_name"
+                  name="full_name"
+                  value="<%= admin.full_name %>"
+                />
+              </div>
+          
+              <div class="form-group">
+                  <label>Ảnh đại diện hiện tại</label><br />
+                  <!-- Ảnh xem trước -->
+                  <img
+                    data-group="avatar"
+                    data-role="preview"
+                    src="<%= admin.avatar ? admin.avatar : '/dist/img/avatar4.png' %>"
+                    width="150"
+                    class="avatar"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <!-- Tên ảnh -->
+                  <p data-group="avatar" data-role="filename">
+                    <%= admin.avatar ? admin.avatar.split('/').pop() : 'avatar4.png' %>
+                  </p>
+
+                  <label for="avatar">Cập nhật ảnh đại diện</label>
+                  <!-- Input ảnh từ máy -->
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="avatar"
+                    name="avatar"
+                    accept="image/*"
+                    data-group="avatar"
+                    onchange="showImage(event, this)"
+                  />
+
+                  <!-- Nút chọn từ thư viện -->
+                  <button
+                    type="button"
+                    class="btn btn-secondary mt-2"
+                    data-group="avatar"
+                    onclick="openImageModal(this)"
+                  >
+                    Chọn từ thư viện
+                  </button>
+                  <input
+                    type="hidden"
+                    name="selected_image"
+                    data-group="avatar"
+                    data-role="selectedInput"
+/>
+                  <input
+                  type="hidden"
+                  name="old_thumbnail_url"
+                  value="<%= admin.avatar || '/dist/img/avatar4.png' %>"
+                />
+                </div>
+
+          
+              <div class="form-group">
+                <label for="status">Trạng thái tài khoản</label>
+                <select
+                  class="form-control"
+                  id="status"
+                  name="status"
+                  required
+                >
+                  <option value="active" <%= admin.status === 'active' ? 'selected' : '' %>>Hoạt động</option>
+                  <option value="inactive" <%= admin.status === 'suspended' ? 'selected' : '' %>>Tạm khóa</option>
+                 
+                </select>
+              </div>
+          
+              <div class="form-group">
+                <label for="role">Loại tài khoản</label>
+                <select
+                  class="form-control"
+                  id="role"
+                  name="role"
+                  required
+                >
+                  <option value="super_admin" <%= admin.role === 'super_admin' ? 'selected' : '' %>>super_admin</option>
+                  <option value="content_manager" <%= admin.role === 'content_manager' ? 'selected' : '' %>>content_manager</option>
+                  <option value="support" <%= admin.role === 'support' ? 'selected' : '' %>>support</option>
+                </select>
+              </div>
+              <div class="box-footer mt-3">
+                <button type="submit" class="btn btn-success">
+                  <i class="fa fa-save"></i> Cập nhật người dùng
+                </button>
+                <a href="/admin/admin/danhsach" class="btn btn-default float-right">
+                  <i class="fa fa-reply"></i> Quay lại danh sách
+                </a>
+              </div>
+            </div>
+
+          </form>
+          
+          </div>
+          <div class="card-footer text-muted"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<%- include('modalimage')%> 
+<%- include('footer')%>

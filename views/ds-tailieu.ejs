@@ -1,0 +1,145 @@
+<%- include('header') %> <%- include('aside') %>
+
+<div class="content-wrapper" style="min-height: 1604.44px">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="box mb-4">
+      <form method="GET" class="form-inline" role="form">
+        <div class="form-group">
+          <input
+            type="text"
+            name="search"
+            class="form-control"
+            placeholder="Tìm kiếm tiêu đề..."
+            value="<%= search %>"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary ml-2">
+          <i class="fa fa-search"></i> Tìm kiếm
+        </button>
+        <a href="/admin/tailieu/add" class="btn btn-success ml-2">
+          <i class="fa fa-plus"></i> Thêm mới
+        </a>
+      </form>
+    </div>
+
+    <div class="card-body p-0">
+      <table class="table projects table-bordered table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Tiêu đề</th>
+            <!-- <th>Mô tả</th> -->
+            <th>Loại</th>
+            <th>Mức độ</th>
+            <th>HSK</th>
+            <th>Chủ đề</th>
+            <th>Thời lượng / Số từ</th>
+            <th>Hình ảnh</th>
+            <th>Giá</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% data.forEach((doc) => { %>
+          <tr>
+            <td><%= doc.document_id %></td>
+            <td><%= doc.title %></td>
+            <!-- <td>
+                <p class="clamp-description"><%- doc.description %></p>
+              </td> -->
+            <td><%= doc.content_type %></td>
+            <td><%= doc.difficulty_level %></td>
+            <td><%= doc.hsk_level || '-' %></td>
+            <td><%= doc.category %></td>
+            <td>
+              <% if (doc.duration) { %> <%= doc.duration %> phút <% } else if
+              (doc.word_count) { %> <%= doc.word_count %> từ <% } else { %> - <%
+              } %>
+            </td>
+            <td>
+              <% if (doc.thumbnail_url) { %>
+              <img
+                src="<%= doc.thumbnail_url %>"
+                style="width: 50px; height: 50px; object-fit: cover"
+              />
+              <% } else { %> - <% } %>
+            </td>
+            <td>
+              <% if (doc.is_free) { %>
+              <span class="badge badge-success">Miễn phí</span>
+              <% } else { %> <%= doc.price ? doc.price + ' đ' : 'N/A' %> <% } %>
+            </td>
+            <td>
+              <a
+                href="/admin/tailieu/edit/<%= doc.document_id %>"
+                class="btn btn-info btn-sm"
+              >
+                <i class="fas fa-pencil-alt"></i> Sửa
+              </a>
+              <form
+                action="/admin/tailieu/delete/<%= doc.document_id %>"
+                method="POST"
+                style="display: inline"
+                onsubmit="return confirm('Bạn có chắc muốn xóa tài liệu này không?');"
+              >
+                <button class="btn btn-danger btn-sm" type="submit">
+                  <i class="fas fa-trash"></i> Xóa
+                </button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PHÂN TRANG -->
+    <div class="box-footer text-center">
+      <ul class="pagination justify-content-center">
+        <li class="page-item <%= Page === 1 ? 'disabled' : '' %>">
+          <a
+            class="page-link"
+            href="?page=<%= Page - 1 %><%= search ? '&search=' + search : '' %>"
+            >Trước</a
+          >
+        </li>
+
+        <% for (let i = 1; i <= totalPage; i++) { %>
+        <li class="page-item <%= i === Page ? 'active' : '' %>">
+          <a
+            class="page-link"
+            href="?page=<%= i %><%= search ? '&search=' + search : '' %>"
+            ><%= i %></a
+          >
+        </li>
+        <% } %>
+
+        <li class="page-item <%= Page === totalPage ? 'disabled' : '' %>">
+          <a
+            class="page-link"
+            href="?page=<%= Page + 1 %><%= search ? '&search=' + search : '' %>"
+            >Sau</a
+          >
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<%- include('footer') %>

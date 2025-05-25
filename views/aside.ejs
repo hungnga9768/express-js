@@ -1,0 +1,237 @@
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+  <!-- Brand Logo -->
+  <a href="index3.html" class="brand-link">
+    <img
+      src="/dist/img/AdminLTELogo.png"
+      alt="AdminLTE Logo"
+      class="brand-image img-circle elevation-3"
+      style="opacity: 0.8"
+    />
+    <span class="brand-text font-weight-light">AdminLTE 3</span>
+  </a>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Sidebar user panel (optional) -->
+    <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+      <div class="image">
+        <img
+          src="<%= user?.avatar %>"
+          class="img-circle elevation-2"
+          alt="User Image"
+        />
+      </div>
+      <div class="info">
+        <a href="#" class="d-block"><%= user?.username || "alex" %></a>
+      </div>
+    </div>
+
+    <!-- SidebarSearch Form -->
+    <div class="form-inline">
+      <div class="input-group" data-widget="sidebar-search">
+        <input
+          class="form-control form-control-sidebar"
+          type="search"
+          placeholder="Search"
+          aria-label="Search"
+        />
+        <div class="input-group-append">
+          <button class="btn btn-sidebar">
+            <i class="fas fa-search fa-fw"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <nav class="mt-2">
+      <ul
+        class="nav nav-pills nav-sidebar flex-column"
+        data-widget="treeview"
+        role="menu"
+        data-accordion="false"
+      >
+        <!-- Add icons to the links using the .nav-icon class
+             with font-awesome or any other icon font library -->
+
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quan li khoa hoc
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/khoahoc/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách khóa học</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/khoahoc/add-khoahoc" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>thêm mới khóa học</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quan li bai hoc
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/baihoc/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách bai học</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/baihoc/add-baihoc" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>thêm mới bai học</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quản lý người dùng
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/user/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách người dùng</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/user/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm người dùng</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quản lý admin
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/admins/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách người dùng</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/admins/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm người dùng</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quản lý người dùng
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/baitap/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách bai tap</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/baitap/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm bai tap</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quản lý tài liệu
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/tailieu/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách tài liệu</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/tailieu/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm tài liệu</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-copy"></i>
+            <p>
+              quản lý thành phần web site
+              <i class="fas fa-angle-left right"></i>
+              <span class="badge badge-info right">6</span>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/setting/banner/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>quản lý banner sides</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/setting" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>quản lý Logo website</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/tailieu/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>quản lý footer website</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+    <!-- /.sidebar-menu -->
+  </div>
+  <!-- /.sidebar -->
+</aside>
