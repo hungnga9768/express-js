@@ -8,7 +8,7 @@ module.exports = {
   async index(req, res) {
     const search = req.query.search || "";
     const page = parseInt(req.query.page) || 1;
-    const limit = 5;
+    const limit = 10;
     const totalRow = await userModel.getTotalRow(search);
     const totalPage = Math.ceil(totalRow / limit);
     const baihocPage = Math.min(Math.max(page, 1), totalPage);

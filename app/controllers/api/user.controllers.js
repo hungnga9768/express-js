@@ -5,57 +5,63 @@ const saltRounds = 10; //số vòng mã hóa sản phẩm vòng càng cao thì c
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
-
+const passport = require("passport");
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 module.exports = {
-  async Login(req, res) {
-    try {
-      const { email, password } = req.body;
-      const user = await userModel.check_emaill(email);
+  async Login(req, res, next) {
+    passport.authenticate(
+      "user-local",
+      { session: false },
+      (err, user, info) => {
+        if (err) {
+          // Xử lý lỗi từ Passport strategy (ví dụ: lỗi DB)
+          console.error("Lỗi trong Passport callback:", err);
+          return res
+            .status(500)
+            .json({ message: "Lỗi máy chủ khi đăng nhập." });
+        }
+        if (!user) {
+          // Passport trả về user = false nếu xác thực thất bại
+          // info.message chứa thông báo lỗi từ strategy ('Email không tồn tại', 'Mật khẩu không đúng')
+          return res
+            .status(401)
+            .json({ message: info.message || "Đăng nhập thất bại." });
+        }
 
-      if (!user.length) {
-        return res.status(400).json({ message: "Tài khoản không tồn tại" });
+        // Nếu Passport xác thực thành công (user không phải false)
+        // 'user' BÂY GIỜ LÀ ĐỐI TƯỢNG NGƯỜI DÙNG, KHÔNG PHẢI MẢNG.
+        // Vì vậy, TRUY CẬP TRỰC TIẾP CÁC THUỘC TÍNH CỦA 'user'.
+
+        const userInfo = {
+          user_id: user.user_id,
+          username: user.username,
+          email: user.email,
+          full_name: user.full_name,
+          profile_picture: user.profile_picture,
+        };
+        const accessToken = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {
+          expiresIn: "15m",
+        });
+        const refreshToken = jwt.sign(userInfo, REFRESH_TOKEN_SECRET, {
+          expiresIn: "7d",
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production", // Nên dùng biến môi trường cho secure
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({
+          message: "Đăng nhập thành công",
+          accessToken,
+          user: userInfo,
+        });
       }
-
-      const storedPassword = user[0].password_hash;
-      const isMatch = await bcrypt.compare(password, storedPassword);
-      if (!isMatch) {
-        return res.status(401).json({ message: "Sai mật khẩu, mời nhập lại" });
-      }
-
-      const userInfo = {
-        user_id: user[0].user_id,
-        username: user[0].username,
-        email: user[0].email,
-        full_name: user[0].full_name,
-        profile_picture: user[0].profile_picture,
-      };
-      console.log(userInfo);
-      const accessToken = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {
-        expiresIn: "15m",
-      });
-      const refreshToken = jwt.sign(userInfo, REFRESH_TOKEN_SECRET, {
-        expiresIn: "7d",
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      res.status(200).json({
-        message: "Đăng nhập thành công",
-        accessToken,
-        user: userInfo,
-      });
-    } catch (error) {
-      console.error("Lỗi đăng nhập:", error);
-      res.status(500).json({ message: "Đã xảy ra lỗi server" });
-    }
+    )(req, res, next);
   },
   refreshToken(req, res) {
     const token = req.cookies?.refreshToken;

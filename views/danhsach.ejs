@@ -106,24 +106,20 @@
           >
             <a
               href="?page=<%= currentPage > 1 ? currentPage - 1 : 1 %><%= search ? '&search=' + search : '' %>"
-              aria-controls="example2"
-              data-dt-idx="0"
-              tabindex="0"
               class="page-link"
               >Previous</a
             >
           </li>
 
-          <!-- Page numbers -->
-          <% for (let i = 1; i <= totalPage; i++) { %>
+          <!-- Page numbers: chỉ hiển thị 1 trang trước, hiện tại, 1 trang sau -->
+          <% const startPage = Math.max(1, currentPage - 1); const endPage =
+          Math.min(totalPage, currentPage + 1); for (let i = startPage; i <=
+          endPage; i++) { %>
           <li
             class="paginate_button page-item <%= i === currentPage ? 'active' : '' %>"
           >
             <a
               href="?page=<%= i %><%= search ? '&search=' + search : '' %>"
-              aria-controls="example2"
-              data-dt-idx="<%= i %>"
-              tabindex="0"
               class="page-link"
               ><%= i %></a
             >
@@ -136,9 +132,6 @@
           >
             <a
               href="?page=<%= currentPage < totalPage ? currentPage + 1 : totalPage %><%= search ? '&search=' + search : '' %>"
-              aria-controls="example2"
-              data-dt-idx="<%= totalPage + 1 %>"
-              tabindex="0"
               class="page-link"
               >Next</a
             >

@@ -6,7 +6,7 @@ module.exports = {
   async index(req, res) {
     const search = req.query.search || "";
     const page = parseInt(req.query.page) || 1;
-    const limit = 5;
+    const limit = 10;
 
     const totalRow = await dsTailieu.getTotalRow(search);
     const totalPage = Math.max(Math.ceil(totalRow / limit), 1); // ✅ tránh 0

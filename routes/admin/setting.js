@@ -12,5 +12,6 @@ router.post("/banner/delete/:id", adminsCtl.remove);
 router.get("/banner/danhsach", adminsCtl.indexSetttings);
 router.get("/", adminsCtl.indexSetttings);
 router.get("/edit/:id", adminsCtl.showEditForSettings);
+router.post("/edit/:id", upload.single("image"), adminsCtl.updateSettings);
 
 module.exports = router;

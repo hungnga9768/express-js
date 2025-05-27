@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt"); // thư viện mã hóa mật khẩu
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const passport = require("passport");
 require("dotenv").config();
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
@@ -15,46 +16,56 @@ module.exports = {
       message: null,
     });
   },
-  async checkLogin(req, res) {
-    const { email, password_hash } = req.body;
-    const user = await adminMd.check_emaill(email);
+  async checkLogin(req, res, next) {
+    //xac thuc authenticaletoken
+    passport.authenticate(
+      "admin-local", // Sử dụng chiến lược admin-local
+      { session: false }, // Không sử dụng session
+      (err, admin, info) => {
+        if (err) {
+          return res.render("Admin-login", {
+            message: "Lỗi máy chủ khi đăng nhập. Vui lòng thử lại sau.",
+            email: req.body.email,
+          });
+        }
+        if (!admin) {
+          return res.render("Admin-login", {
+            message:
+              info.message ||
+              "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.",
+            email: req.body.email,
+          });
+        }
+        const userInfo = {
+          admin_id: admin.admin_id,
+          username: admin.username,
+          email: admin.email,
+          full_name: admin.full_name,
+          avatar: admin.avatar,
+          role: admin.role,
+        };
+        const accessToken_admin = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {
+          expiresIn: "15m",
+        });
+        const refreshToken_admin = jwt.sign(userInfo, REFRESH_TOKEN_SECRET, {
+          expiresIn: "7d",
+        });
+        res.cookie("accessToken_admin", accessToken_admin, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Lax",
+          maxAge: 15 * 60 * 1000,
+        });
+        res.cookie("refreshToken_admin", refreshToken_admin, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Lax",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
-    if (!user.length) {
-      res.render("Admin-login", {
-        message: "Tài khoản không tồn tại",
-      });
-    }
-    //check mật khẩu đã được mã hóa
-    const storedPassword = user[0].password_hash;
-    const isMatch = await bcrypt.compare(password_hash, storedPassword);
-    if (!isMatch) {
-      return res.render("Admin-login", {
-        message: "Mật khẩu không chính xác",
-      });
-    }
-    const userInfo = {
-      admin_id: user[0].admin_id,
-      username: user[0].username,
-      email: user[0].email,
-      full_name: user[0].full_name,
-      avatar: user[0].avatar,
-    };
-
-    const accessToken_admin = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {
-      expiresIn: "15m",
-    });
-    const refreshToken_admin = jwt.sign(userInfo, REFRESH_TOKEN_SECRET, {
-      expiresIn: "7d",
-    });
-    res.cookie("accessToken_admin", accessToken_admin, {
-      httpOnly: true,
-      maxAge: 15 * 60 * 1000, // 15 phút
-    });
-    res.cookie("refreshToken_admin", refreshToken_admin, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
-    });
-    res.redirect("/admin");
+        res.redirect("/admin");
+      }
+    )(req, res, next);
   },
   // Chức năng đăng xuất
   async Logout(req, res) {
@@ -69,7 +80,7 @@ module.exports = {
   async index(req, res) {
     const search = req.query.search || "";
     const page = parseInt(req.query.page) || 1;
-    const limit = 5;
+    const limit = 10;
     const totalRow = await adminMd.getTotalRow(search);
     const totalPage = Math.ceil(totalRow / limit);
     const baihocPage = Math.min(Math.max(page, 1), totalPage);
@@ -143,7 +154,8 @@ module.exports = {
           uploadedImages,
         });
       }
-      await adminMd.create(newCourse);
+      const hihi = await adminMd.create(newCourse);
+      console.log(hihi);
       res.redirect("/admin/admins/danhsach");
     } catch (err) {
       console.error("Lỗi thêm khóa học:", err);

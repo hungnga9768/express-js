@@ -1,15 +1,9 @@
 const tailieu = require("../../models/tailieu");
-
+const { listItems } = require("../../utils/listItemsAPI");
 module.exports = {
   // Trang danh sách khóa học với phân trang & tìm kiếm
   async index(req, res) {
-    const search = req.query.search || "";
-    const data = await tailieu.getDs(search);
-    res.send({
-      data: data ? data : [],
-      message: "lấy dữ liệu thành công",
-      code: 200,
-    });
+    await listItems(tailieu, req, res);
   },
   async getID(req, res) {
     const id = req.params.id;

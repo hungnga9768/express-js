@@ -25,45 +25,91 @@
           <div class="card-body">
             <form
               method="POST"
-              action="/admin/setting/edit"
+              action="/admin/setting/edit/<%= setting.id %>"
               enctype="multipart/form-data"
             >
               <div class="form-group">
                 <label><%= setting.note %></label>
 
                 <% if (setting.key === 'logo' || setting.key === 'favicon') { %>
-                <!-- Xem ảnh -->
-                <img
-                  src="<%= setting.value %>"
-                  alt="<%= setting.key %>"
-                  style="max-height: 60px; display: block; margin-bottom: 10px"
-                />
-                <input
-                  type="file"
-                  name="<%= setting.key %>_file"
-                  class="form-control"
-                  accept="image/*"
-                />
-                <!-- Giữ lại giá trị cũ nếu không chọn ảnh mới -->
-                <input
-                  type="hidden"
-                  name="<%= setting.key %>_old"
-                  value="<%= setting.value %>"
-                />
+               
+                  <label>Ảnh đang áp dụng</label><br />
+                  <!-- Ảnh xem trước -->
+                  <img
+                    data-group="uploadImage"
+                    data-role="preview"
+                    src="<%= setting.value ? setting.value : '/dist/img/avatar4.png' %>"
+                    width="150"
+                    class="thumbnail_url"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <!-- Tên ảnh -->
+                  <p data-group="uploadImage" data-role="filename">
+                    <%= setting.value ? setting.value.split('/').pop() :
+                    'avatar4.png' %>
+                  </p>
+
+                  <label for="avatar">Cập nhật ảnh</label>
+                  <!-- Input ảnh từ máy -->
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="image"
+                    name="image"
+                    accept="image/*"
+                    data-group="uploadImage"
+                    onchange="showImage(event, this)"
+                  />
+
+                  <!-- Nút chọn từ thư viện -->
+                  <button
+                    type="button"
+                    class="btn btn-secondary mt-2"
+                    data-group="uploadImage"
+                    onclick="openImageModal(this)"
+                  >
+                    Chọn từ thư viện
+                  </button>
+                  <input
+                    type="hidden"
+                    name="selected_image"
+                    data-group="uploadImage"
+                    data-role="selectedInput"
+                  />
+                  <input
+                    type="hidden"
+                    name="old_thumbnail_url"
+                    value="<%= setting.value || '/dist/img/avatar4.png' %>"
+                  />
+                   <input  type="hidden" name="key" value="<%= setting.key %>" >
+                </div>
+
                 <% } else if (setting.key === 'about_us' || setting.key ===
                 'seo_description') { %>
+                  <input  type="hidden" name="key" value="<%= setting.key %>" >
                 <textarea
                   class="form-control"
-                  name="<%= setting.key %>"
+                  name="value"
                   rows="3"
                 >
-<%= setting.value %></textarea
-                >
+                <%= setting.value %></textarea>
+                
+                <% } else if (setting.key === 'primary_color' || setting.key ==='secondary_color'|| setting.key ==='gradient-end'|| setting.key ==='gradient-start'|| setting.key ==='text_color' ) { %>
+                <input  type="hidden" name="key" value="<%= setting.key %>" >
+                <input
+                  type="color"
+                  id="value"
+                  name="value"
+                  value="<%= setting.value %>" 
+                />
                 <% } else { %>
+                   <input  type="hidden" name="key" value="<%= setting.key %>" >
                 <input
                   type="text"
                   class="form-control"
-                  name="<%= setting.key %>"
+                  name="value"
                   value="<%= setting.value %>"
                 />
                 <% } %>
@@ -85,5 +131,5 @@
     </div>
   </section>
 </div>
-
+<%- include('modalimage')%>
 <%- include('footer') %>
