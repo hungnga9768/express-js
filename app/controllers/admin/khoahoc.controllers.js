@@ -1,4 +1,5 @@
 const Course = require("../../models/khoahoc");
+const Lessons = require("../../models/baihoc");
 const fs = require("fs");
 const path = require("path");
 module.exports = {
@@ -42,7 +43,7 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
+
         selected_image,
         old_thumbnail_url,
       } = req.body;
@@ -62,7 +63,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
         thumbnail_url,
       };
 
@@ -84,10 +84,21 @@ module.exports = {
     if (!course) {
       return res.render("error", { message: "Không tìm thấy khóa học" });
     }
+    const rawLessons = await Lessons.getcourseId(id);
+
+    const groupedLessons = {};
+    rawLessons.forEach((lesson) => {
+      const module = lesson.module_order || 1;
+      if (!groupedLessons[module]) {
+        groupedLessons[module] = [];
+      }
+      groupedLessons[module].push(lesson);
+    });
     res.render("edit-khoahoc", {
       title: "Chỉnh sửa khóa học",
       course,
       uploadedImages,
+      groupedLessons,
     });
   },
 
@@ -102,7 +113,7 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
+
         old_thumbnail_url,
         selected_image,
       } = req.body;
@@ -119,7 +130,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
       };
 
       if (req.file) {
@@ -149,5 +159,31 @@ module.exports = {
       console.error("Lỗi xóa:", err);
       res.status(500).send("Xóa thất bại");
     }
+  },
+  async updateMultipleCourses(req, res) {
+    const { courses } = req.body;
+    const results = [];
+
+    for (const course of courses) {
+      try {
+        await Course.update(course.course_id, {
+          title: course.title,
+          difficulty_level: course.difficulty_level,
+          estimated_duration: course.estimated_duration,
+          price: course.price,
+          is_free: course.is_free,
+        });
+
+        results.push({ course_id: course.course_id, success: true });
+      } catch (err) {
+        results.push({
+          course_id: course.course_id,
+          success: false,
+          message: err.message,
+        });
+      }
+    }
+
+    res.json({ success: true, results });
   },
 };

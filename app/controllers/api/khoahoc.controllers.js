@@ -20,7 +20,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
       } = req.body;
 
       const thumbnail_url = "/images/" + req.file.filename;
@@ -32,7 +31,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
         thumbnail_url,
       };
 
@@ -65,7 +63,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
       } = req.body;
 
       const isDuplicate = await Course.checkDuplicateTitle(title, id);
@@ -80,7 +77,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-        instructor_id,
       };
 
       if (req.file) {

@@ -38,8 +38,8 @@ module.exports = {
   //  Thêm khóa học mới
   async create(course) {
     const sql = `
-      INSERT INTO courses (title, description, thumbnail_url, difficulty_level, estimated_duration, is_free, price, instructor_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO courses (title, description, thumbnail_url, difficulty_level, estimated_duration, is_free, price)
+      VALUES (?, ?, ?, ?, ?, ?, ?, )
     `;
     const values = [
       course.title,
@@ -49,7 +49,6 @@ module.exports = {
       course.estimated_duration,
       course.is_free,
       course.price,
-      course.instructor_id,
     ];
     return await query(sql, values);
   },

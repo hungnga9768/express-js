@@ -146,17 +146,6 @@
             />
           </div>
         
-          <div class="form-group">
-            <label for="instructor_id">ID Giảng viên</label>
-            <input
-              type="number"
-              class="form-control"
-              id="instructor_id"
-              name="instructor_id"
-              value="<%= course.instructor_id %>"
-              required
-            />
-          </div>
         
           <div class="box-footer">
             <button type="submit" class="btn btn-primary">
@@ -171,6 +160,122 @@
       </div>
     </div>
   </section>
+  <section class="content">
+     <div class="box">
+      <div class="box-body">
+<table class="table table-bordered table-sm">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th style="width: 5%;">Module</th>
+      <th style="width: 5%;">Thứ tự trong Module</th>
+      <th style="width: 40%;">Tiêu đề</th>
+      <th>Loại</th>
+      <th>URL Nội dung</th>
+      <th style="width: 5%;">Thời lượng (phút)</th>
+      <th>Xem trước</th>
+      <th>Hành Động</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% Object.keys(groupedLessons).sort((a, b) => a - b).forEach((moduleNum) => {
+         groupedLessons[moduleNum].forEach((lesson, index) => { %>
+      <tr>
+        <td><%= lesson.lesson_id %></td>
+        <td>
+          <input type="number" class="form-control form-control-sm" name="module_order" value="<%= lesson.module_order %>" data-id="<%= lesson.lesson_id %>">
+        </td>
+        <td>
+          <input type="number" class="form-control form-control-sm" name="display_order" value="<%= lesson.display_order %>" data-id="<%= lesson.lesson_id %>">
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm" name="title" value="<%= lesson.title %>" data-id="<%= lesson.lesson_id %>">
+        </td>
+        <td>
+          <select class="form-control form-control-sm" name="content_type" data-id="<%= lesson.lesson_id %>">
+            <option value="video" <%= lesson.content_type === 'video' ? 'selected' : '' %>>Video</option>
+            <option value="text" <%= lesson.content_type === 'text' ? 'selected' : '' %>>Text</option>
+            <option value="quiz" <%= lesson.content_type === 'quiz' ? 'selected' : '' %>>Quiz</option>
+            <option value="interactive" <%= lesson.content_type === 'interactive' ? 'selected' : '' %>>Interactive</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm" name="content_url" value="<%= lesson.content_url %>" data-id="<%= lesson.lesson_id %>">
+        </td>
+        <td>
+          <input type="number" class="form-control form-control-sm" name="duration" value="<%= lesson.duration %>" data-id="<%= lesson.lesson_id %>">
+        </td>
+        <td>
+          <select class="form-control form-control-sm" name="is_preview" data-id="<%= lesson.lesson_id %>">
+            <option value="1" <%= lesson.is_preview ? 'selected' : '' %>>✅</option>
+            <option value="0" <%= !lesson.is_preview ? 'selected' : '' %>>❌</option>
+          </select>
+        </td>
+          <td>
+                <a
+                  href="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>"
+                  class="btn btn-sm btn-warning"
+                >
+                  <i class="fa fa-edit"></i> Sửa
+                </a>
+                <form
+                  action="/admin/baihoc/delete-baihoc/<%= lesson.lesson_id %>"
+                  method="POST"
+                  style="display: inline-block"
+                  onsubmit="return confirm('Bạn có chắc muốn xóa bài học này không?');"
+                >
+                  <button class="btn btn-sm btn-danger" type="submit">
+                    <i class="fa fa-trash"></i> Xóa
+                  </button>
+                </form>
+              </td>
+      </tr>
+    <% })}) %>
+  </tbody>
+</table>
+
+      </div>
+    </div>
+  </section>
+  <button id="saveAllLessons" class="btn btn-success mb-3">💾 Lưu tất cả</button>
+
 </div>
 <%- include('modalimage')%>
 <%- include('footer')%>
+<script>
+  document.getElementById('saveAllLessons').addEventListener('click', () => {
+    const rows = document.querySelectorAll('tbody tr');
+    const data = [];
+
+    rows.forEach(row => {
+      const lesson_id = row.querySelector('input[name="title"]').dataset.id;
+      const lesson = {
+        lesson_id,
+        title: row.querySelector('input[name="title"]').value,
+        content_type: row.querySelector('select[name="content_type"]').value,
+        content_url: row.querySelector('input[name="content_url"]').value,
+        duration: row.querySelector('input[name="duration"]').value,
+        module_order: row.querySelector('input[name="module_order"]').value,
+        display_order: row.querySelector('input[name="display_order"]').value,
+        is_preview: row.querySelector('select[name="is_preview"]').value
+      };
+      data.push(lesson);
+    });
+
+    fetch('/admin/baihoc/bulk-update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ lessons: data })
+    })
+    .then(res => res.json())
+    .then(response => {
+      alert('Đã cập nhật thành công!');
+    })
+    .catch(error => {
+      console.error('Lỗi khi cập nhật:', error);
+      alert('Có lỗi xảy ra.');
+    });
+  });
+</script>

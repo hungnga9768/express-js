@@ -7,7 +7,7 @@ const SettingsCtrl = require("../../app/controllers/api/setting.controller");
 const khoahoc = require("../api/khoahoc");
 const baihoc = require("../api/baihoc");
 const auth = require("../api/auth");
-const passport = require("passport");
+const geminiCtrl = require("../../app/controllers/api/gemini.controller");
 // router baor vệ check đăng nhập thông qua cái này mới chạy
 const authenticateTokenUser = require("../../middlewares/authAPI");
 
@@ -30,5 +30,20 @@ router.get("/logout", userCtrl.logout);
 //router quan li giao dien
 router.get("/banner", SettingsCtrl.index);
 router.get("/config", SettingsCtrl.getConfig);
+
+//touter giao tiep người dùng với api
+
+router.post("/chat", authenticateTokenUser, geminiCtrl.handleChat);
+router.get("/chat-topics", geminiCtrl.getchattopics);
+router.get(
+  "/chat/history/:sessionId",
+  authenticateTokenUser,
+  geminiCtrl.getChatHistoryDetail
+);
+router.get(
+  "/chat/sessions",
+  authenticateTokenUser,
+  geminiCtrl.getUserChatSessions
+);
 
 module.exports = router;

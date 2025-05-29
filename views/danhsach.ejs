@@ -37,7 +37,12 @@
             class="btn btn-success pull-right"
           >
             <i class="fa fa-plus"></i> Thêm mới</a
-          >
+          ><div class="text-right mt-3">
+  <button id="save-all-courses" class="btn btn-primary">
+    <i class="fa fa-save"></i> Lưu tất cả
+  </button>
+</div>
+
         </form>
       </div>
       <div class="box-body">
@@ -55,21 +60,29 @@
               </tr>
             </thead>
 
-            <tbody>
-              <!-- 1 dòng ví dụ -->
+            <tbody id="course-table-body">
               <% data.forEach(function(value){%>
-              <tr>
-                <td><%= value.course_id %></td>
-                <td><%= value.title %></td>
-                <td><%= value.difficulty_level %></td>
-                <td><%= value.estimated_duration %></td>
-                <td><%= value.price %></td>
+                <tr data-id="<%= value.course_id %>">
+                            <td><%= value.course_id %></td>
+                <td><input type="text" class="form-control form-control-sm title" value="<%= value.title %>"></td>
+               <td>
+              <select class="form-control form-control-sm difficulty_level">
+                <option value="hsk1" <%= value.difficulty_level === 'hsk1' ? 'selected' : '' %>>hsk1</option>
+                <option value="hsk2" <%= value.difficulty_level === 'hsk2' ? 'selected' : '' %>>hsk2</option>
+                <option value="hsk3" <%= value.difficulty_level === 'hsk3' ? 'selected' : '' %>>hsk3</option>
+                <option value="hsk4" <%= value.difficulty_level === 'hsk4' ? 'selected' : '' %>>hsk4</option>
+                <option value="hsk5" <%= value.difficulty_level === 'hsk5' ? 'selected' : '' %>>hsk5</option>
+                <option value="hsk6" <%= value.difficulty_level === 'hsk6' ? 'selected' : '' %>>hsk6</option>
+              </select>
+            </td>
+
+                <td><input type="text" class="form-control form-control-sm estimated_duration" value="<%= value.estimated_duration %>"></td>
+                <td><input type="text" class="form-control form-control-sm price" value="<%= value.price %>"></td>
                 <td>
-                  <% if (value.is_free) { %>
-                  <span class="badge badge-info">Miễn phí</span>
-                  <% } else { %>
-                  <span class="badge badge-success">Không miễn phí</span>
-                  <% } %>
+                  <select class="form-control form-control-sm is_free">
+                    <option value="1" <%= value.is_free ? 'selected' : '' %>>Miễn phí</option>
+                    <option value="0" <%= !value.is_free ? 'selected' : '' %>>Không miễn phí</option>
+                  </select>
                 </td>
 
                 <td>
@@ -142,3 +155,49 @@
   </section>
 </div>
 <%- include('footer')%>
+<script>
+  $('#save-all-courses').click(function () {
+    const courses = [];
+
+    $('#course-table-body tr').each(function () {
+      const row = $(this);
+      const course_id = row.data('id');
+      const title = row.find('.title').val();
+      const difficulty_level = row.find('.difficulty_level').val();
+      const estimated_duration = row.find('.estimated_duration').val();
+      const price = row.find('.price').val();
+      const is_free = row.find('.is_free').val();
+
+      courses.push({
+        course_id,
+        title,
+        difficulty_level,
+        estimated_duration,
+        price,
+        is_free,
+      });
+    });
+
+    $.ajax({
+      url: '/admin/khoahoc/update-multiple',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({ courses }),
+      success: function (res) {
+        if (res.success) {
+          const failed = res.results.filter(r => !r.success);
+          if (failed.length === 0) {
+           
+          } else {
+            alert('Có ' + failed.length + ' dòng lỗi:\n' + failed.map(f => 'ID ' + f.course_id + ': ' + f.message).join('\n'));
+          }
+        } else {
+          alert('Lỗi tổng thể!');
+        }
+      },
+      error: function () {
+        alert('Lỗi máy chủ!');
+      },
+    });
+  });
+</script>

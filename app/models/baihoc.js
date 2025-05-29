@@ -35,6 +35,12 @@ module.exports = {
     ]);
     return result[0]; // trả về 1 object duy nhất
   },
+  async getcourseId(id) {
+    const result = await query("SELECT * FROM lessons WHERE course_id = ?", [
+      id,
+    ]);
+    return result; // trả về 1 mảng
+  },
 
   //  Thêm khóa học mới
   async create(lesson) {

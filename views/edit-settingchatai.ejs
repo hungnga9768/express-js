@@ -1,0 +1,72 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Tài liệu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="content">
+    <div class="box">
+      <div class="box-body card card-primary">
+        <div class="card">
+          <div class="card-header"><%= title %></div>
+          <div class="card-body">
+            <form  action="/admin/settingai/edit/<%= chat.id %>"  method="POST"  >
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="name">Tên trợ lý AI</label>
+                  <input type="text" class="form-control" id="name" name="name" value="<%= chat.name %>" required />
+                </div>
+                <div class="form-group">
+                  <label for="internal_name">mã AI</label>
+                  <input type="text" class="form-control" id="internal_name" name="internal_name" value="<%= chat.internal_name %>" required />
+                </div>
+                <div class="form-group">
+                  <label for="initial_prompt">Nội dung hướng dẫn ban đầu cho AI</label>
+                  <textarea class="form-control" id="initial_prompt" name="initial_prompt"><%= chat.initial_prompt %></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="description">Mô tả</label>
+                  <textarea  class="form-control noidung" id="description" name="description"><%= chat.description %> </textarea>
+                 
+                </div>
+                <div class="form-group">
+                  <label for="is_active">trạng thái</label>
+                  <select class="form-control" id="is_active" name="is_active" required>
+                  <option value="1" <%= chat.is_active == 1 ? 'selected' : '' %>>Hoạt động</option>
+                  <option value="0" <%= chat.is_active == 0 ? 'selected' : '' %>>Ngưng hoạt động</option>
+                </select>
+                </div>
+                <div class="box-footer mt-3">
+                  <button type="submit" class="btn btn-success">
+                    <i class="fa fa-save"></i> Cập nhật trợ lý AI
+                  </button>
+                  <a href="/admin/setting/chat/danhsach" class="btn btn-default float-right">
+                    <i class="fa fa-reply"></i> Quay lại danh sách
+                  </a>
+                </div>
+
+              </div>
+            </form>
+          </div>
+          <div class="card-footer text-muted"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<!-- Modal -->
+
+<%- include('footer')%>

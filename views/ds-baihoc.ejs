@@ -38,6 +38,12 @@
           <a href="/admin/baihoc/add-baihoc" class="btn btn-success pull-right">
             <i class="fa fa-plus"></i> Thêm bài học
           </a>
+          <div class="text-center my-3">
+  <button id="saveAll" class="btn btn-success">
+    <i class="fa fa-save"></i> Lưu tất cả
+  </button>
+</div>
+
         </form>
       </div>
 
@@ -55,22 +61,28 @@
             </tr>
           </thead>
           <tbody>
-            <% if (data && data.length > 0) { %> <%
-            data.forEach(function(lesson) { %>
-            <tr>
-              <td><%= lesson.lesson_id %></td>
-              <td><%= lesson.title %></td>
-              <td><%= lesson.content_type %></td>
-              <td><%= lesson.duration %> phút</td>
-              <td>
-                <% if (lesson.is_preview) { %>
-                <span class="badge badge-info">Có</span>
-                <% } else { %>
-                <span class="badge badge-secondary">Không</span>
-                <% } %>
-              </td>
-              <td><%= lesson.display_order %></td>
-              <td>
+  <% if (data && data.length > 0) { %>
+    <% data.forEach(function(lesson) { %>
+      <tr data-id="<%= lesson.lesson_id %>">
+        <td><%= lesson.lesson_id %></td>
+        <td><input type="text" class="form-control title" value="<%= lesson.title %>"></td>
+        <td>
+          <select class="form-control content_type">
+      <option value="video" <%= lesson.content_type === 'video' ? 'selected' : '' %>>Video</option>
+      <option value="text" <%= lesson.content_type === 'text' ? 'selected' : '' %>>Văn bản</option>
+      <option value="quiz" <%= lesson.content_type === 'quiz' ? 'selected' : '' %>>Bài kiểm tra</option>
+      <option value="interactive" <%= lesson.content_type === 'interactive' ? 'selected' : '' %>>Tương tác</option>
+    </select>
+        </td>
+        <td><input type="number" class="form-control duration" value="<%= lesson.duration %>"></td>
+        <td>
+          <select class="form-control is_preview">
+            <option value="1" <%= lesson.is_preview ? 'selected' : '' %>>Có</option>
+            <option value="0" <%= !lesson.is_preview ? 'selected' : '' %>>Không</option>
+          </select>
+        </td>
+        <td><input type="number" class="form-control display_order" value="<%= lesson.display_order %>"></td>
+                  <td>
                 <a
                   href="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>"
                   class="btn btn-sm btn-warning"
@@ -88,13 +100,14 @@
                   </button>
                 </form>
               </td>
-            </tr>
-            <% }) %> <% } else { %>
-            <tr>
-              <td colspan="7" class="text-center">Không có bài học nào.</td>
-            </tr>
-            <% } %>
-          </tbody>
+        
+      </tr>
+    <% }) %>
+  <% } else { %>
+    <tr><td colspan="7" class="text-center">Không có bài học nào.</td></tr>
+  <% } %>
+</tbody>
+ 
         </table>
       </div>
 
@@ -142,3 +155,55 @@
   </section>
 </div>
 <%- include('footer')%>
+<script>
+$('#saveAll').click(function () {
+  const lessons = [];
+  $('tbody tr').removeClass('table-danger').find('.error-msg').remove(); // reset màu & lỗi cũ
+
+  $('tbody tr').each(function () {
+    const row = $(this);
+    const lesson = {
+      lesson_id: row.data('id'),
+      title: row.find('.title').val(),
+      content_type: row.find('.content_type').val(),
+      duration: parseInt(row.find('.duration').val()),
+      is_preview: row.find('.is_preview').val() === '1',
+      display_order: parseInt(row.find('.display_order').val())
+    };
+    lessons.push(lesson);
+  });
+
+  $.ajax({
+    url: '/admin/baihoc/update-multiple',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({ lessons }),
+    success: function (res) {
+      if (res.success && res.results) {
+        let hasError = false;
+
+        res.results.forEach(result => {
+          const row = $(`tr[data-id="${result.lesson_id}"]`);
+          if (!result.success) {
+            hasError = true;
+            row.addClass('table-danger'); // tô đỏ dòng lỗi
+            row.find('td:last').append(`<div class="error-msg text-danger mt-1"><i class="fa fa-exclamation-circle"></i> ${result.message}</div>`);
+          }
+        });
+
+        if (!hasError) {
+          alert('Tất cả đã được cập nhật thành công!');
+        } else {
+          alert('Một số dòng có lỗi, vui lòng kiểm tra.');
+        }
+      } else {
+        alert('Lỗi không xác định từ server.');
+      }
+    },
+    error: function () {
+      alert('Không thể kết nối tới server.');
+    }
+  });
+});
+
+</script>

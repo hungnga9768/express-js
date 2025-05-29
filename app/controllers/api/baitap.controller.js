@@ -4,7 +4,7 @@ module.exports = {
   // Trang danh sách khóa học với phân trang & tìm kiếm
   async index(req, res) {
     try {
-      const rows = await baitap.getExerciseSetsWithQuestions();
+      const rows = await baitap.getexercisesetsWithQuestions();
       console.log(rows);
 
       // Gom nhóm các bài tập theo exercise_set_id

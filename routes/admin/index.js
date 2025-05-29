@@ -8,6 +8,7 @@ const admin = require("./admins");
 const baitap = require("./baitap");
 const tailieu = require("./tailieu");
 const setting = require("./setting");
+const settingAi = require("./setingchatai");
 const authenticateToken = require("../../middlewares/authenticateToken");
 router.get("/", (req, res) => {
   res.render("home");
@@ -25,5 +26,6 @@ router.use("/baitap", baitap);
 router.use("/tailieu", tailieu);
 router.use("/user", user);
 router.use("/setting", setting);
+router.use("/settingai", settingAi);
 
 module.exports = router;

@@ -4,12 +4,6 @@ module.exports = {
   // Trang danh sách khóa học với phân trang & tìm kiếm
   async index(req, res) {
     const search = req.query.search || "";
-    // const page = parseInt(req.query.page) || 1;
-    // const limit = 5;
-    // const totalRow = await lessons.getTotalRow(search);
-    // const totalPage = Math.ceil(totalRow / limit);
-    // const baihocPage = Math.min(Math.max(page, 1), totalPage);
-    // const offset = (baihocPage - 1) * limit;
     const data = await lessons.getDs(search);
     console.log(data);
     res.send({

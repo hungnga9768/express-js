@@ -58,20 +58,20 @@ module.exports = {
       user.subscription_type,
       user.subscription_expiry,
     ];
-    const [result] = await query(sql, values); // Lấy phần tử đầu tiên của mảng kết quả
+    const result = await query(sql, values); // Lấy phần tử đầu tiên của mảng kết quả
     return result; // Trả về đối tượng kết quả INSERT (có insertId)
   },
 
   // Cập nhật người dùng
   async update(id, data) {
     const sql = `UPDATE users SET ? WHERE user_id = ?`;
-    const [result] = await query(sql, [data, id]); // Lấy phần tử đầu tiên của mảng kết quả
+    const result = await query(sql, [data, id]); // Lấy phần tử đầu tiên của mảng kết quả
     return result; // Trả về đối tượng kết quả UPDATE (có affectedRows)
   },
 
   // Xóa người dùng
   async delete(id) {
-    const [result] = await query("DELETE FROM users WHERE user_id = ?", [id]); // Lấy phần tử đầu tiên của mảng kết quả
+    const result = await query("DELETE FROM users WHERE user_id = ?", [id]); // Lấy phần tử đầu tiên của mảng kết quả
     return result; // Trả về đối tượng kết quả DELETE (có affectedRows)
   },
 
@@ -162,7 +162,7 @@ module.exports = {
       WHERE user_id = ?
     `;
     try {
-      const [updateResult] = await query(sql, [googleId, userId]); // Dùng query đã promisify
+      const updateResult = await query(sql, [googleId, userId]); // Dùng query đã promisify
       return updateResult.affectedRows > 0; // Trả về true nếu có hàng nào được cập nhật
     } catch (error) {
       console.error("Error updating google_id for user:", error);

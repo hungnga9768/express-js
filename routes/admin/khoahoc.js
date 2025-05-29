@@ -14,5 +14,6 @@ router.post(
   courseCtrl.update
 );
 router.post("/delete-khoahoc/:id", courseCtrl.remove);
+router.post("/update-multiple", courseCtrl.updateMultipleCourses);
 
 module.exports = router;

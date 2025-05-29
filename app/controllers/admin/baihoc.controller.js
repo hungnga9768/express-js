@@ -130,4 +130,52 @@ module.exports = {
       res.status(500).send("Xóa thất bại");
     }
   },
+  // up date hàng loạtloạt trên router ds bài học
+  async updateMultiple(req, res) {
+    const { lessons } = req.body;
+    const results = [];
+
+    for (const lesson of lessons) {
+      try {
+        await Course.update(lesson.lesson_id, {
+          title: lesson.title,
+          content_type: lesson.content_type,
+          duration: lesson.duration,
+          is_preview: lesson.is_preview,
+          display_order: lesson.display_order,
+        });
+
+        results.push({ lesson_id: lesson.lesson_id, success: true });
+      } catch (error) {
+        results.push({
+          lesson_id: lesson.lesson_id,
+          success: false,
+          message: error.message,
+        });
+      }
+    }
+
+    res.json({ success: true, results });
+  },
+  // up date hàng loạtloạt trên router theo chi tiết khóa học
+  async bulkUpdateLessons(req, res) {
+    try {
+      const lessons = req.body.lessons;
+      for (const lesson of lessons) {
+        await Course.update(lesson.lesson_id, {
+          title: lesson.title,
+          content_type: lesson.content_type,
+          content_url: lesson.content_url,
+          duration: parseInt(lesson.duration),
+          module_order: parseInt(lesson.module_order),
+          display_order: parseInt(lesson.display_order),
+          is_preview: lesson.is_preview === "1",
+        });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Lỗi khi cập nhật:", error);
+      res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+  },
 };

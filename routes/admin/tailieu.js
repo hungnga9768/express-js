@@ -9,6 +9,6 @@ router.get("/add", tailieuCtl.showAddForm);
 router.post("/add", upload.single("thumbnail_url"), tailieuCtl.create);
 router.get("/edit/:id", tailieuCtl.showEditForm);
 router.post("/edit/:id", upload.single("thumbnail_url"), tailieuCtl.update);
-// router.post("/delete/:id", tailieuCtl.remove);
+router.post("/delete/:id", tailieuCtl.remove);
 
 module.exports = router;
