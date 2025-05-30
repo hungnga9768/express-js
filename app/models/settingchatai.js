@@ -37,7 +37,7 @@ module.exports = {
   //  Thêm khóa học mới
   async create(chat) {
     const sql = `
-      INSERT INTO banners (title, description, image_url, link_url, display_order, is_active)
+      INSERT INTO chat_topics (name, internal_name, initial_prompt, description, avatar_url, is_active)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
     const values = [
@@ -45,6 +45,7 @@ module.exports = {
       chat.internal_name,
       chat.initial_prompt,
       chat.description,
+      chat.avatar_url,
       chat.is_active,
     ];
     return await query(sql, values);
@@ -58,10 +59,8 @@ module.exports = {
 
   // Xóa khóa học
   async delete(id) {
-    return await query("DELETE FROM banners WHERE id = ?", [id]);
+    return await query("DELETE FROM chat_topics WHERE id = ?", [id]);
   },
-
-  // Kiểm tra trùng tiêu đề khi sửa
   async checkDuplicateTitle(title, id) {
     const result = await query(
       `SELECT * FROM chat_topics WHERE name = ? AND id != ?`,

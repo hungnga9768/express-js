@@ -45,7 +45,7 @@ class ChatController {
       if (!currentSessionId) {
         // Đây là tin nhắn đầu tiên của một phiên mới: tạo sessionId mới
         currentSessionId = uuidv4();
-        console.log("Tạo Session ID mới:", currentSessionId);
+
         // Lưu ý: Không cần lưu initialPromptContent vào chat_history ở đây
         // nếu bạn chỉ dùng nó qua system_instruction của Gemini API.
         // historyForGemini vẫn rỗng ở đây vì chưa có tin nhắn nào được lưu.
@@ -57,10 +57,6 @@ class ChatController {
         // Lọc bỏ bất kỳ tin nhắn nào có role 'system' (từ các lần lưu cũ)
         // vì chúng ta sẽ dùng systemInstruction riêng biệt.
         historyForGemini = dbHistory.filter((entry) => entry.role !== "system");
-        console.log(
-          "Lịch sử cũ từ DB (đã lọc và định dạng cho Gemini):",
-          JSON.stringify(historyForGemini, null, 2)
-        );
       }
 
       // 3. Lưu tin nhắn của người dùng hiện tại vào database
@@ -95,7 +91,6 @@ class ChatController {
       // 7. Gửi phản hồi về client cùng với sessionId mới (hoặc hiện tại)
       res.json({ reply: reply, sessionId: currentSessionId });
     } catch (error) {
-      console.error("Lỗi trong ChatController:", error);
       let errorMessage = "Đã xảy ra lỗi khi xử lý yêu cầu chat.";
       if (error.response && error.response.data && error.response.data.error) {
         errorMessage = error.response.data.error.message || errorMessage;
@@ -109,16 +104,19 @@ class ChatController {
   // ... (các hàm getUserChatSessions, getChatHistoryDetail) ...
   async getchattopics(req, res) {
     try {
-      const chattopics = await ChatTopicModel.getAll("", 1, 10000);
-      const data = chattopics.map((i) => {
-        return {
+      const chattopics = await ChatTopicModel.getAll("", 0, 10000);
+
+      const data = chattopics
+        .filter((i) => i.is_active !== 0)
+        .map((i) => ({
           id: i.id,
           name: i.name,
           internal_name: i.internal_name,
           description: i.description,
           is_active: i.is_active,
-        };
-      });
+          avatar_url: i.avatar_url,
+        }));
+      console.log(data);
       res
         .status(200)
         .json({ data: data, message: "lấy danh sách chatbot thành công" });
@@ -130,7 +128,6 @@ class ChatController {
   async getChatHistoryDetail(req, res) {
     const { sessionId } = req.params;
     const userId = req.user.user_id; // Điều chỉnh theo cách bạn thiết lập userId trong req
-    console.log(userId);
     try {
       const history = await ChatHistoryModel.getHistoryBySessionId(
         sessionId,

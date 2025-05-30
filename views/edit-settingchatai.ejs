@@ -23,7 +23,7 @@
         <div class="card">
           <div class="card-header"><%= title %></div>
           <div class="card-body">
-            <form  action="/admin/settingai/edit/<%= chat.id %>"  method="POST"  >
+            <form  action="/admin/chatbot/edit/<%= chat.id %>"  method="POST" enctype="multipart/form-data" >
               <div class="card-body">
                 <div class="form-group">
                   <label for="name">Tên trợ lý AI</label>
@@ -43,6 +43,33 @@
                  
                 </div>
                 <div class="form-group">
+                      <label>Ảnh đại diện hiện tại</label><br />
+                      <!-- Ảnh xem trước -->
+                      <img data-group="avatar_url" data-role="preview"
+                        src="<%= chat.avatar_url ? chat.avatar_url : '/dist/img/avatar4.png' %>" width="150" class="avatar_url" />
+                    </div>
+
+                    <div class="form-group">
+                      <!-- Tên ảnh -->
+                      <p data-group="avatar_url" data-role="filename">
+                        <%= chat.avatar_url ? chat.avatar_url.split('/').pop() : 'avatar4.png' %>
+                      </p>
+
+                      <label for="avatar">Cập nhật ảnh đại diện</label>
+                      <!-- Input ảnh từ máy -->
+                      <input type="file" class="form-control" id="avatar_url" name="avatar_url" accept="image/*"
+                        data-group="avatar_url" onchange="showImage(event, this)" />
+
+                      <!-- Nút chọn từ thư viện -->
+                      <button type="button" class="btn btn-secondary mt-2" data-group="avatar_url"
+                        onclick="openImageModal(this)">
+                        Chọn từ thư viện
+                      </button>
+                      <input type="hidden" name="selected_image" data-group="avatar_url" data-role="selectedInput" />
+                      <input type="hidden" name="old_thumbnail_url"
+                        value="<%= chat.avatar_url || '/dist/img/avatar4.png' %>" />
+                    </div>
+                <div class="form-group">
                   <label for="is_active">trạng thái</label>
                   <select class="form-control" id="is_active" name="is_active" required>
                   <option value="1" <%= chat.is_active == 1 ? 'selected' : '' %>>Hoạt động</option>
@@ -53,7 +80,7 @@
                   <button type="submit" class="btn btn-success">
                     <i class="fa fa-save"></i> Cập nhật trợ lý AI
                   </button>
-                  <a href="/admin/setting/chat/danhsach" class="btn btn-default float-right">
+                  <a href="/admin/chatbot/danhsach" class="btn btn-default float-right">
                     <i class="fa fa-reply"></i> Quay lại danh sách
                   </a>
                 </div>
@@ -68,5 +95,5 @@
   </section>
 </div>
 <!-- Modal -->
-
+<%- include('modalimage')%>
 <%- include('footer')%>

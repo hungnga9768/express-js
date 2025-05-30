@@ -5,16 +5,12 @@ module.exports = {
   // Trang danh sách baitap với phân trang & tìm kiếm
   async index(req, res) {
     const search = req.query.search || "";
-    const page = parseInt(req.query.page) || 1;
+    const Page = parseInt(req.query.page) || 1;
     const limit = 10;
-
     const totalRow = await dsTailieu.getTotalRow(search);
-    const totalPage = Math.max(Math.ceil(totalRow / limit), 1); // ✅ tránh 0
-    const Page = Math.min(Math.max(page, 1), totalPage);
+    const totalPage = Math.max(Math.ceil(totalRow / limit), 1);
     const offset = (Page - 1) * limit;
-
     const data = await dsTailieu.getAll(search, offset, limit);
-
     res.render("ds-tailieu", {
       data,
       totalPage,
