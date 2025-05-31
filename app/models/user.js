@@ -134,11 +134,11 @@ module.exports = {
     ];
 
     try {
-      const [insertResult] = await query(sql, values); // Dùng query đã promisify
+      const insertResult = await query(sql, values); // Dùng query đã promisify
       const insertId = insertResult.insertId;
 
       // Sau khi chèn, truy vấn lại để lấy toàn bộ thông tin người dùng vừa tạo
-      const [rows] = await query("SELECT * FROM users WHERE user_id = ?", [
+      const rows = await query("SELECT * FROM users WHERE user_id = ?", [
         insertId,
       ]);
 
