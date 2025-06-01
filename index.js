@@ -8,7 +8,19 @@ const { startCronJobs } = require("./app/services/cronjobs"); // đường đãn
 app.use(cookieParser());
 const passport = require("passport");
 require("dotenv").config();
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // Cho phép khi chạy frontend cục bộ trên cùng máy
+      "http://192.168.240.124:5173",
+      "http://localhost:8100", // Cho phép khi truy cập frontend từ IP LAN của bạn
+      // Nếu bạn muốn cho phép bất kỳ origin nào (KHÔNG NÊN DÙNG TRONG PRODUCTION):
+      // "*",
+    ],
+    credentials: true,
+  })
+);
+
 const port = process.env.PORT || 3000; // Sử dụng biến môi trường nếu có
 //sử dụng template
 app.set("view engine", "ejs");

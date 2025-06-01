@@ -5,7 +5,7 @@ const ChatHistoryModel = require("../../models/chatHistoryModel");
 const { v4: uuidv4 } = require("uuid");
 
 class ChatController {
-  // ham goi chat ai
+  // ham goi chat ai noi chuyen
   async handleChat(req, res) {
     try {
       const { message, topicInternalName, sessionId } = req.body;
@@ -100,7 +100,77 @@ class ChatController {
       res.status(500).json({ error: errorMessage });
     }
   }
+  // chức năng dịch thuậtthuật
+async translate(req, res) {
+  try {
+    const { sourceLangName, targetLangName, text } = req.body;
+    if (!sourceLangName || !targetLangName || !text) {
+      return res.status(400).json({ error: 'Thiếu thông tin...' });
+    }
 
+    // 1. Bắt đầu phiên dịch (đây là hàm đồng bộ trong class của bạn)
+    const chatSessionForTranslation = geminiModel.startTranslationSession(sourceLangName, targetLangName);
+
+    // 2. Gửi tin nhắn để dịch (đây là hàm bất đồng bộ trong class của bạn)
+    //    Hoặc bạn có thể dùng trực tiếp:
+    //    const result = await chatSessionForTranslation.sendMessage(text);
+    //    const translatedText = result.response.text();
+    //    Nếu dùng hàm tiện ích trong class:
+    const translatedText = await geminiModel.sendMessageToGemini(text, chatSessionForTranslation);
+
+    res.json({ translatedText });
+  } catch (error) {
+    console.error('Backend: Lỗi tại /api/translate:', error.message, error.stack);
+    res.status(500).json({ error: error.message || "Lỗi máy chủ không xác định khi dịch thuật." });
+  }
+}
+ async explaincontext(req, res) {
+  try {
+    // Nhận dữ liệu thô từ client
+    const { originalText, translatedText, sourceLangName, targetLangName } = req.body;
+
+    if (!originalText || !translatedText || !sourceLangName || !targetLangName) {
+      return res.status(400).json({ error: 'Thiếu dữ liệu để giải thích ngữ cảnh.' });
+    }
+
+    // Tạo prompt trên server
+    const serverGeneratedPrompt = `Người dùng đã dịch câu "${originalText}" (từ ${sourceLangName}) thành "${translatedText}" (sang ${targetLangName}).
+Hãy cung cấp một giải thích ngắn gọn về bất kỳ ngữ cảnh văn hóa, sắc thái ý nghĩa, thành ngữ hoặc nguồn gốc lịch sử nào liên quan đến cụm từ "${originalText}" hoặc bản dịch của nó là "${translatedText}". Tập trung vào những gì hữu ích nhất cho người học ngôn ngữ. Nếu không có ngữ cảnh văn hóa nào đáng kể, hãy nêu rõ điều đó một cách ngắn gọn. Phản hồi bằng tiếng Việt.`;
+    // Lưu ý: Tôi đã điều chỉnh lại một chút câu prompt này cho rõ ràng hơn khi người dùng là "Người dùng đã dịch..." thay vì "The user translated..."
+
+    const explanation = await geminiModel.generateSingleResponse(serverGeneratedPrompt, null);
+    res.json({ responseText: explanation }); // Trả về với key là responseText
+
+  } catch (error) {
+    console.error('Backend: Lỗi tại /api/explain-context:', error.message, error.stack);
+    res.status(500).json({ error: error.message || "Lỗi máy chủ khi giải thích ngữ cảnh." });
+  }
+}
+
+// --- (ĐÃ SỬA) Endpoint cho Gợi Ý Câu Tương Tự ---
+ async suggestsimilar(req, res)  {
+  try {
+    // Nhận dữ liệu thô từ client
+    const { originalText, translatedText, sourceLangName, targetLangName } = req.body;
+
+    if (!originalText || !translatedText || !sourceLangName || !targetLangName) {
+      return res.status(400).json({ error: 'Thiếu dữ liệu để gợi ý câu tương tự.' });
+    }
+
+    // Tạo prompt trên server
+    const serverGeneratedPrompt = `Người dùng đã dịch câu "${originalText}" (từ ${sourceLangName}) thành "${translatedText}" (sang ${targetLangName}).
+Hãy cung cấp 2-3 cách diễn đạt khác cho ý nghĩa của câu "${translatedText}" bằng ${targetLangName}.
+Đồng thời, cung cấp 1-2 câu ví dụ bằng ${targetLangName} sử dụng từ vựng hoặc khái niệm chính từ câu "${translatedText}".
+Định dạng phản hồi một cách rõ ràng cho người học ngôn ngữ. Phản hồi bằng tiếng Việt, nhưng các câu ví dụ phải bằng ${targetLangName} kèm theo bản dịch tiếng Việt của chúng.`;
+
+    const suggestions = await geminiModel.generateSingleResponse(serverGeneratedPrompt, null);
+    res.json({ responseText: suggestions }); // Trả về với key là responseText
+
+  } catch (error) {
+    console.error('Backend: Lỗi tại /api/suggest-similar:', error.message, error.stack);
+    res.status(500).json({ error: error.message || "Lỗi máy chủ khi gợi ý câu tương tự." });
+  }
+}
   // ... (các hàm getUserChatSessions, getChatHistoryDetail) ...
   async getchattopics(req, res) {
     try {
@@ -148,7 +218,6 @@ class ChatController {
   async getUserChatSessions(req, res) {
     // userId được đặt bởi middleware xác thực (req.user.id hoặc req.userId)
     const userId = req.user.user_id; // Điều chỉnh theo cách bạn thiết lập userId trong req
-    console.log(userId);
     try {
       const sessions = await ChatHistoryModel.getSessionsByUserId(userId);
       if (sessions.length === 0) {

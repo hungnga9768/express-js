@@ -14,7 +14,7 @@ const authenticateTokenUser = require("../../middlewares/authAPI");
 router.use("/auth", auth);
 router.use("/khoahoc", khoahoc);
 router.use("/baihoc", baihoc);
-router.get("/tailieu/", authenticateTokenUser, tailieuCtrl.index);
+router.get("/tailieu/", tailieuCtrl.index);
 router.get("/tailieu/:id", tailieuCtrl.getID);
 router.get("/baitap/", baitapCtrl.index);
 
@@ -34,16 +34,28 @@ router.get("/config", SettingsCtrl.getConfig);
 //touter giao tiep người dùng với api
 
 router.post("/chat", authenticateTokenUser, geminiCtrl.handleChat);
+//hàm lấy danh sách chatbot
 router.get("/chat-topics", geminiCtrl.getchattopics);
+// hàm lấy lịch sử phiên chat
 router.get(
   "/chat/history/:sessionId",
   authenticateTokenUser,
   geminiCtrl.getChatHistoryDetail
 );
+// hàm lấy phiên chat cho người dùng
 router.get(
   "/chat/sessions",
   authenticateTokenUser,
   geminiCtrl.getUserChatSessions
+);
+// hàm dịch
+router.post("/translate",geminiCtrl.translate
+);
+// cho câu tương tự sau khi dịch
+router.post("/suggest-similar",geminiCtrl.suggestsimilar
+);
+//giải thích nghĩa tương tự sau khi dịch
+router.post("/explain-context",geminiCtrl.explaincontext
 );
 
 module.exports = router;
