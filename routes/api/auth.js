@@ -47,12 +47,12 @@ router.get(
 
       // Chuyển đổi userInfo thành chuỗi JSON và mã hóa để đưa vào URL
       const encodedUserInfo = encodeURIComponent(JSON.stringify(userInfo));
-      const redirectUrl = `http://localhost:5173/auth-callback?accessToken=${accessToken}&user=${encodedUserInfo}`;
+      const redirectUrl = `${process.env.DB_HOST}:${process.env.PORT}/auth-callback?accessToken=${accessToken}&user=${encodedUserInfo}`;
       console.log(`Redirecting to frontend: ${redirectUrl}`);
       res.redirect(redirectUrl);
     } catch (error) {
       console.error("Error during JWT creation or cookie setting:", error);
-      res.redirect(`http://localhost:5173/login`);
+      res.redirect(`${process.env.DB_HOST}:${process.env.PORT}/login`);
     }
   }
 );
