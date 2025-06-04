@@ -67,7 +67,7 @@ module.exports = {
 
   // Xóa khóa học
   async delete(id) {
-    return await query("DELETE FROM Courses WHERE course_id = ?", [id]);
+    return await query("DELETE FROM chinese_documents WHERE document_id = ?", [id]);
   },
 
   // Kiểm tra trùng tiêu đề khi sửa

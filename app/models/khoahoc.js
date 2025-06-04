@@ -39,7 +39,7 @@ module.exports = {
   async create(course) {
     const sql = `
       INSERT INTO courses (title, description, thumbnail_url, difficulty_level, estimated_duration, is_free, price)
-      VALUES (?, ?, ?, ?, ?, ?, ?, )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
       course.title,

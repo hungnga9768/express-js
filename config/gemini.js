@@ -9,6 +9,6 @@ if (!GEMINI_API_KEY) {
 module.exports = {
   GEMINI_API_KEY,
 
-  DEFAULT_GEMINI_MODEL: "gemini-2.0-flash",
+  DEFAULT_GEMINI_MODEL: "gemini-1.5-flash",
   MAX_OUTPUT_TOKENS: 500,
 };

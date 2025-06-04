@@ -1,11 +1,7 @@
-// app/models/user.js
-// Kết nối MySQL
-const db = require("../../connect-mysql"); // Đây là đối tượng kết nối DB của bạn
+const db = require("../../connect-mysql");
+
 // Dùng util để hỗ trợ async/await cho truy vấn
 const util = require("util");
-
-// Promisify db.query và bind nó với đối tượng db
-// Điều này giúp bạn có thể dùng await với query(sql, values)
 const query = util.promisify(db.query).bind(db);
 
 // Export object chứa các hàm xử lý database liên quan đến users
@@ -166,6 +162,48 @@ module.exports = {
       return updateResult.affectedRows > 0; // Trả về true nếu có hàng nào được cập nhật
     } catch (error) {
       console.error("Error updating google_id for user:", error);
+      throw error;
+    }
+  },
+  async updateProfilePicture(userId, profilePictureUrl) {
+    const sql = `
+      UPDATE users
+      SET profile_picture  = ?
+      WHERE user_id = ?
+    `;
+    try {
+      const updateResult = await query(sql, [profilePictureUrl, userId]); 
+      return updateResult.affectedRows > 0; 
+    } catch (error) {
+      console.error("Error updating profile_picture for user:", error);
+      throw error;
+    }
+  },
+  async updateProfileFullName(userId, profileFullName) {
+    const sql = `
+      UPDATE users
+      SET  full_name = ?
+      WHERE user_id = ?
+    `;
+    try {
+      const updateResult = await query(sql, [profileFullName, userId]); 
+      return updateResult; 
+    } catch (error) {
+      console.error("Error updating profile_picture for user:", error);
+      throw error;
+    }
+  },
+  async userprofilechangepassword(userId, password_hash) {
+    const sql = `
+      UPDATE users
+      SET  password_hash = ?
+      WHERE user_id = ?
+    `;
+    try {
+      const updateResult = await query(sql, [password_hash, userId]); 
+      return updateResult; 
+    } catch (error) {
+      console.error("Error updating profile_picture for user:", error);
       throw error;
     }
   },

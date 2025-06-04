@@ -2,7 +2,7 @@
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("../app/models/user"); // Model cho người dùng thông thường
 const Admin = require("../app/models/admin"); // Model cho admin
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcryptjs');
 const GoogleStrategy = require("passport-google-oauth20");
 module.exports = function (passport) {
   //  cho người dùng thông thường

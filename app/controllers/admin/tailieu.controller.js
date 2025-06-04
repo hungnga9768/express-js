@@ -169,9 +169,9 @@ module.exports = {
   async remove(req, res) {
     const id = req.params.id; //lấy req id trên urlurl
     try {
-      await dsBaitap.delete(id); //gọi model xử lí
+      await dsTailieu.delete(id); //gọi model xử lí
       console.log("Đã xóa bài hoc ID:", id);
-      res.redirect("/admin/baitap/danhsach");
+      res.redirect("/admin/tailieu/danhsach");
     } catch (err) {
       console.error("Lỗi xóa:", err);
       res.status(500).send("Xóa thất bại");

@@ -4,6 +4,7 @@ const baitapCtrl = require("../../app/controllers/api/baitap.controller");
 const tailieuCtrl = require("../../app/controllers/api/tailieu.controller");
 const userCtrl = require("../../app/controllers/api/user.controllers");
 const SettingsCtrl = require("../../app/controllers/api/setting.controller");
+const upload = require("../../middlewares/upload");
 const khoahoc = require("../api/khoahoc");
 const baihoc = require("../api/baihoc");
 const auth = require("../api/auth");
@@ -56,6 +57,15 @@ router.post("/suggest-similar",geminiCtrl.suggestsimilar
 );
 //giải thích nghĩa tương tự sau khi dịch
 router.post("/explain-context",geminiCtrl.explaincontext
+);
+//những router  trong trang profile người dùng
+router.post("/user-profile",userCtrl.getprofile
+);
+router.post("/user-profile-avatar",authenticateTokenUser, upload.single('profilePicture'), userCtrl.userprofileavatar
+);
+router.patch("/user-profile-fullname",authenticateTokenUser, userCtrl.userprofilefullname
+);
+router.post("/user-profile-change-password",authenticateTokenUser, userCtrl.userprofilechangepassword
 );
 
 module.exports = router;

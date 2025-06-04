@@ -10,13 +10,14 @@ const tailieu = require("./tailieu");
 const setting = require("./setting");
 const Chatbot = require("./chatbot");
 const authenticateToken = require("../../middlewares/authenticateToken");
-router.get("/", (req, res) => {
-  res.render("home");
-});
+const loadGrobalsettings = require("../../middlewares/loadGrobalsettings");
+router.use(loadGrobalsettings);
+router.get("/",(req,res)=>{
+res.render("home")
+})
 router.get("/login", admins.showLogin);
 router.post("/login", admins.checkLogin);
 router.get("/logout", admins.Logout);
-
 router.use(authenticateToken);
 
 router.use("/khoahoc", khoahoc);

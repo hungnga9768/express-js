@@ -1,6 +1,6 @@
 const admin = require("../../models/admin");
 const adminMd = require("../../models/admin");
-const bcrypt = require("bcrypt"); // thư viện mã hóa mật khẩu
+const bcrypt = require('bcryptjs');; // thư viện mã hóa mật khẩu
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");

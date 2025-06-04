@@ -1,5 +1,5 @@
 const userModel = require("../../models/user");
-const bcrypt = require("bcrypt"); // phương thức mã hóa sản phẩm
+const bcrypt = require('bcryptjs');; // phương thức mã hóa sản phẩm
 const saltRounds = 10; //số vòng mã hóa sản phẩm vòng càng cao thì chạy chậm
 const fs = require("fs");
 const path = require("path");

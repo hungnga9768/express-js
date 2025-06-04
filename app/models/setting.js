@@ -21,6 +21,10 @@ module.exports = {
     const result = await query("SELECT * FROM settings  WHERE id = ?", [id]);
     return result[0]; // trả về 1 object duy nhất
   },
+  async getcontent(key) {
+    const result = await query("SELECT * FROM settings  WHERE `key` = ?", [key]);
+    return result[0]; // trả về 1 object duy nhất
+  },
   async update(id, data) {
     const sql = `UPDATE settings SET ? WHERE id = ?`;
     return await query(sql, [data, id]);
