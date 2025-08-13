@@ -1,0 +1,108 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>Import từ vựng từ file CSV</h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li><a href="/admin/vocabulary">Từ vựng</a></li>
+      <li class="active">Import CSV</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="box box-primary">
+          <div class="box-header with-border">
+            <h3 class="box-title">Import từ vựng từ file CSV</h3>
+          </div>
+          
+          <div class="box-body">
+            <% if (typeof success !== 'undefined' && success) { %>
+              <div class="alert alert-success alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <h4><i class="icon fa fa-check"></i> Thành công!</h4>
+                <%= success %>
+              </div>
+            <% } %>
+
+            <% if (typeof error !== 'undefined' && error) { %>
+              <div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <h4><i class="icon fa fa-ban"></i> Lỗi!</h4>
+                <%= error %>
+              </div>
+            <% } %>
+
+            <!-- Hướng dẫn -->
+            <div class="alert alert-info">
+              <h4><i class="icon fa fa-info"></i> Hướng dẫn sử dụng</h4>
+              <p><strong>Định dạng file CSV:</strong> File phải có các cột sau (có thể để trống các cột không bắt buộc):</p>
+              <ul>
+                <li><strong>simplified_chinese</strong> (bắt buộc): Chữ giản thể</li>
+                <li><strong>traditional_chinese</strong> (không bắt buộc): Chữ phồn thể</li>
+                <li><strong>pinyin</strong> (bắt buộc): Phiên âm</li>
+                <li><strong>english_meaning</strong> (bắt buộc): Nghĩa tiếng Anh</li>
+                <li><strong>part_of_speech</strong> (không bắt buộc): Từ loại</li>
+                <li><strong>hsk_level</strong> (không bắt buộc): Cấp độ HSK (1-6)</li>
+                <li><strong>example_sentence_chinese</strong> (không bắt buộc): Ví dụ tiếng Trung</li>
+                <li><strong>example_sentence_pinyin</strong> (không bắt buộc): Ví dụ phiên âm</li>
+                <li><strong>example_sentence_english</strong> (không bắt buộc): Ví dụ tiếng Anh</li>
+              </ul>
+            </div>
+
+            <!-- Form upload -->
+            <form method="POST" action="/admin/vocabulary/import" enctype="multipart/form-data">
+              <div class="form-group">
+                <label for="csvFile">Chọn file CSV:</label>
+                <input type="file" id="csvFile" name="csvFile" accept=".csv" required class="form-control">
+                <p class="help-block">Chỉ chấp nhận file .csv, kích thước tối đa 5MB</p>
+              </div>
+
+              <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fa fa-upload"></i> Import từ vựng
+                </button>
+                <a href="/admin/vocabulary" class="btn btn-default">
+                  <i class="fa fa-arrow-left"></i> Quay lại
+                </a>
+              </div>
+            </form>
+
+            <!-- Download template -->
+            <hr>
+            <h4>Download template mẫu:</h4>
+            <div class="btn-group">
+              <a href="/admin/vocabulary/export?hskLevel=1" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Template HSK 1
+              </a>
+              <a href="/admin/vocabulary/export?hskLevel=2" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Template HSK 2
+              </a>
+              <a href="/admin/vocabulary/export?hskLevel=3" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Template HSK 3
+              </a>
+              <a href="/admin/vocabulary/export?hskLevel=4" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Template HSK 4
+              </a>
+              <a href="/admin/vocabulary/export?hskLevel=5" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Template HSK 5
+              </a>
+              <a href="/admin/vocabulary/export?hskLevel=6" class="btn btn-success btn-sm">
+                <i class="fa fa-download"></i> Template HSK 6
+              </a>
+              <a href="/admin/vocabulary/export" class="btn btn-info btn-sm">
+                <i class="fa fa-download"></i> Template tất cả HSK
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer')%>
+

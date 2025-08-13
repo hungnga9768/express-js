@@ -1,0 +1,298 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1><%= title %></h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li><a href="/admin/hsk">Đề HSK</a></li>
+      <li class="active">Câu hỏi</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-md-5">
+        <div class="box box-primary">
+          <div class="box-header with-border"><h3 class="box-title">Thêm câu hỏi</h3></div>
+          <div class="box-body">
+            <form method="POST" action="/admin/hsk/<%= test.test_id %>/questions">
+              <!-- Phần kỹ năng -->
+              <div class="form-group">
+                <label>Phần kỹ năng</label>
+                <select class="form-control" name="skill_type" required>
+                  <option value="listening">Nghe hiểu</option>
+                  <option value="reading">Đọc hiểu</option>
+                  <option value="writing">Viết</option>
+                </select>
+              </div>
+              <!-- Kiểu câu hỏi -->
+              <div class="form-group">
+                <label>Kiểu câu hỏi</label>
+                <select class="form-control" name="question_type" id="question_type" onchange="updateQuestionForm()">
+                  <option value="multiple_choice">Trắc nghiệm</option>
+                  <option value="fill_blank">Điền từ</option>
+                  <option value="matching">Ghép nối</option>
+                  <option value="true_false">Đúng/Sai</option>
+                  <option value="ordering">Sắp xếp</option>
+                  <option value="rewrite">Viết lại câu</option>
+                </select>
+              </div>
+              <!-- Trắc nghiệm -->
+              <div class="form-group" id="options-group" style="display:none">
+                <label>Đáp án lựa chọn & chọn đáp án đúng</label>
+                <% ['A','B','C','D'].forEach(function(opt) { %>
+                  <div class="input-group mb-2">
+                    <div class="input-group-prepend">
+                      <div class="input-group-text">
+                        <input type="radio" name="correct_answer" value="<%= opt %>" required>
+                      </div>
+                    </div>
+                    <input type="text" class="form-control" name="option_<%= opt %>" placeholder="Nội dung cho lựa chọn <%= opt %>">
+                  </div>
+                <% }) %>
+                <small class="text-muted">Tick vào đáp án đúng, nhập nội dung cho từng lựa chọn.</small>
+              </div>
+              
+              <!-- Ghép nối -->
+              <div class="form-group" id="matching-group" style="display:none">
+                <label>Cặp ghép nối (mỗi dòng một cặp, ví dụ: A - 1)</label>
+                <textarea class="form-control" name="matching_pairs"></textarea>
+              </div>
+              <!-- Sắp xếp -->
+              <div class="form-group" id="ordering-group" style="display:none">
+                <label>Các mục cần sắp xếp (mỗi dòng một mục)</label>
+                <textarea class="form-control" name="ordering_items"></textarea>
+              </div>
+              <!-- Viết lại câu -->
+              <div class="form-group" id="rewrite-group" style="display:none">
+                <label>Hướng dẫn viết lại câu</label>
+                <textarea class="form-control" name="rewrite_instruction"></textarea>
+              </div>
+              <!-- Điền từ/cloze test -->
+              <div class="form-group" id="blanks-container" style="display:none"></div>
+              <button type="button" class="btn btn-info mt-2" id="addBlankBtn" style="display:none" onclick="addBlank()">Thêm cấu hình cho một chỗ trống</button>
+              <!-- Nội dung câu hỏi -->
+              <div class="form-group">
+                <label>Nội dung câu hỏi</label>
+                <textarea class="form-control" name="question_text" rows="5" required placeholder="Nhập đoạn văn, dùng (1), (2), ... cho chỗ trống"></textarea>
+              </div>
+              <!-- Các trường khác giữ nguyên -->
+              <div class="form-group">
+                <label>Audio URL</label>
+                <input class="form-control" name="audio_url">
+              </div>
+              <div class="form-group">
+                <label>Image URL</label>
+                <input class="form-control" name="image_url">
+              </div>
+              <div class="form-group">
+                <label>Giải thích</label>
+                <textarea class="form-control" name="explanation"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Độ khó</label>
+                <select class="form-control" name="difficulty_level">
+                  <option value="easy">Dễ</option>
+                  <option value="medium">Trung bình</option>
+                  <option value="hard">Khó</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Điểm</label>
+                <input type="number" class="form-control" name="points" value="1" min="0">
+              </div>
+              <div class="form-group">
+                <label>Thứ tự trong đề</label>
+                <input type="number" class="form-control" name="order_in_test" value="0" min="0">
+              </div>
+              <div class="form-group" id="answer-text-group" style="display:none">
+                <label>Đáp án đúng</label>
+                <input class="form-control" name="correct_answer" id="answer-text-input" placeholder="Nhập đáp án đúng">
+                <small class="text-muted" id="answer-text-hint"></small>
+              </div>
+              <button class="btn btn-primary" type="submit"><i class="fa fa-plus"></i> Thêm câu hỏi</button>
+              <a href="/admin/hsk" class="btn btn-default">Quay lại</a>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-7">
+        <div class="box">
+          <div class="box-header with-border"><h3 class="box-title">Danh sách câu hỏi</h3></div>
+          <div class="box-body">
+            <table class="table table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Type</th><th>Nội dung</th><th>Đáp án</th><th>Điểm</th><th>Thứ tự</th><th style="width:160px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (questions && questions.length) { %>
+                  <% questions.forEach(q => { %>
+                    <tr>
+                      <td><%= q.question_id %></td>
+                      <td><span class="label label-info"><%= q.question_type %></span></td>
+                      <td><%= (q.question_text || '').slice(0,80) %></td>
+                      <td>
+                        <% if (q.options && q.options.length) { %>
+                          <% q.options.forEach((opt, idx) => { %>
+                            <div><strong><%= String.fromCharCode(65+idx) %>.</strong> <%= opt %></div>
+                          <% }) %>
+                        <% } %>
+                      </td>
+                      <td><%= q.points || 1 %></td>
+                      <td><%= q.order_in_test || 0 %></td>
+                      <td>
+                        <form method="POST" action="/admin/hsk/<%= test.test_id %>/questions/<%= q.question_id %>/delete" style="display:inline" onsubmit="return confirm('Xóa câu hỏi?')">
+                          <button class="btn btn-xs btn-danger"><i class="fa fa-trash"></i></button>
+                        </form>
+                        <button class="btn btn-xs btn-warning" onclick="openEdit(<%= q.question_id %>)"><i class="fa fa-edit"></i></button>
+                      </td>
+                    </tr>
+                    <!-- Modal inline edit -->
+                    <tr id="edit-row-<%= q.question_id %>" style="display:none">
+                      <td colspan="7">
+                        <form class="form-inline" method="POST" action="/admin/hsk/<%= test.test_id %>/questions/<%= q.question_id %>/update">
+                          <input type="hidden" name="question_type" value="<%= q.question_type %>">
+                          <div class="form-group" style="min-width:220px;margin-right:10px">
+                            <input class="form-control" name="question_text" value="<%= q.question_text %>">
+                          </div>
+                          <div class="form-group" style="min-width:220px;margin-right:10px">
+                            <input class="form-control" name="correct_answer" value="<%= q.correct_answer %>">
+                          </div>
+                          <div class="form-group" style="min-width:120px;margin-right:10px">
+                            <input class="form-control" type="number" name="points" value="<%= q.points||1 %>">
+                          </div>
+                          <div class="form-group" style="min-width:120px;margin-right:10px">
+                            <input class="form-control" type="number" name="order_in_test" value="<%= q.order_in_test||0 %>">
+                          </div>
+                          <button class="btn btn-xs btn-primary" type="submit">Lưu</button>
+                          <button class="btn btn-xs btn-default" type="button" onclick="openEdit(<%= q.question_id %>, true)">Hủy</button>
+                        </form>
+                        <small class="text-muted">Sửa nhanh: nội dung/đáp án/điểm/thứ tự. (Sửa options chi tiết ở phần thêm mới.)</small>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr><td colspan="7" class="text-center">Chưa có câu hỏi</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer')%>
+
+<script>
+function openEdit(id, closeOnly) {
+  var row = document.getElementById('edit-row-' + id);
+  if (!row) return;
+  if (closeOnly) { row.style.display = 'none'; return; }
+  row.style.display = (row.style.display === 'none' || !row.style.display) ? '' : 'none';
+}
+
+function updateQuestionForm() {
+  const type = document.getElementById('question_type').value;
+  document.getElementById('options-group').style.display = (type === 'multiple_choice') ? '' : 'none';
+  document.getElementById('blanks-container').style.display = (type === 'fill_blank' || type === 'cloze') ? '' : 'none';
+  document.getElementById('addBlankBtn').style.display = (type === 'fill_blank' || type === 'cloze') ? '' : 'none';
+
+  // Đáp án đúng cho các kiểu khác
+  const answerTextGroup = document.getElementById('answer-text-group');
+  const answerTextInput = document.getElementById('answer-text-input');
+  const answerTextHint = document.getElementById('answer-text-hint');
+  if (['matching', 'ordering', 'true_false', 'rewrite'].includes(type)) {
+    answerTextGroup.style.display = '';
+    answerTextInput.required = true;
+    if (type === 'matching') {
+      answerTextHint.innerText = 'Nhập đáp án ghép nối, ví dụ: A-1,B-2,...';
+    } else if (type === 'ordering') {
+      answerTextHint.innerText = 'Nhập thứ tự đúng, ví dụ: 2,1,3,4.';
+    } else if (type === 'true_false') {
+      answerTextHint.innerText = 'Nhập "true" hoặc "false".';
+    } else if (type === 'rewrite') {
+      answerTextHint.innerText = 'Nhập đáp án mẫu hoặc yêu cầu viết lại.';
+    }
+  } else {
+    answerTextGroup.style.display = 'none';
+    answerTextInput.required = false;
+    answerTextHint.innerText = '';
+  }
+  // Xử lý radio required cho trắc nghiệm
+  if (type !== 'multiple_choice') {
+    document.querySelectorAll('input[name="correct_answer"]').forEach(radio => {
+      radio.required = false;
+    });
+  } else {
+    document.querySelectorAll('input[name="correct_answer"]').forEach(radio => {
+      radio.required = true;
+    });
+  }
+}
+document.addEventListener('DOMContentLoaded', updateQuestionForm);
+document.getElementById('question_type').addEventListener('change', updateQuestionForm);
+let blankCount = 0;
+
+function addBlank() {
+    const blankDiv = document.createElement('div');
+    blankDiv.className = 'border p-3 mt-3 mb-3 blank-group';
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'd-flex justify-content-between align-items-center';
+    headerDiv.innerHTML = `
+        <h5 class="blank-title"></h5>
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeBlank(this)">Xóa</button>
+    `;
+    blankDiv.appendChild(headerDiv);
+
+    const options = ['A', 'B', 'C', 'D'];
+    options.forEach(option => {
+        const optionGroup = document.createElement('div');
+        optionGroup.className = 'input-group mb-2';
+        optionGroup.innerHTML = `
+            <div class="input-group-prepend">
+                <div class="input-group-text">
+                    <input type="radio" name="correct_answer_temp" value="${option}" required>
+                </div>
+            </div>
+            <input type="text" class="form-control" name="option_temp_${option}" placeholder="Nội dung cho lựa chọn ${option}" required>
+        `;
+        blankDiv.appendChild(optionGroup);
+    });
+
+    document.getElementById('blanks-container').appendChild(blankDiv);
+    updateBlankTitles();
+}
+
+function removeBlank(btn) {
+    const blankToRemove = btn.closest('.blank-group');
+    if (blankToRemove) {
+        blankToRemove.remove();
+        updateBlankTitles();
+    }
+}
+
+// Hàm cập nhật lại số thứ tự và name cho các input
+function updateBlankTitles() {
+    const blanks = document.querySelectorAll('.blank-group');
+    blanks.forEach((blankDiv, idx) => {
+        blankDiv.querySelector('.blank-title').textContent = `Cấu hình cho Chỗ trống (${idx + 1})`;
+        const radios = blankDiv.querySelectorAll('input[type="radio"]');
+        const texts = blankDiv.querySelectorAll('input[type="text"]');
+        radios.forEach(radio => {
+            radio.name = `correct_answer_${idx + 1}`;
+        });
+        texts.forEach((text, i) => {
+            const opt = ['A', 'B', 'C', 'D'][i];
+            text.name = `option_${idx + 1}_${opt}`;
+        });
+    });
+}
+</script>

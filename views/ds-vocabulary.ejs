@@ -1,0 +1,360 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>Quản lý từ vựng</h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li class="active">Từ vựng</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <!-- Thông báo thành công/lỗi -->
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="alert alert-success alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <h4><i class="icon fa fa-check"></i> Thành công!</h4>
+        <%= success %>
+      </div>
+    <% } %>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <h4><i class="icon fa fa-ban"></i> Lỗi!</h4>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="box">
+          <div class="box-header with-border">
+            <h3 class="box-title">Danh sách từ vựng</h3>
+            <div class="box-tools pull-right">
+              <div class="btn-group">
+                <a href="/admin/vocabulary/add" class="btn btn-primary btn-sm">
+                  <i class="fa fa-plus"></i> Thêm từ vựng mới
+                </a>
+                <a href="/admin/vocabulary/import" class="btn btn-success btn-sm">
+                  <i class="fa fa-upload"></i> Import CSV
+                </a>
+                <button type="button" class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown">
+                  <i class="fa fa-download"></i> Export <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a href="/admin/vocabulary/export">Tất cả từ vựng</a></li>
+                  <li class="divider"></li>
+                  <li><a href="/admin/vocabulary/export?hskLevel=1">HSK 1</a></li>
+                  <li><a href="/admin/vocabulary/export?hskLevel=2">HSK 2</a></li>
+                  <li><a href="/admin/vocabulary/export?hskLevel=3">HSK 3</a></li>
+                  <li><a href="/admin/vocabulary/export?hskLevel=4">HSK 4</a></li>
+                  <li><a href="/admin/vocabulary/export?hskLevel=5">HSK 5</a></li>
+                  <li><a href="/admin/vocabulary/export?hskLevel=6">HSK 6</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="box-body">
+            <!-- Form tìm kiếm -->
+            <form method="GET" class="form-inline mb-3">
+              <div class="form-group">
+                <input type="text" class="form-control" name="search" 
+                       placeholder="Tìm kiếm từ vựng..." 
+                       value="<%= typeof search !== 'undefined' ? search : '' %>">
+              </div>
+              <div class="form-group">
+                <select class="form-control" name="hskLevel">
+                  <option value="">Tất cả HSK</option>
+                  <option value="1" <%= typeof hskLevel !== 'undefined' && hskLevel == '1' ? 'selected' : '' %>>HSK 1</option>
+                  <option value="2" <%= typeof hskLevel !== 'undefined' && hskLevel == '2' ? 'selected' : '' %>>HSK 2</option>
+                  <option value="3" <%= typeof hskLevel !== 'undefined' && hskLevel == '3' ? 'selected' : '' %>>HSK 3</option>
+                  <option value="4" <%= typeof hskLevel !== 'undefined' && hskLevel == '4' ? 'selected' : '' %>>HSK 4</option>
+                  <option value="5" <%= typeof hskLevel !== 'undefined' && hskLevel == '5' ? 'selected' : '' %>>HSK 5</option>
+                  <option value="6" <%= typeof hskLevel !== 'undefined' && hskLevel == '6' ? 'selected' : '' %>>HSK 6</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-info">
+                <i class="fa fa-search"></i> Tìm kiếm
+              </button>
+              <a href="/admin/vocabulary" class="btn btn-default">
+                <i class="fa fa-refresh"></i> Làm mới
+              </a>
+            </form>
+
+            <!-- Thống kê -->
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <div class="info-box bg-blue">
+                  <span class="info-box-icon"><i class="fa fa-language"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Tổng từ vựng</span>
+                    <span class="info-box-number"><%= typeof pagination !== 'undefined' ? pagination.totalItems : 0 %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="info-box bg-green">
+                  <span class="info-box-icon"><i class="fa fa-list"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Trang hiện tại</span>
+                    <span class="info-box-number"><%= typeof pagination !== 'undefined' ? pagination.currentPage : 1 %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="info-box bg-yellow">
+                  <span class="info-box-icon"><i class="fa fa-file-text-o"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Từ vựng/trang</span>
+                    <span class="info-box-number"><%= typeof pagination !== 'undefined' ? pagination.itemsPerPage : 20 %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="info-box bg-red">
+                  <span class="info-box-icon"><i class="fa fa-pagelines"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Tổng trang</span>
+                    <span class="info-box-number"><%= typeof pagination !== 'undefined' ? pagination.totalPages : 1 %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bảng từ vựng -->
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped">
+                <thead>
+                  <tr>
+                    <th width="5%">ID</th>
+                    <th width="15%">Chữ giản thể</th>
+                    <th width="15%">Chữ phồn thể</th>
+                    <th width="15%">Phiên âm</th>
+                    <th width="20%">Nghĩa tiếng Anh</th>
+                    <th width="8%">Từ loại</th>
+                    <th width="8%">HSK</th>
+                    <th width="14%">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (typeof data !== 'undefined' && data.length > 0) { %>
+                    <% data.forEach(function(vocab) { %>
+                      <tr>
+                        <td><%= vocab.word_id %></td>
+                        <td>
+                          <strong><%= vocab.simplified_chinese %></strong>
+                          <% if (vocab.audio_url) { %>
+                            <br><small class="text-muted">📻 Có audio</small>
+                          <% } %>
+                        </td>
+                        <td><%= vocab.traditional_chinese || '-' %></td>
+                        <td><%= vocab.pinyin %></td>
+                        <td>
+                          <%= vocab.english_meaning %>
+                          <% if (vocab.example_sentence_chinese) { %>
+                            <br><small class="text-muted">💡 Có ví dụ</small>
+                          <% } %>
+                        </td>
+                        <td>
+                          <% if (vocab.part_of_speech) { %>
+                            <span class="label label-default"><%= vocab.part_of_speech %></span>
+                          <% } else { %>
+                            -
+                          <% } %>
+                        </td>
+                        <td>
+                          <span class="label label-info">HSK <%= vocab.hsk_level %></span>
+                        </td>
+                        <td>
+                          <div class="btn-group">
+                            <a href="/admin/vocabulary/edit/<%= vocab.word_id %>" 
+                               class="btn btn-xs btn-warning" title="Sửa">
+                              <i class="fa fa-edit"></i>
+                            </a>
+                            <button class="btn btn-xs btn-danger delete-vocab" 
+                                    data-id="<%= vocab.word_id %>"
+                                    data-word="<%= vocab.simplified_chinese %>"
+                                    title="Xóa">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                            <button class="btn btn-xs btn-info view-details" 
+                                    data-id="<%= vocab.word_id %>"
+                                    title="Xem chi tiết">
+                              <i class="fa fa-eye"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="8" class="text-center">
+                        <div class="text-muted">
+                          <i class="fa fa-inbox fa-3x"></i>
+                          <br><br>
+                          Không có từ vựng nào
+                          <br>
+                          <a href="/admin/vocabulary/add" class="btn btn-primary btn-sm mt-2">
+                            <i class="fa fa-plus"></i> Thêm từ vựng đầu tiên
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Phân trang -->
+            <% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
+              <div class="text-center">
+                <ul class="pagination">
+                  <% if (pagination.currentPage > 1) { %>
+                    <li>
+                      <a href="?page=<%= pagination.currentPage - 1 %>&search=<%= typeof search !== 'undefined' ? search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>">
+                        &laquo; Trước
+                      </a>
+                    </li>
+                  <% } %>
+                  
+                  <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+                    <li class="<%= i === pagination.currentPage ? 'active' : '' %>">
+                      <a href="?page=<%= i %>&search=<%= typeof search !== 'undefined' ? search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>">
+                        <%= i %>
+                      </a>
+                    </li>
+                  <% } %>
+                  
+                  <% if (pagination.currentPage < pagination.totalPages) { %>
+                    <li>
+                      <a href="?page=<%= pagination.currentPage + 1 %>&search=<%= typeof search !== 'undefined' ? search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>">
+                        Sau &raquo;
+                      </a>
+                    </li>
+                  <% } %>
+                </ul>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Xác nhận xóa</h4>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa từ vựng "<span id="wordToDelete"></span>"?</p>
+        <div class="alert alert-warning">
+          <i class="fa fa-warning"></i> <strong>Lưu ý:</strong> Hành động này không thể hoàn tác!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal xem chi tiết -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Chi tiết từ vựng</h4>
+      </div>
+      <div class="modal-body" id="detailContent">
+        <!-- Nội dung sẽ được load bằng AJAX -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('footer')%>
+
+<script>
+$(document).ready(function() {
+  // Xử lý xóa từ vựng
+  $('.delete-vocab').click(function() {
+    const id = $(this).data('id');
+    const word = $(this).data('word');
+    
+    $('#wordToDelete').text(word);
+    $('#deleteModal').modal('show');
+    
+    $('#confirmDelete').off('click').on('click', function() {
+      $.ajax({
+        url: `/admin/vocabulary/delete/${id}`,
+        type: 'DELETE',
+        success: function(response) {
+          if (response.success) {
+            location.reload();
+          } else {
+            alert('Lỗi: ' + response.message);
+          }
+        },
+        error: function() {
+          alert('Có lỗi xảy ra khi xóa từ vựng');
+        }
+      });
+    });
+  });
+
+  // Xem chi tiết từ vựng
+  $('.view-details').click(function() {
+    const id = $(this).data('id');
+    
+    $.get(`/admin/vocabulary/${id}`, function(response) {
+      if (response.success) {
+        const vocab = response.data;
+        let detailHtml = `
+          <div class="row">
+            <div class="col-md-6">
+              <h4>Thông tin cơ bản</h4>
+              <table class="table table-bordered">
+                <tr><td><strong>ID:</strong></td><td>${vocab.word_id}</td></tr>
+                <tr><td><strong>Chữ giản thể:</strong></td><td>${vocab.simplified_chinese}</td></tr>
+                <tr><td><strong>Chữ phồn thể:</strong></td><td>${vocab.traditional_chinese || '-'}</td></tr>
+                <tr><td><strong>Phiên âm:</strong></td><td>${vocab.pinyin}</td></tr>
+                <tr><td><strong>Nghĩa tiếng Anh:</strong></td><td>${vocab.english_meaning}</td></tr>
+                <tr><td><strong>Từ loại:</strong></td><td>${vocab.part_of_speech || '-'}</td></tr>
+                <tr><td><strong>HSK Level:</strong></td><td><span class="label label-info">HSK ${vocab.hsk_level}</span></td></tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h4>Ví dụ và Audio</h4>
+              <table class="table table-bordered">
+                <tr><td><strong>Ví dụ tiếng Trung:</strong></td><td>${vocab.example_sentence_chinese || '-'}</td></tr>
+                <tr><td><strong>Ví dụ phiên âm:</strong></td><td>${vocab.example_sentence_pinyin || '-'}</td></tr>
+                <tr><td><strong>Ví dụ tiếng Anh:</strong></td><td>${vocab.example_sentence_english || '-'}</td></tr>
+                <tr><td><strong>Audio:</strong></td><td>${vocab.audio_url ? `<audio controls><source src="${vocab.audio_url}" type="audio/mpeg">Trình duyệt không hỗ trợ audio</audio>` : 'Không có'}</td></tr>
+              </table>
+            </div>
+          </div>
+        `;
+        
+        $('#detailContent').html(detailHtml);
+        $('#detailModal').modal('show');
+      } else {
+        alert('Lỗi khi tải thông tin từ vựng');
+      }
+    });
+  });
+});
+</script>

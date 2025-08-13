@@ -2,12 +2,12 @@
   <!-- Brand Logo -->
   <a href="/admin" class="brand-link">
     <img
-      src=" <%= logo %> "
+      src="<%= typeof logo !== 'undefined' ? logo : '/dist/img/AdminLTELogo.png' %>"
       alt="AdminLTE Logo"
       class="brand-image img-circle elevation-3"
       style="opacity: 0.8"
     />
-    <span class="brand-text font-weight-light"><%= nameWeb %></span>
+    <span class="brand-text font-weight-light"><%= typeof nameWeb !== 'undefined' ? nameWeb : 'Làng Hán Ngữ' %></span>
   </a>
 
   <!-- Sidebar -->
@@ -16,13 +16,13 @@
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
       <div class="image">
         <img
-          src="<%= user?.avatar %>"
+          src="<%= typeof user !== 'undefined' && user.avatar ? user.avatar : '/dist/img/avatar4.png' %>"
           class="img-circle elevation-2"
           alt="User Image"
         />
       </div>
       <div class="info">
-        <a href="#" class="d-block"><%= user?.username || "alex" %></a>
+        <a href="#" class="d-block"><%= typeof user !== 'undefined' && user.username ? user.username : 'Admin' %></a>
       </div>
     </div>
 
@@ -51,16 +51,21 @@
         role="menu"
         data-accordion="false"
       >
-        <!-- Add icons to the links using the .nav-icon class
-             with font-awesome or any other icon font library -->
+        <!-- Dashboard -->
+        <li class="nav-item">
+          <a href="/admin" class="nav-link">
+            <i class="nav-icon fas fa-tachometer-alt"></i>
+            <p>Dashboard</p>
+          </a>
+        </li>
 
+        <!-- Quản lý khóa học -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-graduation-cap"></i>
             <p>
-              quan li khoa hoc
+              Quản lý khóa học
               <i class="fas fa-angle-left right"></i>
-            <span class="badge badge-info right">6</span>
             </p>
           </a>
           <ul class="nav nav-treeview">
@@ -73,43 +78,124 @@
             <li class="nav-item">
               <a href="/admin/khoahoc/add-khoahoc" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>thêm mới khóa học</p>
+                <p>Thêm mới khóa học</p>
               </a>
             </li>
           </ul>
         </li>
+
+        <!-- Quản lý bài học -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-book"></i>
             <p>
-              quan li bai hoc
+              Quản lý bài học
               <i class="fas fa-angle-left right"></i>
-            
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
               <a href="/admin/baihoc/danhsach" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>Danh sách bai học</p>
+                <p>Danh sách bài học</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="/admin/baihoc/add-baihoc" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>thêm mới bai học</p>
+                <p>Thêm mới bài học</p>
               </a>
             </li>
           </ul>
         </li>
 
+        <!-- Quản lý từ vựng - MỚI THÊM -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-language"></i>
             <p>
-              quản lý người dùng
+              Quản lý từ vựng
               <i class="fas fa-angle-left right"></i>
-            
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/vocabulary" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách từ vựng</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/vocabulary/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm từ vựng mới</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/vocabulary/import" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Import từ vựng</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Quản lý bài tập -->
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-tasks"></i>
+            <p>
+              Quản lý bài tập
+              <i class="fas fa-angle-left right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/baitap/danhsach" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách bài tập</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/baitap/add" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm bài tập</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </li>
+      <!-- Quản lý HSK -->
+      <li class="nav-item">
+        <a href="#" class="nav-link">
+          <i class="nav-icon fas fa-certificate"></i>
+          <p>
+            Quản lý HSK
+            <i class="fas fa-angle-left right"></i>
+          </p>
+        </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item">
+            <a href="/admin/hsk" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Danh sách đề HSK</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/hsk/add" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Thêm đề HSK</p>
+            </a>
+          </li>
+        </ul>
+      </li>
+        <!-- Quản lý người dùng -->
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-users"></i>
+            <p>
+              Quản lý người dùng
+              <i class="fas fa-angle-left right"></i>
             </p>
           </a>
           <ul class="nav nav-treeview">
@@ -127,61 +213,39 @@
             </li>
           </ul>
         </li>
+
+        <!-- Quản lý admin -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-user-shield"></i>
             <p>
-              quản lý admin
+              Quản lý admin
               <i class="fas fa-angle-left right"></i>
-            
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
               <a href="/admin/admins/danhsach" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>Danh sách người dùng</p>
+                <p>Danh sách admin</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="/admin/admins/add" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>Thêm người dùng</p>
+                <p>Thêm admin</p>
               </a>
             </li>
           </ul>
         </li>
+
+        <!-- Quản lý tài liệu -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-file-alt"></i>
             <p>
-              Quản lý bài tập
+              Quản lý tài liệu
               <i class="fas fa-angle-left right"></i>
-            
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="/admin/baitap/danhsach" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Danh sách bai tap</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="/admin/baitap/add" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Thêm bai tap</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
-            <p>
-              quản lý tài liệu
-              <i class="fas fa-angle-left right"></i>
-            
             </p>
           </a>
           <ul class="nav nav-treeview">
@@ -199,13 +263,14 @@
             </li>
           </ul>
         </li>
+
+        <!-- Quản lý AI -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-robot"></i>
             <p>
-              quản lý AI
+              Quản lý AI
               <i class="fas fa-angle-left right"></i>
-            
             </p>
           </a>
           <ul class="nav nav-treeview">
@@ -223,32 +288,64 @@
             </li>
           </ul>
         </li>
+
+        <!-- Quản lý thành phần website -->
         <li class="nav-item">
           <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-copy"></i>
+            <i class="nav-icon fas fa-cogs"></i>
             <p>
-              quản lý thành phần web site
+              Cài đặt website
               <i class="fas fa-angle-left right"></i>
-            
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
               <a href="/admin/setting/banner/danhsach" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>quản lý banner sides</p>
+                <p>Quản lý banner</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="/admin/setting" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>quản lý Logo website</p>
+                <p>Logo & Cài đặt chung</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="/admin/tailieu/add" class="nav-link">
+              <a href="/admin/setting/footer" class="nav-link">
                 <i class="far fa-circle nav-icon"></i>
-                <p>quản lý footer website</p>
+                <p>Quản lý footer</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Thống kê & Báo cáo -->
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-chart-bar"></i>
+            <p>
+              Thống kê & Báo cáo
+              <i class="fas fa-angle-left right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/statistics/users" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thống kê người dùng</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/statistics/learning" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thống kê học tập</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/statistics/vocabulary" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thống kê từ vựng</p>
               </a>
             </li>
           </ul>

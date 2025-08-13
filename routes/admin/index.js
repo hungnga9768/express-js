@@ -9,6 +9,8 @@ const baitap = require("./baitap");
 const tailieu = require("./tailieu");
 const setting = require("./setting");
 const Chatbot = require("./chatbot");
+const vocabulary = require("./vocabulary");
+const hsk = require("./hsk");
 const authenticateToken = require("../../middlewares/authenticateToken");
 const loadGrobalsettings = require("../../middlewares/loadGrobalsettings");
 router.use(loadGrobalsettings);
@@ -28,5 +30,7 @@ router.use("/tailieu", tailieu);
 router.use("/user", user);
 router.use("/setting", setting);
 router.use("/chatbot", Chatbot);
+router.use("/vocabulary", vocabulary);
+router.use("/hsk", require("./hsk"));
 
 module.exports = router;

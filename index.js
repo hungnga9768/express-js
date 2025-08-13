@@ -13,7 +13,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "http://192.168.166.201:5173",
+      "http://192.168.79.124:5173",
       
     ],
     credentials: true,
@@ -48,7 +48,7 @@ const routes = require("./routes");
 app.use("/", routes);
 
 // Catch-all route cho SPA (đặt cuối cùng)
-app.get('/*splat', (req, res) => { // THÊM DẤU GẠCH CHÉO (/) Ở ĐẦU DẤU *
+app.get('/*splat', (req, res) => { 
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

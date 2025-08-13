@@ -1,0 +1,130 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>Thêm từ vựng mới</h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li><a href="/admin/vocabulary">Từ vựng</a></li>
+      <li class="active">Thêm mới</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="box box-primary">
+          <div class="box-header with-border">
+            <h3 class="box-title">Thông tin từ vựng</h3>
+          </div>
+          
+          <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger alert-dismissible">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <h4><i class="icon fa fa-ban"></i> Lỗi!</h4>
+              <%= error %>
+            </div>
+          <% } %>
+
+          <form role="form" method="POST" action="/admin/vocabulary/create">
+            <div class="box-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="simplified_chinese">Chữ giản thể <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="simplified_chinese" name="simplified_chinese" 
+                           value="<%= typeof data !== 'undefined' && data.simplified_chinese ? data.simplified_chinese : '' %>"
+                           placeholder="学习" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="traditional_chinese">Chữ phồn thể</label>
+                    <input type="text" class="form-control" id="traditional_chinese" name="traditional_chinese"
+                           value="<%= typeof data !== 'undefined' && data.traditional_chinese ? data.traditional_chinese : '' %>"
+                           placeholder="學習">
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="pinyin">Phiên âm <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="pinyin" name="pinyin"
+                           value="<%= typeof data !== 'undefined' && data.pinyin ? data.pinyin : '' %>"
+                           placeholder="xuéxí" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="english_meaning">Nghĩa tiếng Anh <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="english_meaning" name="english_meaning"
+                           value="<%= typeof data !== 'undefined' && data.english_meaning ? data.english_meaning : '' %>"
+                           placeholder="to study; to learn" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="part_of_speech">Từ loại</label>
+                    <select class="form-control" id="part_of_speech" name="part_of_speech">
+                      <option value="">Chọn từ loại</option>
+                      <% partsOfSpeech.forEach(function(part) { %>
+                        <option value="<%= part %>" 
+                                <%= typeof data !== 'undefined' && data.part_of_speech === part ? 'selected' : '' %>>
+                          <%= part.charAt(0).toUpperCase() + part.slice(1) %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="hsk_level">Cấp độ HSK</label>
+                    <select class="form-control" id="hsk_level" name="hsk_level">
+                      <% hskLevels.forEach(function(level) { %>
+                        <option value="<%= level %>" 
+                                <%= typeof data !== 'undefined' && data.hsk_level == level ? 'selected' : '' %>>
+                          HSK <%= level %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="example_sentence_chinese">Ví dụ tiếng Trung</label>
+                <textarea class="form-control" id="example_sentence_chinese" name="example_sentence_chinese" 
+                          rows="2" placeholder="我喜欢学习中文。"><%= typeof data !== 'undefined' && data.example_sentence_chinese ? data.example_sentence_chinese : '' %></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="example_sentence_pinyin">Ví dụ phiên âm</label>
+                <textarea class="form-control" id="example_sentence_pinyin" name="example_sentence_pinyin" 
+                          rows="2" placeholder="Wǒ xǐhuān xuéxí zhōngwén."><%= typeof data !== 'undefined' && data.example_sentence_pinyin ? data.example_sentence_pinyin : '' %></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="example_sentence_english">Ví dụ tiếng Anh</label>
+                <textarea class="form-control" id="example_sentence_english" name="example_sentence_english" 
+                          rows="2" placeholder="I like studying Chinese."><%= typeof data !== 'undefined' && data.example_sentence_english ? data.example_sentence_english : '' %></textarea>
+              </div>
+            </div>
+
+            <div class="box-footer">
+              <button type="submit" class="btn btn-primary">Thêm từ vựng</button>
+              <a href="/admin/vocabulary" class="btn btn-default">Hủy</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer')%>

@@ -1,0 +1,96 @@
+<%- include('header')%> <%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6"><h1><%= title %></h1></div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Đề thi HSK</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="box">
+      <div class="box-body">
+        <form method="GET" class="form-inline">
+          <div class="form-group">
+            <input class="form-control" name="search" placeholder="Tìm đề" value="<%= search || '' %>"/>
+          </div>
+          <div class="form-group">
+            <select class="form-control" name="level">
+              <option value="">Tất cả HSK</option>
+              <% [1,2,3,4,5,6].forEach(l => { %>
+                <option value="<%= l %>" <%= String(level)===String(l)?'selected':'' %>>HSK <%= l %></option>
+              <% }) %>
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> Tìm</button>
+          <a href="/admin/hsk/add" class="btn btn-success pull-right"><i class="fa fa-plus"></i> Thêm đề</a>
+        </form>
+      </div>
+
+      <div class="box-body">
+        <table class="table table-bordered table-hover">
+          <thead><tr>
+            <th>ID</th><th>HSK</th><th>Tiêu đề</th><th>Số câu</th><th>Thời gian</th><th>Điểm đạt</th><th>Trộn đề</th><th style="width:240px">Hành động</th>
+          </tr></thead>
+          <tbody>
+            <% if (data && data.length) { %>
+              <% data.forEach(t => { %>
+                <tr>
+                  <td><%= t.test_id %></td>
+                  <td><span class="label label-info">HSK <%= t.hsk_level %></span></td>
+                  <td><%= t.title %></td>
+                  <td><%= t.total_questions || 0 %></td>
+                  <td><%= t.time_limit || '-' %> phút</td>
+                  <td><%= t.passing_score || 0 %></td>
+                  <td>
+                    <form method="POST" action="/admin/hsk/toggle-randomize/<%= t.test_id %>" style="display:inline">
+                      <input type="hidden" name="value" value="<%= t.randomize_questions ? 0 : 1 %>"/>
+                      <button class="btn btn-xs <%= t.randomize_questions ? 'btn-success':'btn-default' %>" type="submit">
+                        <i class="fa fa-random"></i> <%= t.randomize_questions ? 'Đang bật' : 'Tắt' %>
+                      </button>
+                    </form>
+                  </td>
+                  <td>
+                    <a class="btn btn-sm btn-primary" href="/admin/hsk/<%= t.test_id %>/questions"><i class="fa fa-list"></i> Câu hỏi</a>
+                    <a class="btn btn-sm btn-warning" href="/admin/hsk/edit/<%= t.test_id %>"><i class="fa fa-edit"></i> Sửa</a>
+                    <form method="POST" action="/admin/hsk/delete/<%= t.test_id %>" style="display:inline" onsubmit="return confirm('Xóa đề này?');">
+                      <button class="btn btn-sm btn-danger" type="submit"><i class="fa fa-trash"></i> Xóa</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="8" class="text-center">Không có đề nào</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="box-footer text-center">
+        <ul class="pagination d-flex justify-content-center">
+          <% const page = Page || 1; const total = totalPage || 1; %>
+          <li class="paginate_button page-item previous <%= page===1?'disabled':'' %>">
+            <a class="page-link" href="?page=<%= page>1?page-1:1 %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>">Previous</a>
+          </li>
+          <% for (let i=1;i<=total;i++){ %>
+            <li class="paginate_button page-item <%= i===page?'active':'' %>">
+              <a class="page-link" href="?page=<%= i %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>"><%= i %></a>
+            </li>
+          <% } %>
+          <li class="paginate_button page-item next <%= page===total?'disabled':'' %>">
+            <a class="page-link" href="?page=<%= page<total?page+1:total %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>">Next</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+<%- include('footer')%>

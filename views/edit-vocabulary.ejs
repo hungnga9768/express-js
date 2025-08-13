@@ -1,0 +1,377 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>Chỉnh sửa từ vựng</h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li><a href="/admin/vocabulary">Từ vựng</a></li>
+      <li class="active">Chỉnh sửa</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="box box-warning">
+          <div class="box-header with-border">
+            <h3 class="box-title">Thông tin từ vựng</h3>
+            <div class="box-tools pull-right">
+              <a href="/admin/vocabulary" class="btn btn-default btn-sm">
+                <i class="fa fa-arrow-left"></i> Quay lại danh sách
+              </a>
+            </div>
+          </div>
+          
+          <div class="box-body">
+            <!-- Thông báo lỗi -->
+            <div id="errorAlert" class="alert alert-danger alert-dismissible" style="display: none;">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <h4><i class="icon fa fa-ban"></i> Lỗi!</h4>
+              <span id="errorMessage"></span>
+            </div>
+
+            <!-- Thông báo thành công -->
+            <div id="successAlert" class="alert alert-success alert-dismissible" style="display: none;">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <h4><i class="icon fa fa-check"></i> Thành công!</h4>
+              <span id="successMessage"></span>
+            </div>
+
+            <!-- Form chỉnh sửa -->
+            <form id="editVocabularyForm" role="form">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="simplified_chinese">Chữ giản thể <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="simplified_chinese" name="simplified_chinese" 
+                           value="<%= vocabulary.simplified_chinese %>"
+                           placeholder="学习" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="traditional_chinese">Chữ phồn thể</label>
+                    <input type="text" class="form-control" id="traditional_chinese" name="traditional_chinese"
+                           value="<%= vocabulary.traditional_chinese || '' %>"
+                           placeholder="學習">
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="pinyin">Phiên âm <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="pinyin" name="pinyin"
+                           value="<%= vocabulary.pinyin %>"
+                           placeholder="xuéxí" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="english_meaning">Nghĩa tiếng Anh <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="english_meaning" name="english_meaning"
+                           value="<%= vocabulary.english_meaning %>"
+                           placeholder="to study; to learn" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="part_of_speech">Từ loại</label>
+                    <select class="form-control" id="part_of_speech" name="part_of_speech">
+                      <option value="">Chọn từ loại</option>
+                      <% partsOfSpeech.forEach(function(part) { %>
+                        <option value="<%= part %>" 
+                                <%= vocabulary.part_of_speech === part ? 'selected' : '' %>>
+                          <%= part.charAt(0).toUpperCase() + part.slice(1) %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="hsk_level">Cấp độ HSK</label>
+                    <select class="form-control" id="hsk_level" name="hsk_level">
+                      <% hskLevels.forEach(function(level) { %>
+                        <option value="<%= level %>" 
+                                <%= vocabulary.hsk_level == level ? 'selected' : '' %>>
+                          HSK <%= level %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="example_sentence_chinese">Ví dụ tiếng Trung</label>
+                <textarea class="form-control" id="example_sentence_chinese" name="example_sentence_chinese" 
+                          rows="2" placeholder="我喜欢学习中文。"><%= vocabulary.example_sentence_chinese || '' %></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="example_sentence_pinyin">Ví dụ phiên âm</label>
+                <textarea class="form-control" id="example_sentence_pinyin" name="example_sentence_pinyin" 
+                          rows="2" placeholder="Wǒ xǐhuān xuéxí zhōngwén."><%= vocabulary.example_sentence_pinyin || '' %></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="example_sentence_english">Ví dụ tiếng Anh</label>
+                <textarea class="form-control" id="example_sentence_english" name="example_sentence_english" 
+                          rows="2" placeholder="I like studying Chinese."><%= vocabulary.example_sentence_english || '' %></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="audio_url">URL Audio (nếu có)</label>
+                <input type="url" class="form-control" id="audio_url" name="audio_url"
+                       value="<%= vocabulary.audio_url || '' %>"
+                       placeholder="https://example.com/audio/xuexi.mp3">
+                <p class="help-block">Đường dẫn đến file audio (MP3, WAV, etc.)</p>
+              </div>
+            </form>
+          </div>
+
+          <div class="box-footer">
+            <button type="submit" form="editVocabularyForm" class="btn btn-warning">
+              <i class="fa fa-save"></i> Cập nhật từ vựng
+            </button>
+            <a href="/admin/vocabulary" class="btn btn-default">
+              <i class="fa fa-times"></i> Hủy
+            </a>
+            <button type="button" class="btn btn-danger pull-right" id="deleteVocabulary">
+              <i class="fa fa-trash"></i> Xóa từ vựng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Xác nhận xóa</h4>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa từ vựng "<strong><%= vocabulary.simplified_chinese %></strong>"?</p>
+        <div class="alert alert-warning">
+          <i class="fa fa-warning"></i> <strong>Lưu ý:</strong> Hành động này không thể hoàn tác!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('footer')%>
+
+<script>
+$(document).ready(function() {
+  // Xử lý submit form
+  $('#editVocabularyForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    // Ẩn các thông báo cũ
+    $('#errorAlert, #successAlert').hide();
+    
+    // Lấy dữ liệu form
+    const formData = {
+      simplified_chinese: $('#simplified_chinese').val().trim(),
+      traditional_chinese: $('#traditional_chinese').val().trim(),
+      pinyin: $('#pinyin').val().trim(),
+      english_meaning: $('#english_meaning').val().trim(),
+      part_of_speech: $('#part_of_speech').val(),
+      hsk_level: $('#hsk_level').val(),
+      example_sentence_chinese: $('#example_sentence_chinese').val().trim(),
+      example_sentence_pinyin: $('#example_sentence_pinyin').val().trim(),
+      example_sentence_english: $('#example_sentence_english').val().trim(),
+      audio_url: $('#audio_url').val().trim()
+    };
+
+    // Validation
+    if (!formData.simplified_chinese) {
+      showError('Chữ giản thể không được để trống');
+      $('#simplified_chinese').focus();
+      return;
+    }
+
+    if (!formData.pinyin) {
+      showError('Phiên âm không được để trống');
+      $('#pinyin').focus();
+      return;
+    }
+
+    if (!formData.english_meaning) {
+      showError('Nghĩa tiếng Anh không được để trống');
+      $('#english_meaning').focus();
+      return;
+    }
+
+    // Gửi request cập nhật
+    $.ajax({
+      url: `/admin/vocabulary/update/<%= vocabulary.word_id %>`,
+      type: 'PUT',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function(response) {
+        if (response.success) {
+          showSuccess(response.message);
+          // Tự động chuyển về trang danh sách sau 2 giây
+          setTimeout(function() {
+            window.location.href = '/admin/vocabulary?success=' + encodeURIComponent(response.message);
+          }, 2000);
+        } else {
+          showError(response.message);
+        }
+      },
+      error: function(xhr) {
+        let errorMessage = 'Có lỗi xảy ra khi cập nhật từ vựng';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+          errorMessage = xhr.responseJSON.message;
+        }
+        showError(errorMessage);
+      }
+    });
+  });
+
+  // Xử lý xóa từ vựng
+  $('#deleteVocabulary').click(function() {
+    $('#deleteModal').modal('show');
+  });
+
+  $('#confirmDelete').click(function() {
+    $.ajax({
+      url: `/admin/vocabulary/delete/<%= vocabulary.word_id %>`,
+      type: 'DELETE',
+      success: function(response) {
+        if (response.success) {
+          $('#deleteModal').modal('hide');
+          showSuccess(response.message);
+          // Tự động chuyển về trang danh sách sau 2 giây
+          setTimeout(function() {
+            window.location.href = '/admin/vocabulary?success=' + encodeURIComponent(response.message);
+          }, 2000);
+        } else {
+          showError(response.message);
+        }
+      },
+      error: function() {
+        showError('Có lỗi xảy ra khi xóa từ vựng');
+      }
+    });
+  });
+
+  // Hiển thị thông báo lỗi
+  function showError(message) {
+    $('#errorMessage').text(message);
+    $('#errorAlert').show();
+    $('html, body').animate({
+      scrollTop: $('#errorAlert').offset().top - 100
+    }, 500);
+  }
+
+  // Hiển thị thông báo thành công
+  function showSuccess(message) {
+    $('#successMessage').text(message);
+    $('#successAlert').show();
+    $('html, body').animate({
+      scrollTop: $('#successAlert').offset().top - 100
+    }, 500);
+  }
+
+  // Auto-save draft (tùy chọn)
+  let autoSaveTimer;
+  $('input, textarea, select').on('input change', function() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(function() {
+      // Có thể thêm logic auto-save draft ở đây
+      console.log('Auto-save draft...');
+    }, 3000);
+  });
+
+  // Preview từ vựng
+  $('#previewVocabulary').click(function() {
+    const formData = {
+      simplified_chinese: $('#simplified_chinese').val(),
+      traditional_chinese: $('#traditional_chinese').val(),
+      pinyin: $('#pinyin').val(),
+      english_meaning: $('#english_meaning').val(),
+      part_of_speech: $('#part_of_speech').val(),
+      hsk_level: $('#hsk_level').val()
+    };
+
+    // Hiển thị preview trong modal hoặc tooltip
+    let previewHtml = `
+      <div class="vocabulary-preview">
+        <h4>${formData.simplified_chinese}</h4>
+        <p><strong>Phồn thể:</strong> ${formData.traditional_chinese || 'Không có'}</p>
+        <p><strong>Phiên âm:</strong> ${formData.pinyin}</p>
+        <p><strong>Nghĩa:</strong> ${formData.english_meaning}</p>
+        <p><strong>Từ loại:</strong> ${formData.part_of_speech || 'Không có'}</p>
+        <p><strong>HSK:</strong> ${formData.hsk_level}</p>
+      </div>
+    `;
+
+    // Có thể hiển thị trong tooltip hoặc modal
+    alert('Preview: ' + JSON.stringify(formData, null, 2));
+  });
+});
+</script>
+
+<style>
+.vocabulary-preview {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.vocabulary-preview h4 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.vocabulary-preview p {
+  margin-bottom: 5px;
+}
+
+.form-group label {
+  font-weight: 600;
+}
+
+.text-danger {
+  color: #dd4b39;
+}
+
+.box-warning {
+  border-top-color: #f39c12;
+}
+
+.box-warning > .box-header {
+  background-color: #f39c12;
+  color: #fff;
+}
+
+.btn-warning {
+  background-color: #f39c12;
+  border-color: #e08e0b;
+}
+
+.btn-warning:hover {
+  background-color: #e08e0b;
+  border-color: #c87f0a;
+}
+</style>

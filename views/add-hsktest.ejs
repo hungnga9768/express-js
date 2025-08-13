@@ -1,0 +1,76 @@
+<%- include('header') %>
+<%- include('aside') %>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6"><h1><%= title %></h1></div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/admin/hsk">Đề HSK</a></li>
+            <li class="breadcrumb-item active"><%= title %></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="box">
+      <div class="box-body card card-primary">
+        <form method="POST" action="<%= test ? ('/admin/hsk/update/' + test.test_id) : '/admin/hsk/create' %>">
+          <div class="form-group">
+            <label>HSK Level</label>
+            <select class="form-control" name="hsk_level" required>
+              <% [1,2,3,4,5,6].forEach(l=>{ %>
+                <option value="<%= l %>" <%= test && test.hsk_level===l?'selected':'' %>>HSK <%= l %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Tiêu đề</label>
+            <input class="form-control" name="title" value="<%= test?test.title:'' %>" required>
+          </div>
+
+          <div class="form-group">
+            <label>Mô tả</label>
+            <textarea class="form-control" name="description"><%= test? (test.description||'') : '' %></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Tổng số câu</label>
+            <input type="number" class="form-control" name="total_questions" min="0" value="<%= test? (test.total_questions||0) : 0 %>">
+          </div>
+
+          <div class="form-group">
+            <label>Thời gian (phút)</label>
+            <input type="number" class="form-control" name="time_limit" min="0" value="<%= test? (test.time_limit||'') : '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Điểm đạt</label>
+            <input type="number" class="form-control" name="passing_score" min="0" value="<%= test? (test.passing_score||0) : 0 %>">
+          </div>
+
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="randomize_questions" value="1" <%= test && test.randomize_questions ? 'checked' : '' %>>
+              Bật trộn đề
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Lưu</button>
+          <a href="/admin/hsk" class="btn btn-default">Quay lại</a>
+          <% if (test) { %>
+            <a href="/admin/hsk/<%= test.test_id %>/questions" class="btn btn-info">Quản lý câu hỏi</a>
+          <% } %>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer') %>
