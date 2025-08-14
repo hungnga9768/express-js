@@ -192,5 +192,27 @@ module.exports = {
     }
 
     return await query(sql, params);
+  },
+
+  // Lấy từ vựng theo HSK level với limit (cho game)
+  async getByHSKLevel(level, limit = 10) {
+    const sql = `
+      SELECT * FROM vocabulary 
+      WHERE hsk_level = ? 
+      ORDER BY RAND() 
+      LIMIT ?
+    `;
+    return await query(sql, [level, limit]);
+  },
+
+  // Lấy từ vựng có audio theo HSK level
+  async getWithAudio(hskLevel, limit = 10) {
+    const sql = `
+      SELECT * FROM vocabulary 
+      WHERE hsk_level = ? AND audio_url IS NOT NULL
+      ORDER BY RAND() 
+      LIMIT ?
+    `;
+    return await query(sql, [hskLevel, limit]);
   }
 };

@@ -5,7 +5,7 @@ module.exports = {
   // Lấy flashcards của user
   async getUserFlashcards(req, res) {
     try {
-      const userId = req.user.user_id;
+      const userId = req.user?.user_id;
       const { limit = 50 } = req.query;
 
       const flashcards = await flashcardModel.getUserFlashcards(userId, parseInt(limit));
@@ -24,7 +24,7 @@ module.exports = {
     }
   },
 
-  // Tạo flashcard mới
+  // Tạo flashcard mới - Kiểm tra trùng lặp chính xác
   async createFlashcard(req, res) {
     try {
       const userId = req.user.user_id;
@@ -38,6 +38,16 @@ module.exports = {
         });
       }
 
+      // Kiểm tra trùng lặp dựa trên nội dung, không chỉ word_id
+      const isDuplicate = await flashcardModel.checkDuplicateByContent(userId, front_content, back_content);
+      
+      if (isDuplicate) {
+        return res.status(400).json({
+          success: false,
+          message: "Flashcard với nội dung này đã tồn tại"
+        });
+      }
+
       // Nếu có word_id, kiểm tra từ vựng tồn tại
       if (word_id) {
         const vocabulary = await vocabularyModel.getById(word_id);
@@ -47,13 +57,23 @@ module.exports = {
             message: "Không tìm thấy từ vựng"
           });
         }
+
+        // Kiểm tra xem từ vựng đã có trong flashcard của user chưa
+        const isWordDuplicate = await flashcardModel.checkDuplicateByWordId(userId, parseInt(word_id));
+
+        if (isWordDuplicate) {
+          return res.status(400).json({
+            success: false,
+            message: "Từ vựng này đã có trong flashcard của bạn"
+          });
+        }
       }
 
       const flashcardData = {
         user_id: userId,
         word_id: word_id || null,
-        front_content,
-        back_content,
+        front_content: front_content.trim(),
+        back_content: back_content.trim(),
         difficulty_level: difficulty_level || 'medium'
       };
 
@@ -69,80 +89,6 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: "Lỗi khi tạo flashcard"
-      });
-    }
-  },
-
-  // Cập nhật flashcard
-  async updateFlashcard(req, res) {
-    try {
-      const userId = req.user.user_id;
-      const { id } = req.params;
-      const { front_content, back_content, difficulty_level } = req.body;
-
-      // Kiểm tra flashcard thuộc về user
-      const existingFlashcard = await flashcardModel.getUserFlashcards(userId);
-      const userFlashcard = existingFlashcard.find(f => f.flashcard_id == id);
-
-      if (!userFlashcard) {
-        return res.status(404).json({
-          success: false,
-          message: "Không tìm thấy flashcard"
-        });
-      }
-
-      const updateData = {
-        front_content: front_content || userFlashcard.front_content,
-        back_content: back_content || userFlashcard.back_content,
-        difficulty_level: difficulty_level || userFlashcard.difficulty_level
-      };
-
-      const success = await flashcardModel.update(id, updateData);
-
-      if (success) {
-        res.json({
-          success: true,
-          message: "Cập nhật flashcard thành công"
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          message: "Không thể cập nhật flashcard"
-        });
-      }
-    } catch (error) {
-      console.error("Error updating flashcard:", error);
-      res.status(500).json({
-        success: false,
-        message: "Lỗi khi cập nhật flashcard"
-      });
-    }
-  },
-
-  // Xóa flashcard
-  async deleteFlashcard(req, res) {
-    try {
-      const userId = req.user.user_id;
-      const { id } = req.params;
-
-      const success = await flashcardModel.delete(id, userId);
-
-      if (success) {
-        res.json({
-          success: true,
-          message: "Xóa flashcard thành công"
-        });
-      } else {
-        res.status(404).json({
-          success: false,
-          message: "Không tìm thấy flashcard để xóa"
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting flashcard:", error);
-      res.status(500).json({
-        success: false,
-        message: "Lỗi khi xóa flashcard"
       });
     }
   },
@@ -172,9 +118,11 @@ module.exports = {
   // Cập nhật trạng thái ôn tập
   async updateReviewStatus(req, res) {
     try {
-      const userId = req.user.user_id;
+      const userId = req.user?.user_id;
+      
       const { id } = req.params;
-      const { difficulty, nextReviewDate } = req.body;
+      let { difficulty, nextReviewDate } = req.body;
+
 
       // Validate difficulty
       if (!['easy', 'medium', 'hard'].includes(difficulty)) {
@@ -185,16 +133,19 @@ module.exports = {
       }
 
       // Kiểm tra flashcard thuộc về user
-      const existingFlashcard = await flashcardModel.getUserFlashcards(userId);
-      const userFlashcard = existingFlashcard.find(f => f.flashcard_id == id);
+      const existingFlashcard = await flashcardModel.getById(id, userId);
 
-      if (!userFlashcard) {
+      if (!existingFlashcard) {
         return res.status(404).json({
           success: false,
           message: "Không tìm thấy flashcard"
         });
-      }
-
+      }// Chuyển đổi ISO date sang MySQL DATETIME format
+    if (nextReviewDate) {
+      const dateObj = new Date(nextReviewDate);
+      nextReviewDate = dateObj.toISOString().slice(0, 19).replace('T', ' '); 
+      // Ví dụ: "2025-08-17 10:07:49"
+    }
       const success = await flashcardModel.updateReviewStatus(id, difficulty, nextReviewDate);
 
       if (success) {
@@ -213,6 +164,34 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: "Lỗi khi cập nhật trạng thái ôn tập"
+      });
+    }
+  },
+
+  // Xóa flashcard
+  async deleteFlashcard(req, res) {
+    try {
+      const userId = req.user.user_id;
+      const { id } = req.params;
+
+      const success = await flashcardModel.delete(id, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Xóa flashcard thành công"
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: "Không tìm thấy flashcard để xóa"
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting flashcard:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi khi xóa flashcard"
       });
     }
   }

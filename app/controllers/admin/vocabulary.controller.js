@@ -321,7 +321,7 @@ module.exports = {
             fs.unlinkSync(req.file.path);
 
             // Redirect với thông báo
-            const message = `Import thành công ${importedCount} từ vựng`;
+            let  message = `Import thành công ${importedCount} từ vựng`;
             if (duplicateCount > 0) {
               message += `, ${duplicateCount} từ bị trùng lặp`;
             }

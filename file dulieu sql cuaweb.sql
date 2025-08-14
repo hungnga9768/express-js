@@ -426,3 +426,88 @@ ALTER TABLE HSKUserAnswers
   ADD UNIQUE KEY uq_result_question (result_id, question_id),
   ADD INDEX ix_result_id (result_id),
   ADD INDEX ix_question_id (question_id);
+  CREATE TABLE Games (
+    game_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    game_type ENUM('vocabulary', 'grammar', 'listening', 'writing', 'pronunciation') NOT NULL,
+    difficulty_level ENUM('beginner', 'intermediate', 'advanced'),
+    thumbnail_url VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) COMMENT 'Danh sách các game trong hệ thống';
+CREATE TABLE GameSessions (
+    session_id INT PRIMARY KEY AUTO_INCREMENT,
+    game_id INT NOT NULL,
+    user_id INT NOT NULL,
+    start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    end_time DATETIME,
+    score INT,
+    duration_seconds INT,
+    FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+) COMMENT 'Lưu lịch sử các lượt chơi game';
+CREATE TABLE GameLeaderboard (
+    entry_id INT PRIMARY KEY AUTO_INCREMENT,
+    game_id INT NOT NULL,
+    user_id INT NOT NULL,
+    score INT NOT NULL,
+    date_achieved DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    INDEX (game_id, score) -- Index để tối ưu truy vấn xếp hạng
+) COMMENT 'Bảng xếp hạng các game';
+CREATE TABLE GameRewards (
+    reward_id INT PRIMARY KEY AUTO_INCREMENT,
+    game_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    reward_type ENUM('xp', 'badge', 'coin', 'item') NOT NULL,
+    reward_value INT,
+    icon_url VARCHAR(255),
+    FOREIGN KEY (game_id) REFERENCES Games(game_id)
+) COMMENT 'Phần thưởng có thể nhận được từ game';
+CREATE TABLE UserGameProgress (
+    progress_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    game_id INT NOT NULL,
+    level INT DEFAULT 1,
+    current_xp INT DEFAULT 0,
+    unlocked_rewards JSON, -- Danh sách reward_id đã mở khóa
+    last_played DATETIME,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    UNIQUE (user_id, game_id)
+) COMMENT 'Tiến trình game của từng người dùng';
+CREATE TABLE GameVocabulary (
+    game_id INT NOT NULL,
+    word_id INT NOT NULL,
+    PRIMARY KEY (game_id, word_id),
+    FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    FOREIGN KEY (word_id) REFERENCES Vocabulary(word_id)
+) COMMENT 'Từ vựng sử dụng trong các game';
+CREATE TABLE GameGrammar (
+    game_id INT NOT NULL,
+    grammar_id INT NOT NULL,
+    PRIMARY KEY (game_id, grammar_id),
+    FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    FOREIGN KEY (grammar_id) REFERENCES Grammar(grammar_id)
+) COMMENT 'Ngữ pháp sử dụng trong các game';
+CREATE TABLE GameImages (
+    image_id INT PRIMARY KEY AUTO_INCREMENT,
+    word_id INT NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    is_correct_answer BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (word_id) REFERENCES Vocabulary(word_id)
+) COMMENT 'Ảnh minh họa từ vựng cho game';
+ALTER TABLE Games 
+MODIFY COLUMN game_type ENUM(
+    'vocabulary', 
+    'grammar', 
+    'listening', 
+    'writing', 
+    'pronunciation',
+    'image_quiz'  -- Game nhìn ảnh đoán từ
+) NOT NULL;
+ALTER TABLE GameVocabulary
+ADD COLUMN use_images BOOLEAN DEFAULT FALSE COMMENT 'TRUE nếu game dùng ảnh thay vì chữ';

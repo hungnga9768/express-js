@@ -7,6 +7,7 @@ const SettingsCtrl = require("../../app/controllers/api/setting.controller");
 const upload = require("../../middlewares/upload");
 const khoahoc = require("../api/khoahoc");
 const baihoc = require("../api/baihoc");
+const vocabulary = require("../api/vocabulary");
 const auth = require("../api/auth");
 const geminiCtrl = require("../../app/controllers/api/gemini.controller");
 // router baor vệ check đăng nhập thông qua cái này mới chạy
@@ -15,6 +16,7 @@ const authenticateTokenUser = require("../../middlewares/authAPI");
 router.use("/auth", auth);
 router.use("/khoahoc", khoahoc);
 router.use("/baihoc", baihoc);
+router.use("/vocabulary", vocabulary);
 router.get("/tailieu/", tailieuCtrl.index);
 router.get("/tailieu/:id", tailieuCtrl.getID);
 router.get("/baitap/", baitapCtrl.index);

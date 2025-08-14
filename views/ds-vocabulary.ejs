@@ -208,37 +208,63 @@
                 </tbody>
               </table>
             </div>
-
             <!-- Phân trang -->
-            <% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
-              <div class="text-center">
-                <ul class="pagination">
-                  <% if (pagination.currentPage > 1) { %>
-                    <li>
-                      <a href="?page=<%= pagination.currentPage - 1 %>&search=<%= typeof search !== 'undefined' ? search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>">
+            <div class="box-footer text-center">
+              <% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
+                <div class="text-center">
+                  <ul class="pagination d-flex justify-content-center">
+              
+                    <!-- Previous -->
+                    <li class="paginate_button page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+                      <a href="?page=<%= pagination.currentPage > 1 ? pagination.currentPage - 1 : 1 %><%= typeof search !== 'undefined' ? '&search=' + search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>" class="page-link">
                         &laquo; Trước
                       </a>
                     </li>
-                  <% } %>
-                  
-                  <% for (let i = 1; i <= pagination.totalPages; i++) { %>
-                    <li class="<%= i === pagination.currentPage ? 'active' : '' %>">
-                      <a href="?page=<%= i %>&search=<%= typeof search !== 'undefined' ? search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>">
-                        <%= i %>
-                      </a>
-                    </li>
-                  <% } %>
-                  
-                  <% if (pagination.currentPage < pagination.totalPages) { %>
-                    <li>
-                      <a href="?page=<%= pagination.currentPage + 1 %>&search=<%= typeof search !== 'undefined' ? search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>">
+              
+                    <% 
+                      const startPage = Math.max(1, pagination.currentPage - 2);
+                      const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+              
+                      // Trang đầu
+                      if (startPage > 1) { %>
+                        <li class="paginate_button page-item">
+                          <a href="?page=1<%= typeof search !== 'undefined' ? '&search=' + search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>" class="page-link">1</a>
+                        </li>
+                        <% if (startPage > 2) { %>
+                          <li class="paginate_button page-item disabled"><span class="page-link">…</span></li>
+                        <% } %>
+                    <% } %>
+              
+                    <!-- Các trang xung quanh -->
+                    <% for (let i = startPage; i <= endPage; i++) { %>
+                      <li class="paginate_button page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+                        <a href="?page=<%= i %><%= typeof search !== 'undefined' ? '&search=' + search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>" class="page-link"><%= i %></a>
+                      </li>
+                    <% } %>
+              
+                    <!-- Trang cuối -->
+                    <% if (endPage < pagination.totalPages) { %>
+                      <% if (endPage < pagination.totalPages - 1) { %>
+                        <li class="paginate_button page-item disabled"><span class="page-link">…</span></li>
+                      <% } %>
+                      <li class="paginate_button page-item">
+                        <a href="?page=<%= pagination.totalPages %><%= typeof search !== 'undefined' ? '&search=' + search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>" class="page-link"><%= pagination.totalPages %></a>
+                      </li>
+                    <% } %>
+              
+                    <!-- Next -->
+                    <li class="paginate_button page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+                      <a href="?page=<%= pagination.currentPage < pagination.totalPages ? pagination.currentPage + 1 : pagination.totalPages %><%= typeof search !== 'undefined' ? '&search=' + search : '' %>&hskLevel=<%= typeof hskLevel !== 'undefined' ? hskLevel : '' %>" class="page-link">
                         Sau &raquo;
                       </a>
                     </li>
-                  <% } %>
-                </ul>
-              </div>
-            <% } %>
+              
+                  </ul>
+                </div>
+              <% } %>
+            </div>
+            
+            
           </div>
         </div>
       </div>
