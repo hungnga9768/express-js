@@ -1,68 +1,402 @@
-<div
-  id="imageModal"
-  style="
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    overflow: auto;
-  "
->
-  <div
-    style="
-      background: white;
-      margin: 50px auto;
-      padding: 20px;
-      max-width: 800px;
-      border-radius: 8px;
-      position: relative;
-    "
-  >
-    <h4>Chọn ảnh có sẵn</h4>
-    <!-- Nút đóng modal đã có type="button" -->
-    <button
-      type="button"
-      onclick="closeImageModal()"
-      style="
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 24px;
-        background: none;
-        border: none;
-        cursor: pointer;
-      "
-    >
-      &times;
-    </button>
+<!-- Modal Cloudinary Image Library -->
+<div class="modal fade" id="cloudinaryImageModal" tabindex="-1" role="dialog" aria-labelledby="cloudinaryImageModalLabel">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="cloudinaryImageModalLabel">
+          <i class="fa fa-cloud"></i> Thư viện ảnh Cloudinary
+        </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Filter và Search -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <select class="form-control" id="folderFilter">
+              <option value="">Tất cả thư mục</option>
+              <option value="user-avatars">Ảnh đại diện người dùng</option>
+              <option value="admin-avatars">Ảnh đại diện admin</option>
+              <option value="khoahoc-thumbnails">Ảnh khóa học</option>
+              <option value="tailieu-thumbnails">Ảnh tài liệu</option>
+              <option value="game-thumbnails">Ảnh game</option>
+              <option value="banner-images">Ảnh banner</option>
+              <option value="chatbot-avatars">Ảnh chatbot</option>
+              <option value="vocabulary-audio">Audio từ vựng</option>
+              <option value="hsk-questions">Ảnh câu hỏi HSK</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <input type="text" class="form-control" id="searchImages" placeholder="Tìm kiếm ảnh...">
+          </div>
+          <div class="col-md-4">
+            <button type="button" class="btn btn-primary" onclick="loadCloudinaryImages()">
+              <i class="fa fa-refresh"></i> Làm mới
+            </button>
+          </div>
+        </div>
 
-    <div
-      id="imageGallery"
-      style="
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        max-height: 400px;
-        overflow-y: auto;
-      "
-    >
-      <% uploadedImages.forEach(img => { %>
-      <img
-        src="/images/<%= img %>"
-        alt="<%= img %>"
-        style="
-          width: 100px;
-          height: 100px;
-          cursor: pointer;
-          border: 2px solid transparent;
-        "
-        onclick="selectImageFromModal('/images/<%= img %>', this)"
-      />
-      <% }) %>
+        <!-- Loading spinner -->
+        <div id="loadingSpinner" class="text-center" style="display: none;">
+          <i class="fa fa-spinner fa-spin fa-3x"></i>
+          <p>Đang tải ảnh...</p>
+        </div>
+
+        <!-- Image grid -->
+        <div id="cloudinaryImageGrid" class="row">
+          <!-- Ảnh sẽ được load động ở đây -->
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="text-center mt-3" style="display: none;">
+          <button type="button" class="btn btn-default" id="prevPage" onclick="changePage(-1)">
+            <i class="fa fa-chevron-left"></i> Trước
+          </button>
+          <span class="mx-3">
+            Trang <span id="currentPage">1</span> / <span id="totalPages">1</span>
+          </span>
+          <button type="button" class="btn btn-default" id="nextPage" onclick="changePage(1)">
+            Sau <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-success" onclick="selectCurrentImage()">
+          <i class="fa fa-check"></i> Chọn ảnh
+        </button>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- Modal preview ảnh -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xem trước ảnh</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="previewImage" src="" alt="Preview" class="img-fluid">
+        <div class="mt-3">
+          <p><strong>Public ID:</strong> <span id="previewPublicId"></span></p>
+          <p><strong>Kích thước:</strong> <span id="previewDimensions"></span></p>
+          <p><strong>Định dạng:</strong> <span id="previewFormat"></span></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary" onclick="selectPreviewImage()">Chọn ảnh này</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentImageData = null;
+let currentPage = 1;
+let totalPages = 1;
+let currentFolder = '';
+
+// Mở modal Cloudinary
+function openCloudinaryImageModal() {
+  console.log('openCloudinaryImageModal được gọi');
+  
+  // Kiểm tra jQuery
+  if (typeof $ === 'undefined') {
+    console.error('jQuery không được load!');
+    alert('jQuery không được load. Vui lòng kiểm tra lại.');
+    return;
+  }
+  
+  // Kiểm tra Bootstrap modal
+  if (typeof $.fn.modal === 'undefined') {
+    console.error('Bootstrap modal không được load!');
+    alert('Bootstrap modal không được load. Vui lòng kiểm tra lại.');
+    return;
+  }
+  
+  // Kiểm tra modal element
+  const modal = document.getElementById('cloudinaryImageModal');
+  if (!modal) {
+    console.error('Modal element không tìm thấy!');
+    alert('Modal element không tìm thấy. Vui lòng kiểm tra lại.');
+    return;
+  }
+  
+  console.log('Mở modal...');
+  $('#cloudinaryImageModal').modal('show');
+  
+  // Load ảnh từ Cloudinary
+  if (typeof loadCloudinaryImages === 'function') {
+    console.log('Load ảnh từ Cloudinary...');
+    loadCloudinaryImages();
+  } else {
+    console.error('Function loadCloudinaryImages không tìm thấy!');
+  }
+}
+
+// Load ảnh từ Cloudinary
+async function loadCloudinaryImages(page = 1) {
+  const folder = document.getElementById('folderFilter').value;
+  const search = document.getElementById('searchImages').value;
+  
+  document.getElementById('loadingSpinner').style.display = 'block';
+  document.getElementById('cloudinaryImageGrid').innerHTML = '';
+  
+  try {
+    const response = await fetch('/admin/api/cloudinary/images', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        folder: folder,
+        search: search,
+        page: page
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      displayCloudinaryImages(data.images);
+      currentPage = page;
+      totalPages = Math.ceil(data.total / 20); // 20 ảnh mỗi trang
+      updatePagination();
+    } else {
+      showError('Không thể tải ảnh: ' + data.error);
+    }
+  } catch (error) {
+    showError('Lỗi khi tải ảnh: ' + error.message);
+  } finally {
+    document.getElementById('loadingSpinner').style.display = 'none';
+  }
+}
+
+// Hiển thị ảnh trong grid
+function displayCloudinaryImages(images) {
+  const grid = document.getElementById('cloudinaryImageGrid');
+  
+  if (images.length === 0) {
+    grid.innerHTML = '<div class="col-12 text-center text-muted"><p>Không tìm thấy ảnh nào</p></div>';
+    return;
+  }
+  
+  images.forEach(image => {
+    const col = document.createElement('div');
+    col.className = 'col-md-3 col-sm-4 col-6 mb-3';
+    
+    col.innerHTML = `
+      <div class="image-item" onclick="selectImage('${image.public_id}', '${image.url}', ${image.width}, ${image.height}, '${image.format}')">
+        <img src="${image.url}" alt="${image.public_id}" 
+             class="img-thumbnail" style="width: 100%; height: 120px; object-fit: cover; cursor: pointer;">
+        <div class="image-info mt-2">
+          <small class="text-muted d-block">${image.public_id.split('/').pop()}</small>
+          <small class="text-muted">${image.width}x${image.height}</small>
+        </div>
+      </div>
+    `;
+    
+    grid.appendChild(col);
+  });
+}
+
+// Chọn ảnh
+function selectImage(publicId, url, width, height, format) {
+  currentImageData = { publicId, url, width, height, format };
+  
+  // Highlight ảnh được chọn
+  document.querySelectorAll('.image-item').forEach(item => {
+    item.classList.remove('selected');
+  });
+  event.currentTarget.classList.add('selected');
+  
+  // Cập nhật nút chọn
+  document.querySelector('#cloudinaryImageModal .btn-success').disabled = false;
+}
+
+// Xem trước ảnh
+function previewImage(publicId, url, width, height, format) {
+  document.getElementById('previewImage').src = url;
+  document.getElementById('previewPublicId').textContent = publicId;
+  document.getElementById('previewDimensions').textContent = `${width}x${height}`;
+  document.getElementById('previewFormat').textContent = format.toUpperCase();
+  
+  currentImageData = { publicId, url, width, height, format };
+  $('#imagePreviewModal').modal('show');
+}
+
+// Chọn ảnh từ preview
+function selectPreviewImage() {
+  $('#imagePreviewModal').modal('hide');
+  selectCurrentImage();
+}
+
+// Chọn ảnh hiện tại
+function selectCurrentImage() {
+  if (!currentImageData) {
+    showError('Vui lòng chọn một ảnh');
+    return;
+  }
+  
+  // Cập nhật form
+  const selectedInput = document.querySelector('input[name="selected_image"]');
+  if (selectedInput) {
+    selectedInput.value = currentImageData.publicId;
+    console.log('✅ Đã cập nhật selected_image:', currentImageData.publicId);
+  }
+  
+  // Cập nhật preview
+  const previewImg = document.querySelector('img[data-role="preview"]');
+  if (previewImg) {
+    previewImg.src = currentImageData.url;
+    console.log('✅ Đã cập nhật preview image:', currentImageData.url);
+  }
+  
+  // Cập nhật filename
+  const filename = document.querySelector('p[data-role="filename"]');
+  if (filename) {
+    const filenameText = currentImageData.publicId.split('/').pop();
+    filename.textContent = filenameText;
+    console.log('✅ Đã cập nhật filename:', filenameText);
+  }
+  
+  // Đóng modal
+  $('#cloudinaryImageModal').modal('hide');
+  
+  // Reset
+  currentImageData = null;
+  document.querySelectorAll('.image-item').forEach(item => {
+    item.classList.remove('selected');
+  });
+  
+  console.log('✅ Hoàn thành chọn ảnh từ Cloudinary');
+}
+
+// Thay đổi trang
+function changePage(delta) {
+  const newPage = currentPage + delta;
+  if (newPage >= 1 && newPage <= totalPages) {
+    loadCloudinaryImages(newPage);
+  }
+}
+
+// Cập nhật pagination
+function updatePagination() {
+  const pagination = document.getElementById('pagination');
+  const currentPageSpan = document.getElementById('currentPage');
+  const totalPagesSpan = document.getElementById('totalPages');
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  
+  if (totalPages <= 1) {
+    pagination.style.display = 'none';
+    return;
+  }
+  
+  pagination.style.display = 'block';
+  currentPageSpan.textContent = currentPage;
+  totalPagesSpan.textContent = totalPages;
+  
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+}
+
+// Hiển thị lỗi
+function showError(message) {
+  // Có thể sử dụng toastr hoặc alert đơn giản
+  alert(message);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Filter change
+  document.getElementById('folderFilter').addEventListener('change', function() {
+    currentFolder = this.value;
+    loadCloudinaryImages(1);
+  });
+  
+  // Search
+  let searchTimeout;
+  document.getElementById('searchImages').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      loadCloudinaryImages(1);
+    }, 500);
+  });
+  
+  // Modal events
+  $('#cloudinaryImageModal').on('show.bs.modal', function() {
+    document.querySelector('#cloudinaryImageModal .btn-success').disabled = true;
+  });
+  
+  $('#cloudinaryImageModal').on('hidden.bs.modal', function() {
+    currentImageData = null;
+    document.querySelectorAll('.image-item').forEach(item => {
+      item.classList.remove('selected');
+    });
+  });
+});
+</script>
+
+<style>
+.image-item {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px;
+  transition: all 0.3s ease;
+}
+
+.image-item:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.image-item.selected {
+  border-color: #28a745;
+  background-color: #f8fff9;
+}
+
+.image-item img {
+  transition: all 0.3s ease;
+}
+
+.image-item:hover img {
+  transform: scale(1.05);
+}
+
+.image-info {
+  text-align: center;
+}
+
+#cloudinaryImageModal .modal-xl {
+  max-width: 90%;
+}
+
+#cloudinaryImageModal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+#loadingSpinner {
+  padding: 40px;
+}
+
+#loadingSpinner i {
+  color: #007bff;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

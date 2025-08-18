@@ -2,6 +2,7 @@ const Course = require("../../models/khoahoc");
 const Lessons = require("../../models/baihoc");
 const fs = require("fs");
 const path = require("path");
+const cloudinaryService = require("../../services/cloudinaryService");
 module.exports = {
   // Trang danh sách khóa học với phân trang & tìm kiếm
   async index(req, res) {
@@ -27,10 +28,7 @@ module.exports = {
 
   // Trang form thêm khóa học
   showAddForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
-    res.render("add-khoahoc", { title: "Thêm khóa học", uploadedImages });
+    res.render("add-khoahoc", { title: "Thêm khóa học" });
   },
 
   // Xử lý thêm khóa học
@@ -43,18 +41,23 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-
         selected_image,
-        old_thumbnail_url,
       } = req.body;
 
       let thumbnail_url;
       if (req.file) {
-        thumbnail_url = "/images/" + req.file.filename;
+        // Upload lên Cloudinary - CHỈ LƯU TRÊN CLOUDINARY
+        const result = await cloudinaryService.uploadImage(req.file.path, 'khoahoc-thumbnails');
+        if (result.success) {
+          thumbnail_url = result.public_id; // Lưu public_id thay vì URL
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
         thumbnail_url = selected_image;
       } else {
-        thumbnail_url = old_thumbnail_url;
+        thumbnail_url = null; // Không có ảnh
       }
       const newCourse = {
         title,
@@ -76,9 +79,6 @@ module.exports = {
 
   // Trang form chỉnh sửa khóa học
   async showEditForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
     const id = req.params.id;
     const course = await Course.getById(id);
     if (!course) {
@@ -97,8 +97,7 @@ module.exports = {
     res.render("edit-khoahoc", {
       title: "Chỉnh sửa khóa học",
       course,
-      uploadedImages,
-      groupedLessons,
+      groupedLessons
     });
   },
 
@@ -113,8 +112,6 @@ module.exports = {
         estimated_duration,
         is_free,
         price,
-
-        old_thumbnail_url,
         selected_image,
       } = req.body;
 
@@ -122,6 +119,9 @@ module.exports = {
       if (isDuplicate) {
         return res.send("Khóa học với tiêu đề này đã tồn tại.");
       }
+
+      // Lấy thông tin khóa học cũ để xóa file
+      const oldCourse = await Course.getById(id);
 
       const dataUpdate = {
         title,
@@ -133,11 +133,54 @@ module.exports = {
       };
 
       if (req.file) {
-        dataUpdate.thumbnail_url = "/images/" + req.file.filename;
+        // Upload lên Cloudinary - CHỈ LƯU TRÊN CLOUDINARY
+        const result = await cloudinaryService.uploadImage(req.file.path, 'khoahoc-thumbnails');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có
+          if (oldCourse && oldCourse.thumbnail_url) {
+            try {
+              // Sử dụng helper để trích xuất public_id
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(oldCourse.thumbnail_url);
+              
+              // Kiểm tra xem có phải là public_id hợp lệ không
+              if (oldPublicId) {
+                const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+                if (!deleteResult.success) {
+                  console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+                }
+              }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa file cũ:', deleteError);
+            }
+          }
+          dataUpdate.thumbnail_url = result.public_id; // Lưu public_id thay vì URL
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (oldCourse && oldCourse.thumbnail_url && oldCourse.thumbnail_url !== selected_image && selected_image) {
+          try {
+            // Sử dụng helper để trích xuất public_id
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const oldPublicId = cloudinaryHelper.extractPublicId(oldCourse.thumbnail_url);
+            
+            // Kiểm tra xem có phải là public_id hợp lệ không
+            if (oldPublicId) {
+                          const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+            if (!deleteResult.success) {
+              console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+            }
+          }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file cũ:', deleteError);
+          }
+        }
         dataUpdate.thumbnail_url = selected_image;
       } else {
-        dataUpdate.thumbnail_url = old_thumbnail_url;
+        dataUpdate.thumbnail_url = oldCourse.thumbnail_url;
       }
 
       await Course.update(id, dataUpdate);
@@ -153,7 +196,7 @@ module.exports = {
     const id = req.params.id;
     try {
       await Course.delete(id);
-      console.log("Đã xóa khóa học ID:", id);
+
       res.redirect("/admin/khoahoc/danhsach");
     } catch (err) {
       console.error("Lỗi xóa:", err);

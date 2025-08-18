@@ -4,11 +4,13 @@ const baitapCtrl = require("../../app/controllers/api/baitap.controller");
 const tailieuCtrl = require("../../app/controllers/api/tailieu.controller");
 const userCtrl = require("../../app/controllers/api/user.controllers");
 const SettingsCtrl = require("../../app/controllers/api/setting.controller");
-const upload = require("../../middlewares/upload");
+const { uploadProfilePicture } = require("../../middlewares/upload");
 const khoahoc = require("../api/khoahoc");
 const baihoc = require("../api/baihoc");
 const vocabulary = require("../api/vocabulary");
 const auth = require("../api/auth");
+const games = require("../api/games");
+const hsk = require("../api/hsk");
 const geminiCtrl = require("../../app/controllers/api/gemini.controller");
 // router baor vệ check đăng nhập thông qua cái này mới chạy
 const authenticateTokenUser = require("../../middlewares/authAPI");
@@ -17,6 +19,8 @@ router.use("/auth", auth);
 router.use("/khoahoc", khoahoc);
 router.use("/baihoc", baihoc);
 router.use("/vocabulary", vocabulary);
+router.use("/games", games);
+router.use("/hsk", hsk);
 router.get("/tailieu/", tailieuCtrl.index);
 router.get("/tailieu/:id", tailieuCtrl.getID);
 router.get("/baitap/", baitapCtrl.index);
@@ -63,7 +67,7 @@ router.post("/explain-context",geminiCtrl.explaincontext
 //những router  trong trang profile người dùng
 router.post("/user-profile",userCtrl.getprofile
 );
-router.post("/user-profile-avatar",authenticateTokenUser, upload.single('profilePicture'), userCtrl.userprofileavatar
+router.post("/user-profile-avatar",authenticateTokenUser, uploadProfilePicture, userCtrl.userprofileavatar
 );
 router.patch("/user-profile-fullname",authenticateTokenUser, userCtrl.userprofilefullname
 );

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');; // phương thức mã hóa sản phẩm
 const saltRounds = 10; //số vòng mã hóa sản phẩm vòng càng cao thì chạy chậm
 const fs = require("fs");
 const path = require("path");
+const cloudinaryService = require("../../services/cloudinaryService");
 module.exports = {
   // Trang danh sách khóa học với phân trang & tìm kiếm
   async index(req, res) {
@@ -25,10 +26,7 @@ module.exports = {
 
   // Trang form thêm user
   async showAddForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
-    res.render("add-user", { title: "Thêm mới người dùng", uploadedImages });
+    res.render("add-user", { title: "Thêm mới người dùng" });
   },
 
   // Xử lý thêm user
@@ -41,7 +39,6 @@ module.exports = {
         account_status,
         subscription_type,
         selected_image,
-        old_thumbnail_url,
       } = req.body;
       // mã hóa mật khẩu trước khi thêm
       const password_hash = await bcrypt.hash(
@@ -50,11 +47,19 @@ module.exports = {
       );
       let profile_picture;
       if (req.file) {
-        profile_picture = "/images/" + req.file.filename;
+        // Upload lên Cloudinary - CHỈ LƯU TRÊN CLOUDINARY
+        const result = await cloudinaryService.uploadImage(req.file.path, 'user-avatars');
+        if (result.success) {
+
+          profile_picture = result.public_id; // Lưu public_id thay vì URL
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
         profile_picture = selected_image;
       } else {
-        profile_picture = old_thumbnail_url;
+        profile_picture = null; // Không có ảnh
       } // ảnh mặc định
       const subscription_expiry = req.body.subscription_expiry || null;
       const user = {
@@ -86,8 +91,6 @@ module.exports = {
 
   // Trang form chỉnh sửa user
   async showEditForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"));
     const id = req.params.id;
     const user = await userModel.getById(id);
     if (!user) {
@@ -95,8 +98,7 @@ module.exports = {
     }
     res.render("edit-user", {
       title: "Sửa thông tin người dùng",
-      user,
-      uploadedImages,
+      user
     });
   },
   // Trang form update user
@@ -111,7 +113,6 @@ module.exports = {
         account_status,
         subscription_type,
         selected_image,
-        old_thumbnail_url,
       } = req.body;
       const subscription_expiry = req.body.subscription_expiry || null;
       const isDuplicate = await userModel.checkDuplicateUsernameOrEmailUpdate(
@@ -124,6 +125,10 @@ module.exports = {
           "Tên đăng nhập hoặc email đã tồn tại bởi người dùng khác."
         );
       }
+      
+      // Lấy thông tin user cũ để xóa file
+      const oldUser = await userModel.getById(id);
+      
       const dataUpdate = {
         username,
         email,
@@ -137,11 +142,54 @@ module.exports = {
         dataUpdate.password_hash = await bcrypt.hash(password_hash, saltRounds);
       }
       if (req.file) {
-        dataUpdate.profile_picture = "/images/" + req.file.filename;
+        // Upload lên Cloudinary - CHỈ LƯU TRÊN CLOUDINARY
+        const result = await cloudinaryService.uploadImage(req.file.path, 'user-avatars');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có
+          if (oldUser && oldUser.profile_picture) {
+            try {
+              // Sử dụng helper để trích xuất public_id
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(oldUser.profile_picture);
+              
+              // Kiểm tra xem có phải là public_id hợp lệ không
+              if (oldPublicId) {
+                              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
+            }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file cũ:', deleteError);
+          }
+        }
+          dataUpdate.profile_picture = result.public_id; // Lưu public_id thay vì URL
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (oldUser && oldUser.profile_picture && oldUser.profile_picture !== selected_image && selected_image) {
+          try {
+            // Sử dụng helper để trích xuất public_id
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const oldPublicId = cloudinaryHelper.extractPublicId(oldUser.profile_picture);
+            
+            // Kiểm tra xem có phải là public_id hợp lệ không
+            if (oldPublicId) {
+                          const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+            if (!deleteResult.success) {
+              console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+            }
+          }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file cũ:', deleteError);
+          }
+        }
         dataUpdate.profile_picture = selected_image;
       } else {
-        dataUpdate.profile_picture = old_thumbnail_url;
+        dataUpdate.profile_picture = oldUser.profile_picture;
       }
       await userModel.update(id, dataUpdate);
       res.redirect("/admin/user/danhsach");
@@ -156,7 +204,7 @@ module.exports = {
     const id = req.params.id; //lấy req id trên urlurl
     try {
       await userModel.delete(id); //gọi model xử lí
-      console.log("Đã xóa bài hoc ID:", id);
+
       res.redirect("/admin/user/danhsach");
     } catch (err) {
       console.error("Lỗi xóa:", err);

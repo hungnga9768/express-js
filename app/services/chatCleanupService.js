@@ -18,9 +18,6 @@ async function deleteOldChatSessions() {
         `;
 
     const result = await query(deleteQuery);
-    console.log(
-      `[ChatCleanupService] Đã xóa ${result.affectedRows} bản ghi cũ.`
-    );
   } catch (error) {
     console.error("[ChatCleanupService] Lỗi khi xóa phiên chat cũ:", error);
   }

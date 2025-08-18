@@ -73,7 +73,19 @@
                   <img
                     data-group="avatar"
                     data-role="preview"
-                    src="<%= admin.avatar ? admin.avatar : '/dist/img/avatar4.png' %>"
+                    <% 
+                  let avatarUrl = '/dist/img/avatar4.png';
+                  if (admin.avatar) {
+                    if (admin.avatar.includes('cloudinary.com')) {
+                      avatarUrl = admin.avatar;
+                    } else if (!admin.avatar.startsWith('/')) {
+                      avatarUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${admin.avatar}`;
+                    } else {
+                      avatarUrl = admin.avatar;
+                    }
+                  }
+                %>
+                src="<%= avatarUrl %>"
                     width="150"
                     class="avatar"
                   />
@@ -97,14 +109,14 @@
                     onchange="showImage(event, this)"
                   />
 
-                  <!-- Nút chọn từ thư viện -->
+                  <!-- Nút chọn từ thư viện Cloudinary -->
                   <button
                     type="button"
                     class="btn btn-secondary mt-2"
                     data-group="avatar"
-                    onclick="openImageModal(this)"
+                    onclick="openCloudinaryImageModal()"
                   >
-                    Chọn từ thư viện
+                    <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
                   </button>
                   <input
                     type="hidden"

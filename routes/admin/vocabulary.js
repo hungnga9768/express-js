@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const vocabularyCtrl = require("../../app/controllers/admin/vocabulary.controller");
 const authenticateToken = require("../../middlewares/authenticateToken");
+const { uploadAudio } = require("../../middlewares/upload");
 const multer = require("multer");
 const path = require("path");
 
@@ -35,9 +36,9 @@ const upload = multer({
 // Routes quản lý từ vựng
 router.get("/", vocabularyCtrl.index);
 router.get("/add", vocabularyCtrl.createForm);
-router.post("/create", vocabularyCtrl.create);
+router.post("/create", uploadAudio, vocabularyCtrl.create);
 router.get("/edit/:id", vocabularyCtrl.editForm);
-router.put("/update/:id", vocabularyCtrl.update);
+router.put("/update/:id", uploadAudio, vocabularyCtrl.update);
 router.delete("/delete/:id", vocabularyCtrl.delete);
 
 // Routes import/export (đặt TRƯỚC route tham số)

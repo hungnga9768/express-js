@@ -1,6 +1,7 @@
 const chatModel = require("../../models/settingchatai");
 const fs = require("fs");
 const path = require("path");
+const cloudinaryService = require("../../services/cloudinaryService");
 module.exports = {
   async index(req, res) {
     const search = req.query.search || "";
@@ -20,13 +21,9 @@ module.exports = {
     });
   },
   async showAddForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
     res.render("add-chatbot", {
       title: "Thêm mới trợ lý AI",
-      message: "",
-      uploadedImages,
+      message: ""
     });
   },
   // Xử lý thêm khóa học
@@ -44,8 +41,47 @@ module.exports = {
       const is_active = req.body.is_active === "1" ? 1 : 0;
       let avatar_url;
       if (req.file) {
-        avatar_url = "/images/" + req.file.filename;
+        avatar_url = await (async () => {
+        const result = await cloudinaryService.uploadImage(req.file.path, 'chatbot-avatars');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có (khi update)
+          if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
+            try {
+              // Sử dụng helper để trích xuất public_id chính xác
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(old_thumbnail_url);
+              
+              console.log('🔍 Thông tin xóa file cũ chatbot (create):');
+              console.log('   Avatar cũ:', old_thumbnail_url);
+              console.log('   Public ID để xóa:', oldPublicId);
+              
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (deleteResult.success) {
+                console.log('✅ Đã xóa file cũ trên Cloudinary:', oldPublicId);
+              } else {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa file cũ:', deleteError);
+            }
+          }
+          return result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
+      })();
       } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
+          try {
+            const oldPublicId = old_thumbnail_url.split('/').pop().split('.')[0];
+            await cloudinaryService.deleteFile(oldPublicId);
+            console.log('Đã xóa file cũ trên Cloudinary:', oldPublicId);
+          } catch (deleteError) {
+            console.error('Lỗi khi xóa file cũ:', deleteError);
+          }
+        }
         avatar_url = selected_image;
       } else {
         avatar_url = old_thumbnail_url;
@@ -67,9 +103,6 @@ module.exports = {
     }
   },
   async showEditForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
     const id = req.params.id;
     const chat = await chatModel.getById(id);
     if (!chat) {
@@ -77,8 +110,7 @@ module.exports = {
     }
     res.render("edit-settingchatai", {
       title: "Chỉnh sửa trợ lý AI",
-      chat,
-      uploadedImages,
+      chat
     });
   },
   async update(req, res) {
@@ -97,10 +129,52 @@ module.exports = {
       if (checktitle) {
         return res.send(`Tên ${name} đã bị trùng `);
       }
+      
+      // Lấy thông tin chatbot cũ để xóa file
+      const oldChatbot = await chatModel.getById(id);
       let avatar_url;
       if (req.file) {
-        avatar_url = "/images/" + req.file.filename;
+        const result = await cloudinaryService.uploadImage(req.file.path, 'chatbot-avatars');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có
+          if (oldChatbot && oldChatbot.avatar_url) {
+            try {
+              // Sử dụng helper để trích xuất public_id chính xác
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(oldChatbot.avatar_url);
+              
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa file cũ:', deleteError);
+            }
+          }
+          avatar_url = result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (oldChatbot && oldChatbot.avatar_url && oldChatbot.avatar_url !== selected_image && selected_image) {
+          try {
+            // Sử dụng helper để trích xuất public_id chính xác
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const oldPublicId = cloudinaryHelper.extractPublicId(oldChatbot.avatar_url);
+            
+                          // Kiểm tra xem có phải là public_id hợp lệ không
+              if (oldPublicId) {
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
+            }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file cũ:', deleteError);
+          }
+        }
         avatar_url = selected_image;
       } else {
         avatar_url = old_thumbnail_url;

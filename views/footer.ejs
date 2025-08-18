@@ -77,36 +77,8 @@ $(document).ready(function() {
 
   let currentGroup = ""; // Nhóm đang thao tác
 
-  function openImageModal(button) {
-    currentGroup = button.getAttribute("data-group");
-    document.getElementById("imageModal").style.display = "block";
-  }
-
-  function closeImageModal() {
-    document.getElementById("imageModal").style.display = "none";
-  }
-
-  function selectImageFromModal(src, imgElem) {
-    // Bỏ chọn ảnh cũ
-    document.querySelectorAll("#imageGallery img").forEach((img) => {
-      img.style.borderColor = "transparent";
-    });
-
-    // Đánh dấu ảnh được chọn
-    imgElem.style.borderColor = "#007bff";
-
-    // Cập nhật ảnh xem trước, tên file
-    const preview = document.querySelector(`[data-group="${currentGroup}"][data-role="preview"]`);
-    const filename = document.querySelector(`[data-group="${currentGroup}"][data-role="filename"]`);
-    const fileInput = document.querySelector(`input[type="file"][data-group="${currentGroup}"]`);
-    const selectedInput = document.querySelector(`input[data-group="${currentGroup}"][data-role="selectedInput"]`);
-    if (preview) preview.src = src;
-    if (filename) filename.textContent = src.split("/").pop();
-    if (fileInput) fileInput.value = ""; // Reset file input nếu đã chọn từ thư viện
-    if (selectedInput) selectedInput.value = src;
-
-    closeImageModal();
-  }
+  // Function này được định nghĩa trong modalimage.ejs
+  // Không cần định nghĩa lại ở đây
 
   function showImage(event, inputElem) {
     const group = inputElem.getAttribute("data-group");

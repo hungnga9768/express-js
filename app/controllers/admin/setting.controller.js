@@ -2,6 +2,7 @@ const Banner = require("../../models/banner");
 const Settings = require("../../models/setting");
 const fs = require("fs");
 const path = require("path");
+const cloudinaryService = require("../../services/cloudinaryService");
 module.exports = {
   // Trang danh sách baitap với phân trang & tìm kiếm
   async index(req, res) {
@@ -26,13 +27,9 @@ module.exports = {
 
   // Trang form thêm tài liệu
   async showAddForm(req, res) {
-    const uploadedImages = fs // lấy danh sách ảnh đã update
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
     res.render("add-banner", {
       title: "Thêm mới banner",
-      message: "",
-      uploadedImages,
+      message: ""
     });
   },
   // Xử lý thêm khóa học
@@ -49,8 +46,38 @@ module.exports = {
       const is_active = req.body.is_active === "1" ? 1 : 0;
       let image_url;
       if (req.file) {
-        image_url = "/images/" + req.file.filename;
+        const result = await cloudinaryService.uploadImage(req.file.path, 'settings-images');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có (khi update)
+          if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
+            try {
+              // Sử dụng helper để trích xuất public_id chính xác
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(old_thumbnail_url);
+              
+                          const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+            if (!deleteResult.success) {
+              console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+            }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa file cũ:', deleteError);
+            }
+          }
+          image_url = result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
+          try {
+            const oldPublicId = old_thumbnail_url.split('/').pop().split('.')[0];
+            await cloudinaryService.deleteFile(oldPublicId);
+          } catch (deleteError) {
+            console.error('Lỗi khi xóa file cũ:', deleteError);
+          }
+        }
         image_url = selected_image;
       } else {
         image_url = old_thumbnail_url;
@@ -74,20 +101,13 @@ module.exports = {
   async showEditForm(req, res) {
     const id = req.params.id;
     const banner = await Banner.getById(id);
-    const fs = require("fs");
-    const path = require("path");
-
-    const uploadedImages = fs
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
 
     if (!banner) {
       return res.render("error", { message: "Không tìm thấy tài liệu" });
     }
     res.render("edit-banner", {
       title: "Chỉnh sửa baner",
-      banner,
-      uploadedImages,
+      banner
     });
   },
   // Xử lý cập nhật tài liệu
@@ -107,15 +127,57 @@ module.exports = {
       if (checktitle) {
         return res.send("Tên tiêu đề đã bị trùng ");
       }
+      
+      // Lấy thông tin banner cũ để xóa file
+      const oldBanner = await Banner.getById(id);
       let image_url;
       if (req.file) {
-        image_url = "/images/" + req.file.filename;
+        const result = await cloudinaryService.uploadImage(req.file.path, 'settings-images');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có
+          if (oldBanner && oldBanner.image_url) {
+            try {
+              // Sử dụng helper để trích xuất public_id chính xác
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(oldBanner.image_url);
+              
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa file cũ:', deleteError);
+            }
+          }
+          image_url = result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (oldBanner && oldBanner.image_url && oldBanner.image_url !== selected_image && selected_image) {
+          try {
+            // Sử dụng helper để trích xuất public_id chính xác
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const oldPublicId = cloudinaryHelper.extractPublicId(oldBanner.image_url);
+            
+                          // Kiểm tra xem có phải là public_id hợp lệ không
+              if (oldPublicId) {
+                          const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+            if (!deleteResult.success) {
+              console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+            }
+          }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file cũ:', deleteError);
+          }
+        }
         image_url = selected_image;
       } else {
         image_url = old_thumbnail_url;
       }
-      console.log(image_url);
+
       const dataUpdate = {
         title,
         description,
@@ -138,7 +200,7 @@ module.exports = {
     const id = req.params.id; //lấy req id trên urlurl
     try {
       await Banner.delete(id); //gọi model xử lí
-      console.log("Đã xóa banner", id);
+
       res.redirect("/admin/setting/banner/danhsach");
     } catch (err) {
       console.error("Lỗi xóa:", err);
@@ -168,20 +230,13 @@ module.exports = {
   async showEditForSettings(req, res) {
     const id = req.params.id;
     const setting = await Settings.getById(id);
-    const fs = require("fs");
-    const path = require("path");
-
-    const uploadedImages = fs
-      .readdirSync(path.join(__dirname, "../../../public/images"))
-      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
 
     if (!setting) {
       return res.render("error", { message: "Không tìm thấy tài liệu" });
     }
     res.render("edit-settings", {
       title: "Chỉnh sửa bố cục website",
-      setting,
-      uploadedImages,
+      setting
     });
   },
   async updateSettings(req, res) {
@@ -194,20 +249,35 @@ module.exports = {
       // Trường hợp là ảnh (logo hoặc favicon)
       if (key === "logo" || key === "favicon") {
         if (req.file) {
-          value = "/images/" + req.file.filename;
-
-          // Nếu có ảnh cũ và khác ảnh mới => xóa ảnh cũ khỏi thư mục public
-          if (
-            old_thumbnail_url &&
-            old_thumbnail_url !== value &&
-            !old_thumbnail_url.startsWith("http")
-          ) {
-            const oldPath = path.join("public", old_thumbnail_url);
-            if (fs.existsSync(oldPath)) {
-              fs.unlinkSync(oldPath);
+          const result = await cloudinaryService.uploadImage(req.file.path, 'settings-images');
+          if (result.success) {
+            value = result.public_id;
+            
+            // Xóa file cũ trên Cloudinary nếu có
+            if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
+              try {
+                const oldPublicId = old_thumbnail_url.split('/').pop().split('.')[0];
+                await cloudinaryService.deleteFile(oldPublicId);
+                console.log('Đã xóa file cũ trên Cloudinary:', oldPublicId);
+              } catch (deleteError) {
+                console.error('Lỗi khi xóa file cũ:', deleteError);
+              }
             }
+          } else {
+            console.error('Lỗi upload lên Cloudinary:', result.error);
+            throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
           }
         } else if (selected_image) {
+          // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+          if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
+            try {
+              const oldPublicId = old_thumbnail_url.split('/').pop().split('.')[0];
+              await cloudinaryService.deleteFile(oldPublicId);
+              console.log('Đã xóa file cũ trên Cloudinary:', oldPublicId);
+            } catch (deleteError) {
+              console.error('Lỗi khi xóa file cũ:', deleteError);
+            }
+          }
           value = selected_image;
         } else if (old_thumbnail_url) {
           value = old_thumbnail_url;

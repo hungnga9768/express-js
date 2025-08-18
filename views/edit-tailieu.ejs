@@ -94,7 +94,15 @@
               <img
                 data-group="uploadImage"
                 data-role="preview"
-                src="<%= document.thumbnail_url ? document.thumbnail_url : '/dist/img/avatar4.png' %>"
+                                    <% 
+                      let docImageUrl = document.thumbnail_url;
+                      if (document.thumbnail_url && !document.thumbnail_url.includes('cloudinary.com') && !document.thumbnail_url.startsWith('/')) {
+                        docImageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${document.thumbnail_url}`;
+                      } else if (!document.thumbnail_url) {
+                        docImageUrl = '/dist/img/avatar4.png';
+                      }
+                    %>
+                    src="<%= docImageUrl %>"
                 width="150"
                 class="thumbnail_url"
               />
@@ -116,14 +124,14 @@
                 onchange="showImage(event, this)"
               />
 
-              <!-- Nút chọn từ thư viện -->
+              <!-- Nút chọn từ thư viện Cloudinary -->
               <button
                 type="button"
                 class="btn btn-secondary mt-2"
                 data-group="uploadImage"
-                onclick="openImageModal(this)"
+                onclick="openCloudinaryImageModal()"
               >
-                Chọn từ thư viện
+                <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
               </button>
               <input
                 type="hidden"
@@ -134,7 +142,17 @@
               <input
                 type="hidden"
                 name="old_thumbnail_url"
-                value="<%= document.thumbnail_url || '/dist/img/avatar4.png' %>"
+                value="<%= document.thumbnail_url || '/dist/img/avatar4.png' %>
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />"
               />
             </div>
              

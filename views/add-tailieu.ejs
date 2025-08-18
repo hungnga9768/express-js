@@ -162,14 +162,14 @@
                 onchange="showImage(event, this)"
               />
 
-              <!-- Nút chọn từ thư viện -->
+              <!-- Nút chọn từ thư viện Cloudinary -->
               <button
                 type="button"
                 class="btn btn-secondary mt-2"
                 data-group="uploadImage"
-                onclick="openImageModal(this)"
+                onclick="openCloudinaryImageModal()"
               >
-                Chọn từ thư viện
+                <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
               </button>
               <input
                 type="hidden"
@@ -182,6 +182,16 @@
                 name="old_thumbnail_url"
                 value="/dist/img/avatar4.png"
               />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
             </div>
             <div class="form-group">
               <label for="is_free">Tài liệu miễn phí?</label>

@@ -1,0 +1,267 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>Quản lý Game</h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li class="active">Game</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <!-- Thông báo thành công/lỗi -->
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="alert alert-success alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <h4><i class="icon fa fa-check"></i> Thành công!</h4>
+        <%= success %>
+      </div>
+    <% } %>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <h4><i class="icon fa fa-ban"></i> Lỗi!</h4>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="box">
+          <div class="box-header with-border">
+            <h3 class="box-title">Danh sách Game</h3>
+            <div class="box-tools pull-right">
+              <a href="/admin/games/add-game" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus"></i> Thêm Game mới
+              </a>
+            </div>
+          </div>
+          
+          <div class="box-body">
+            <!-- Form tìm kiếm -->
+            <form method="GET" class="form-inline mb-3">
+              <div class="form-group">
+                <input type="text" class="form-control" name="search" 
+                       placeholder="Tìm kiếm game..." 
+                       value="<%= typeof search !== 'undefined' ? search : '' %>">
+              </div>
+              <div class="form-group">
+                <select class="form-control" name="gameType">
+                  <option value="">Tất cả loại game</option>
+                  <option value="vocabulary" <%= typeof gameType !== 'undefined' && gameType == 'vocabulary' ? 'selected' : '' %>>Từ vựng</option>
+                  <option value="grammar" <%= typeof gameType !== 'undefined' && gameType == 'grammar' ? 'selected' : '' %>>Ngữ pháp</option>
+                  <option value="listening" <%= typeof gameType !== 'undefined' && gameType == 'listening' ? 'selected' : '' %>>Nghe</option>
+                  <option value="writing" <%= typeof gameType !== 'undefined' && gameType == 'writing' ? 'selected' : '' %>>Viết</option>
+                  <option value="pronunciation" <%= typeof gameType !== 'undefined' && gameType == 'pronunciation' ? 'selected' : '' %>>Phát âm</option>
+                  <option value="image_quiz" <%= typeof gameType !== 'undefined' && gameType == 'image_quiz' ? 'selected' : '' %>>Quiz ảnh</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <select class="form-control" name="difficulty">
+                  <option value="">Tất cả độ khó</option>
+                  <option value="beginner" <%= typeof difficulty !== 'undefined' && difficulty == 'beginner' ? 'selected' : '' %>>Cơ bản</option>
+                  <option value="intermediate" <%= typeof difficulty !== 'undefined' && difficulty == 'intermediate' ? 'selected' : '' %>>Trung bình</option>
+                  <option value="advanced" <%= typeof difficulty !== 'undefined' && difficulty == 'advanced' ? 'selected' : '' %>>Nâng cao</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-info">
+                <i class="fa fa-search"></i> Tìm kiếm
+              </button>
+              <a href="/admin/games" class="btn btn-default">
+                <i class="fa fa-refresh"></i> Làm mới
+              </a>
+            </form>
+
+            <!-- Thống kê -->
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <div class="info-box bg-blue">
+                  <span class="info-box-icon"><i class="fa fa-gamepad"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Tổng Game</span>
+                    <span class="info-box-number"><%= games ? games.length : 0 %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="info-box bg-green">
+                  <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Đang hoạt động</span>
+                    <span class="info-box-number"><%= games ? games.filter(function(g) { return g.is_active; }).length : 0 %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="info-box bg-yellow">
+                  <span class="info-box-icon"><i class="fa fa-language"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Game từ vựng</span>
+                    <span class="info-box-number"><%= games ? games.filter(function(g) { return g.game_type === 'vocabulary'; }).length : 0 %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="info-box bg-red">
+                  <span class="info-box-icon"><i class="fa fa-book"></i></span>
+                  <div class="info-box-content">
+                    <span class="info-box-text">Game ngữ pháp</span>
+                    <span class="info-box-number"><%= games ? games.filter(function(g) { return g.game_type === 'grammar'; }).length : 0 %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bảng danh sách -->
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped">
+                <thead>
+                  <tr>
+                    <th width="5%">ID</th>
+                    <th width="10%">Thumbnail</th>
+                    <th width="20%">Tên Game</th>
+                    <th width="15%">Loại Game</th>
+                    <th width="10%">Độ khó</th>
+                    <th width="15%">Mô tả</th>
+                    <th width="10%">Trạng thái</th>
+                    <th width="15%">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (games && games.length > 0) { %>
+                    <% games.forEach(function(game) { %>
+                      <tr>
+                        <td><%= game.game_id %></td>
+                        <td>
+                          <% if (game.thumbnail_url) { %>
+                            <% 
+                              let gameImageUrl = game.thumbnail_url;
+                              // Nếu là public_id, tạo URL Cloudinary
+                              if (!game.thumbnail_url.includes('cloudinary.com')) {
+                                gameImageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${game.thumbnail_url}`;
+                              }
+                            %>
+                            <img src="<%= gameImageUrl %>" alt="<%= game.name %>" 
+                                 class="img-thumbnail" style="max-width: 60px; max-height: 60px;">
+                          <% } else { %>
+                            <div class="bg-gray" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                              <i class="fa fa-image text-muted"></i>
+                            </div>
+                          <% } %>
+                        </td>
+                        <td>
+                          <strong><%= game.name %></strong>
+                          <br>
+                          <small class="text-muted">Tạo: <%= new Date(game.created_at).toLocaleDateString('vi-VN') %></small>
+                        </td>
+                        <td>
+                          <% 
+                            var gameTypeLabels = {
+                              'vocabulary': 'Từ vựng',
+                              'grammar': 'Ngữ pháp', 
+                              'listening': 'Nghe',
+                              'writing': 'Viết',
+                              'pronunciation': 'Phát âm',
+                              'image_quiz': 'Quiz ảnh'
+                            };
+                          %>
+                          <span class="label label-info"><%= gameTypeLabels[game.game_type] || game.game_type %></span>
+                        </td>
+                        <td>
+                          <% 
+                            var difficultyLabels = {
+                              'beginner': 'Cơ bản',
+                              'intermediate': 'Trung bình',
+                              'advanced': 'Nâng cao'
+                            };
+                            var difficultyClass = 'default';
+                            if (game.difficulty_level === 'beginner') { difficultyClass = 'success'; }
+                            else if (game.difficulty_level === 'intermediate') { difficultyClass = 'warning'; }
+                            else if (game.difficulty_level === 'advanced') { difficultyClass = 'danger'; }
+                          %>
+                          <span class="label label-<%= difficultyClass %>">
+                            <%= difficultyLabels[game.difficulty_level] || game.difficulty_level %>
+                          </span>
+                        </td>
+                        <td>
+                          <% if (game.description) { %>
+                            <%= game.description.length > 50 ? game.description.substring(0, 50) + '...' : game.description %>
+                          <% } else { %>
+                            <span class="text-muted">Chưa có mô tả</span>
+                          <% } %>
+                        </td>
+                        <td>
+                          <% if (game.is_active) { %>
+                            <span class="label label-success">Hoạt động</span>
+                          <% } else { %>
+                            <span class="label label-danger">Tạm dừng</span>
+                          <% } %>
+                        </td>
+                        <td>
+                          <div class="btn-group">
+                            <a href="/admin/games/edit-game/<%= game.game_id %>" 
+                               class="btn btn-primary btn-xs" title="Chỉnh sửa">
+                              <i class="fa fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-danger btn-xs" 
+                                    onclick="deleteGame(<%= game.game_id %>, '<%= game.name %>')" 
+                                    title="Xóa">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="8" class="text-center text-muted">
+                        <i class="fa fa-info-circle"></i> Chưa có game nào được tạo
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Xác nhận xóa</h4>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa game "<strong id="gameName"></strong>"?</p>
+        <p class="text-danger"><i class="fa fa-exclamation-triangle"></i> Hành động này không thể hoàn tác!</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+        <form id="deleteForm" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-danger">Xóa</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function deleteGame(gameId, gameName) {
+  document.getElementById('gameName').textContent = gameName;
+  document.getElementById('deleteForm').action = '/admin/games/delete/' + gameId;
+  $('#deleteModal').modal('show');
+}
+</script>
+
+<%- include('footer')%>

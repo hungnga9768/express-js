@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs'); // phương thức mã hóa sản phẩm
 const saltRounds = 10; //số vòng mã hóa sản phẩm vòng càng cao thì chạy chậm
 const fs = require("fs");
 const path = require("path");
+const cloudinaryService = require("../../services/cloudinaryService");
 require("dotenv").config();
 const passport = require("passport");
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
@@ -102,7 +103,7 @@ module.exports = {
     try {
       const { email, firstName, lastName } = req.body;
       const password_hash = await bcrypt.hash(req.body.password, saltRounds);
-      console.log(email, firstName, lastName);
+
       const user = {
         username: firstName + lastName,
         full_name: firstName + " " + lastName,
@@ -181,32 +182,36 @@ async userprofileavatar (req, res) {
       return res.status(401).json({ message: 'Xác thực người dùng thất bại.' });
     }
 
-    // req.file.filename là tên file multer đã lưu
-    const profilePictureUrl =  "/images/" + req.file.filename;
-    // (Tùy chọn) Xóa ảnh đại diện cũ của người dùng trên server nếu có
-    const currentUser = await userModel.getById(userId); // Lấy thông tin user hiện tại
-    if (currentUser && currentUser.length > 0 && currentUser.profile_picture) {
-      const oldAvatarPath = path.join(__dirname, '..', 'public', currentUser.profile_picture);
-      if (fs.existsSync(oldAvatarPath)) {
-        // Đảm bảo không xóa nhầm thư mục hoặc file mặc định
-        if (!currentUser.profile_picture.includes('default-avatar.png')) { // Ví dụ tên ảnh mặc định
-             try {
-                fs.unlinkSync(oldAvatarPath);
-                console.log('Đã xóa ảnh đại diện cũ:', oldAvatarPath);
-             } catch (unlinkErr) {
-                console.error('Lỗi khi xóa ảnh cũ:', unlinkErr);
-             }
-        }
+    // Lấy thông tin user hiện tại để xóa file cũ
+    const currentUser = await userModel.getById(userId);
+    
+    // Xóa ảnh đại diện cũ trên Cloudinary nếu có (xóa trước khi upload mới)
+    if (currentUser && currentUser.profile_picture && currentUser.profile_picture.includes('cloudinary.com')) {
+      try {
+        const oldPublicId = currentUser.profile_picture.split('/').pop().split('.')[0];
+        await cloudinaryService.deleteFile(oldPublicId);
+
+      } catch (deleteError) {
+        console.error('Lỗi khi xóa ảnh cũ trên Cloudinary:', deleteError);
       }
     }
+    
+    // Upload file mới lên Cloudinary (sử dụng folder chung user-avatars)
+    const result = await cloudinaryService.uploadImage(req.file.path, 'user-avatars');
+    if (result.success) {
+              const profilePictureUrl = result.public_id;
+      
+      // Cập nhật đường dẫn ảnh mới vào database cho user
+      await userModel.updateProfilePicture(userId, profilePictureUrl);
 
-    // Cập nhật đường dẫn ảnh mới vào database cho user
-    await userModel.updateProfilePicture(userId, profilePictureUrl); // Bạn cần tạo hàm này trong model
-
-    res.status(200).json({
-      message: 'Cập nhật ảnh đại diện thành công!',
-      profilePictureUrl: profilePictureUrl
-    });
+      res.status(200).json({
+        message: 'Cập nhật ảnh đại diện thành công!',
+        profilePictureUrl: profilePictureUrl
+      });
+    } else {
+      console.error('Lỗi upload lên Cloudinary:', result.error);
+      throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+    }
 
   } catch (error) {
     console.error('Lỗi khi upload ảnh đại diện:', error);

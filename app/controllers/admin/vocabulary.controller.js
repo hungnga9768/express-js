@@ -3,6 +3,7 @@ const { listItems } = require("../../utils/listItemsAPI");
 const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
+const cloudinaryService = require("../../services/cloudinaryService");
 
 module.exports = {
   // Hiển thị danh sách từ vựng (admin)
@@ -97,6 +98,18 @@ module.exports = {
         });
       }
 
+      // Xử lý upload audio nếu có
+      let audio_url = null;
+      if (req.file) {
+        const result = await cloudinaryService.uploadAudio(req.file.path, 'vocabulary-audio');
+        if (result.success) {
+          audio_url = result.public_id;
+        } else {
+          console.error('Lỗi upload audio lên Cloudinary:', result.error);
+          throw new Error('Không thể upload audio lên Cloudinary: ' + result.error);
+        }
+      }
+
       const vocabData = {
         simplified_chinese,
         traditional_chinese: traditional_chinese || null,
@@ -106,7 +119,8 @@ module.exports = {
         hsk_level: parseInt(hsk_level) || 1,
         example_sentence_chinese: example_sentence_chinese || null,
         example_sentence_pinyin: example_sentence_pinyin || null,
-        example_sentence_english: example_sentence_english || null
+        example_sentence_english: example_sentence_english || null,
+        audio_url
       };
 
       await vocabularyModel.create(vocabData);
@@ -189,6 +203,61 @@ module.exports = {
         });
       }
 
+      // Lấy thông tin từ vựng cũ để xóa audio
+      const oldVocabulary = await vocabularyModel.getById(id);
+      
+      // Xử lý upload audio nếu có
+      let audio_url = null;
+      if (req.file) {
+        const result = await cloudinaryService.uploadAudio(req.file.path, 'vocabulary-audio');
+        if (result.success) {
+                     // Xóa audio cũ trên Cloudinary nếu có
+           if (oldVocabulary && oldVocabulary.audio_url) {
+            try {
+              // Sử dụng helper để trích xuất public_id chính xác
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(oldVocabulary.audio_url);
+              
+              // Kiểm tra xem có phải là public_id hợp lệ không
+              if (oldPublicId) {
+                const deleteResult = await cloudinaryService.deleteFile(oldPublicId, 'video');
+                if (!deleteResult.success) {
+                  console.error('❌ Lỗi khi xóa audio cũ:', deleteResult.error);
+                }
+              }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa audio cũ:', deleteError);
+            }
+          }
+          audio_url = result.public_id;
+        } else {
+          console.error('Lỗi upload audio lên Cloudinary:', result.error);
+          throw new Error('Không thể upload audio lên Cloudinary: ' + result.error);
+        }
+      } else if (selected_audio) {
+                 // Nếu chọn audio từ Cloudinary, xóa audio cũ nếu có
+         if (oldVocabulary && oldVocabulary.audio_url && oldVocabulary.audio_url !== selected_audio && selected_audio) {
+          try {
+            // Sử dụng helper để trích xuất public_id chính xác
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const oldPublicId = cloudinaryHelper.extractPublicId(oldVocabulary.audio_url);
+            
+            // Kiểm tra xem có phải là public_id hợp lệ không
+            if (oldPublicId) {
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId, 'video');
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa audio cũ:', deleteResult.error);
+              }
+            }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa audio cũ:', deleteError);
+          }
+        }
+        audio_url = selected_audio;
+      } else {
+        audio_url = oldVocabulary.audio_url;
+      }
+
       const vocabData = {
         simplified_chinese,
         traditional_chinese: traditional_chinese || null,
@@ -198,7 +267,8 @@ module.exports = {
         hsk_level: parseInt(hsk_level) || 1,
         example_sentence_chinese: example_sentence_chinese || null,
         example_sentence_pinyin: example_sentence_pinyin || null,
-        example_sentence_english: example_sentence_english || null
+        example_sentence_english: example_sentence_english || null,
+        audio_url
       };
 
       const success = await vocabularyModel.update(id, vocabData);

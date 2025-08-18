@@ -38,7 +38,19 @@
                   <img
                     data-group="uploadImage"
                     data-role="preview"
-                    src="<%= setting.value ? setting.value : '/dist/img/avatar4.png' %>"
+                    <% 
+                  let imageUrl = '/dist/img/avatar4.png';
+                  if (setting.value) {
+                    if (setting.value.includes('cloudinary.com')) {
+                      imageUrl = setting.value;
+                    } else if (!setting.value.startsWith('/')) {
+                      imageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${setting.value}`;
+                    } else {
+                      imageUrl = setting.value;
+                    }
+                  }
+                %>
+                src="<%= imageUrl %>"
                     width="150"
                     class="thumbnail_url"
                   />
@@ -63,14 +75,14 @@
                     onchange="showImage(event, this)"
                   />
 
-                  <!-- Nút chọn từ thư viện -->
+                  <!-- Nút chọn từ thư viện Cloudinary -->
                   <button
                     type="button"
                     class="btn btn-secondary mt-2"
                     data-group="uploadImage"
-                    onclick="openImageModal(this)"
+                    onclick="openCloudinaryImageModal()"
                   >
-                    Chọn từ thư viện
+                    <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
                   </button>
                   <input
                     type="hidden"
@@ -81,7 +93,17 @@
                   <input
                     type="hidden"
                     name="old_thumbnail_url"
-                    value="<%= setting.value || '/dist/img/avatar4.png' %>"
+                    value="<%= setting.value || '/dist/img/avatar4.png' %>
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />"
                   />
                    <input  type="hidden" name="key" value="<%= setting.key %>" >
                 </div>

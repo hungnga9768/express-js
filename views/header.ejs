@@ -237,7 +237,13 @@
           <li class="nav-item dropdown user-menu">
             <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
               <img
-                src="<%= user?.avatar %>"
+                <% 
+                  let avatarUrl1 = user?.avatar;
+                  if (user?.avatar && !user.avatar.includes('cloudinary.com') && !user.avatar.startsWith('/')) {
+                    avatarUrl1 = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+                  }
+                %>
+                src="<%= avatarUrl1 %>"
                 class="user-image img-circle elevation-2"
                 alt="User Image"
               />
@@ -247,7 +253,13 @@
               <!-- User image -->
               <li class="user-header bg-primary">
                 <img
-                  src="<%= user?.avatar %>"
+                  <% 
+                    let avatarUrl2 = user?.avatar;
+                    if (user?.avatar && !user.avatar.includes('cloudinary.com') && !user.avatar.startsWith('/')) {
+                      avatarUrl2 = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+                    }
+                  %>
+                  src="<%= avatarUrl2 %>"
                   class="img-circle elevation-2"
                   alt="User Image"
                 />

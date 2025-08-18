@@ -1,0 +1,317 @@
+<%- include('header') %>
+<%- include('aside') %>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Dashboard HSK</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Dashboard</a></li>
+            <li class="breadcrumb-item active">HSK</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="container-fluid">
+      <!-- Flash Messages -->
+      <% if (typeof success_msg !== 'undefined' && success_msg) { %>
+        <div class="alert alert-success alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <h5><i class="icon fas fa-check"></i> Thành công!</h5>
+          <%= success_msg %>
+        </div>
+      <% } %>
+      <% if (typeof error_msg !== 'undefined' && error_msg) { %>
+        <div class="alert alert-danger alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <h5><i class="icon fas fa-ban"></i> Lỗi!</h5>
+          <%= error_msg %>
+        </div>
+      <% } %>
+
+      <!-- Thống kê tổng quan -->
+      <div class="row">
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-info">
+            <div class="inner">
+              <h3><%= statistics.total_tests || 0 %></h3>
+              <p>Tổng số đề thi</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-certificate"></i>
+            </div>
+            <a href="/admin/hsk" class="small-box-footer">
+              Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-success">
+            <div class="inner">
+              <h3><%= statistics.total_questions || 0 %></h3>
+              <p>Tổng số câu hỏi</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-question-circle"></i>
+            </div>
+            <a href="#" class="small-box-footer">
+              Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-warning">
+            <div class="inner">
+              <h3><%= statistics.active_tests || 0 %></h3>
+              <p>Đề thi hoạt động</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-play-circle"></i>
+            </div>
+            <a href="#" class="small-box-footer">
+              Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-danger">
+            <div class="inner">
+              <h3><%= statistics.total_attempts || 0 %></h3>
+              <p>Lượt thi</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <a href="#" class="small-box-footer">
+              Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thống kê theo cấp độ HSK -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-pie"></i> Phân bố theo cấp độ HSK
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="hskLevelChart" style="height: 300px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-bar"></i> Thống kê theo kỹ năng
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="skillTypeChart" style="height: 300px;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Đề thi gần đây -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-clock"></i> Đề thi gần đây
+              </h3>
+              <div class="card-tools">
+                <a href="/admin/hsk" class="btn btn-primary btn-sm">
+                  <i class="fas fa-list"></i> Xem tất cả
+                </a>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>HSK</th>
+                      <th>Tiêu đề</th>
+                      <th>Số câu</th>
+                      <th>Thời gian</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% if (recent_tests && recent_tests.length > 0) { %>
+                      <% recent_tests.forEach(test => { %>
+                        <tr>
+                          <td class="text-center">
+                            <span class="badge badge-secondary"><%= test.test_id %></span>
+                          </td>
+                          <td class="text-center">
+                            <span class="badge badge-info">HSK <%= test.hsk_level %></span>
+                          </td>
+                          <td>
+                            <strong><%= test.title %></strong>
+                            <% if (test.description) { %>
+                              <br><small class="text-muted"><%= test.description.length > 100 ? test.description.substring(0, 100) + '...' : test.description %></small>
+                            <% } %>
+                          </td>
+                          <td class="text-center">
+                            <span class="badge badge-<%= test.total_questions > 0 ? 'success' : 'warning' %>">
+                              <%= test.total_questions || 0 %>
+                            </span>
+                          </td>
+                          <td class="text-center">
+                            <% if (test.time_limit) { %>
+                              <span class="badge badge-info"><%= test.time_limit %> phút</span>
+                            <% } else { %>
+                              <span class="text-muted">-</span>
+                            <% } %>
+                          </td>
+                          <td class="text-center">
+                            <span class="badge badge-<%= test.is_active ? 'success' : 'secondary' %>">
+                              <%= test.is_active ? 'Hoạt động' : 'Không hoạt động' %>
+                            </span>
+                          </td>
+                          <td class="text-center">
+                            <div class="btn-group" role="group">
+                              <a class="btn btn-sm btn-primary" href="/admin/hsk/<%= test.test_id %>/questions" title="Quản lý câu hỏi">
+                                <i class="fas fa-question-circle"></i>
+                              </a>
+                              <a class="btn btn-sm btn-warning" href="/admin/hsk/edit/<%= test.test_id %>" title="Chỉnh sửa">
+                                <i class="fas fa-edit"></i>
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      <% }); %>
+                    <% } else { %>
+                      <tr>
+                        <td colspan="7" class="text-center text-muted">
+                          <i class="fas fa-inbox fa-2x mb-2"></i>
+                          <br>Chưa có đề thi nào
+                          <br><small>Hãy tạo đề thi đầu tiên!</small>
+                        </td>
+                      </tr>
+                    <% } %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thống kê theo thời gian -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-line"></i> Thống kê theo thời gian
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="timeChart" style="height: 300px;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Biểu đồ phân bố theo cấp độ HSK
+  const hskCtx = document.getElementById('hskLevelChart').getContext('2d');
+  new Chart(hskCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'],
+      datasets: [{
+        data: [<%= statistics.hsk_levels ? statistics.hsk_levels.join(',') : '0,0,0,0,0,0' %>],
+        backgroundColor: [
+          '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+
+  // Biểu đồ thống kê theo kỹ năng
+  const skillCtx = document.getElementById('skillTypeChart').getContext('2d');
+  new Chart(skillCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Nghe hiểu', 'Đọc hiểu', 'Viết'],
+      datasets: [{
+        label: 'Số câu hỏi',
+        data: [<%= statistics.skill_types ? statistics.skill_types.join(',') : '0,0,0' %>],
+        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  // Biểu đồ thống kê theo thời gian
+  const timeCtx = document.getElementById('timeChart').getContext('2d');
+  new Chart(timeCtx, {
+    type: 'line',
+    data: {
+      labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+      datasets: [{
+        label: 'Lượt thi',
+        data: [<%= statistics.time_stats ? statistics.time_stats.join(',') : '0,0,0,0,0,0,0' %>],
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+});
+</script>
+
+<%- include('footer') %>

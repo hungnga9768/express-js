@@ -26,10 +26,7 @@ class ChatController {
         );
         if (selectedTopic && selectedTopic.initial_prompt) {
           initialPromptContent = selectedTopic.initial_prompt;
-          console.log(
-            "Initial Prompt từ DB (System Instruction):",
-            initialPromptContent.substring(0, 50) + "..."
-          );
+
         } else {
           console.warn(
             `Không tìm thấy chủ đề hoặc initial_prompt cho internal_name: ${topicInternalName}.`
@@ -186,12 +183,12 @@ Hãy cung cấp 2-3 cách diễn đạt khác cho ý nghĩa của câu "${transl
           is_active: i.is_active,
           avatar_url: i.avatar_url,
         }));
-      console.log(data);
+      
       res
         .status(200)
         .json({ data: data, message: "lấy danh sách chatbot thành công" });
     } catch (err) {
-      console.log(err);
+      
     }
   }
   //get các seesion cho bản chat

@@ -1,0 +1,424 @@
+<%- include('header') %>
+<%- include('aside') %>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Quản lý Kết quả thi HSK</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Kết quả thi HSK</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="container-fluid">
+      <!-- Flash Messages -->
+      <% if (typeof success_msg !== 'undefined' && success_msg) { %>
+        <div class="alert alert-success alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <h5><i class="icon fas fa-check"></i> Thành công!</h5>
+          <%= success_msg %>
+        </div>
+      <% } %>
+      <% if (typeof error_msg !== 'undefined' && error_msg) { %>
+        <div class="alert alert-danger alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <h5><i class="icon fas fa-ban"></i> Lỗi!</h5>
+          <%= error_msg %>
+        </div>
+      <% } %>
+
+      <!-- Bộ lọc tìm kiếm -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-filter"></i> Bộ lọc tìm kiếm
+          </h3>
+        </div>
+        <div class="card-body">
+          <form method="GET" action="/admin/hsk-results">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>User ID</label>
+                  <input type="text" class="form-control" name="userId" value="<%= userId %>" placeholder="Nhập ID user">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Đề thi</label>
+                  <select class="form-control" name="testId">
+                    <option value="">Tất cả đề thi</option>
+                    <!-- Sẽ được populate bằng JavaScript -->
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Trạng thái</label>
+                  <select class="form-control" name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="in_progress" <%= status === 'in_progress' ? 'selected' : '' %>>Đang làm</option>
+                    <option value="submitted" <%= status === 'submitted' ? 'selected' : '' %>>Đã nộp</option>
+                    <option value="graded" <%= status === 'graded' ? 'selected' : '' %>>Đã chấm</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>&nbsp;</label>
+                  <div class="d-flex">
+                    <button type="submit" class="btn btn-primary mr-2">
+                      <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                    <a href="/admin/hsk-results" class="btn btn-secondary">
+                      <i class="fas fa-refresh"></i> Làm mới
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Danh sách kết quả thi -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-list"></i> Danh sách kết quả thi (<%= data.length %> kết quả)
+          </h3>
+          <div class="card-tools">
+            <a href="/admin/hsk-results/export" class="btn btn-success btn-sm">
+              <i class="fas fa-download"></i> Export CSV
+            </a>
+            <a href="/admin/hsk-results/statistics" class="btn btn-info btn-sm">
+              <i class="fas fa-chart-bar"></i> Thống kê
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <% if (data.length === 0) { %>
+            <div class="text-center text-muted py-5">
+              <i class="fas fa-inbox fa-3x mb-3"></i>
+              <h4>Chưa có kết quả thi nào</h4>
+              <p>Kết quả thi sẽ hiển thị ở đây khi user hoàn thành bài thi</p>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Đề thi</th>
+                    <th>HSK Level</th>
+                    <th>Điểm số</th>
+                    <th>Thời gian</th>
+                    <th>Trạng thái</th>
+                    <th>Kết quả</th>
+                    <th>Ngày thi</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% data.forEach(result => { %>
+                    <tr>
+                      <td class="text-center">
+                        <span class="badge badge-secondary"><%= result.result_id %></span>
+                      </td>
+                      <td>
+                        <div class="user-info">
+                          <strong><%= result.username || 'User ' + result.user_id %></strong>
+                          <br><small class="text-muted"><%= result.email || 'Không có email' %></small>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="test-info">
+                          <strong><%= result.test_title || 'Đề thi ' + result.test_id %></strong>
+                          <br><small class="text-muted">ID: <%= result.test_id %></small>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <span class="badge badge-info">HSK <%= result.hsk_level %></span>
+                      </td>
+                      <td>
+                        <div class="score-info">
+                          <div class="row">
+                            <div class="col-4">
+                              <small class="text-muted">Nghe:</small><br>
+                              <span class="badge badge-<%= result.listening_score >= 60 ? 'success' : 'danger' %>">
+                                <%= result.listening_score || 0 %>
+                              </span>
+                            </div>
+                            <div class="col-4">
+                              <small class="text-muted">Đọc:</small><br>
+                              <span class="badge badge-<%= result.reading_score >= 60 ? 'success' : 'danger' %>">
+                                <%= result.reading_score || 0 %>
+                              </span>
+                            </div>
+                            <div class="col-4">
+                              <small class="text-muted">Viết:</small><br>
+                              <span class="badge badge-<%= result.writing_score >= 60 ? 'success' : 'danger' %>">
+                                <%= result.writing_score || 0 %>
+                              </span>
+                            </div>
+                          </div>
+                          <div class="total-score mt-1">
+                            <strong>Tổng: <span class="badge badge-<%= result.total_score >= 180 ? 'success' : 'danger' %>"><%= result.total_score || 0 %></span></strong>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <% if (result.time_spent) { %>
+                          <span class="badge badge-info"><%= Math.round(result.time_spent / 60) %> phút</span>
+                        <% } else { %>
+                          <span class="text-muted">-</span>
+                        <% } %>
+                      </td>
+                      <td class="text-center">
+                        <% if (result.status === 'in_progress') { %>
+                          <span class="badge badge-warning">Đang làm</span>
+                        <% } else if (result.status === 'submitted') { %>
+                          <span class="badge badge-info">Đã nộp</span>
+                        <% } else if (result.status === 'graded') { %>
+                          <span class="badge badge-success">Đã chấm</span>
+                        <% } else { %>
+                          <span class="badge badge-secondary"><%= result.status %></span>
+                        <% } %>
+                      </td>
+                      <td class="text-center">
+                        <% if (result.is_passed) { %>
+                          <span class="badge badge-success">Đạt</span>
+                        <% } else { %>
+                          <span class="badge badge-danger">Không đạt</span>
+                        <% } %>
+                      </td>
+                      <td class="text-center">
+                        <small class="text-muted">
+                          <%= result.submitted_at ? new Date(result.submitted_at).toLocaleDateString('vi-VN') : 'Chưa nộp' %>
+                        </small>
+                      </td>
+                      <td class="text-center">
+                        <div class="btn-group" role="group">
+                          <a class="btn btn-sm btn-primary" href="/admin/hsk-results/<%= result.result_id %>" title="Xem chi tiết">
+                            <i class="fas fa-eye"></i>
+                          </a>
+                          <% if (result.status === 'submitted') { %>
+                            <button class="btn btn-sm btn-warning" onclick="gradeTest(<%= result.result_id %>)" title="Chấm điểm">
+                              <i class="fas fa-check-double"></i>
+                            </button>
+                          <% } %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Phân trang -->
+            <% if (totalPage > 1) { %>
+              <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center">
+                  <% if (Page > 1) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= Page - 1 %>&userId=<%= userId %>&testId=<%= testId %>&status=<%= status %>">
+                        <i class="fas fa-chevron-left"></i> Trước
+                      </a>
+                    </li>
+                  <% } %>
+                  
+                  <% for (let i = Math.max(1, Page - 2); i <= Math.min(totalPage, Page + 2); i++) { %>
+                    <li class="page-item <%= i === Page ? 'active' : '' %>">
+                      <a class="page-link" href="?page=<%= i %>&userId=<%= userId %>&testId=<%= testId %>&status=<%= status %>"><%= i %></a>
+                    </li>
+                  <% } %>
+                  
+                  <% if (Page < totalPage) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= Page + 1 %>&userId=<%= userId %>&testId=<%= testId %>&status=<%= status %>">
+                        Sau <i class="fas fa-chevron-right"></i>
+                      </a>
+                    </li>
+                  <% } %>
+                </ul>
+              </nav>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Modal Chấm điểm -->
+<div class="modal fade" id="gradeModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-check-double"></i> Chấm điểm bài thi
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="gradeContent">
+          <!-- Nội dung sẽ được load bằng JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary" onclick="saveGrades()">Lưu điểm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Load danh sách đề thi cho filter
+document.addEventListener('DOMContentLoaded', function() {
+  loadTestList();
+});
+
+// Load danh sách đề thi
+async function loadTestList() {
+  try {
+    const response = await fetch('/admin/hsk');
+    const html = await response.text();
+    
+    // Parse HTML để lấy danh sách đề thi
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const testRows = doc.querySelectorAll('tbody tr');
+    
+    const testSelect = document.querySelector('select[name="testId"]');
+    const currentTestId = '<%= testId %>';
+    
+    testRows.forEach(row => {
+      const testId = row.querySelector('td:first-child').textContent.trim();
+      const testTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+      
+      const option = document.createElement('option');
+      option.value = testId;
+      option.textContent = testTitle;
+      if (testId === currentTestId) {
+        option.selected = true;
+      }
+      testSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error loading test list:', error);
+  }
+}
+
+// Chấm điểm bài thi
+function gradeTest(resultId) {
+  // Load nội dung chấm điểm
+  fetch(`/admin/hsk-results/${resultId}`)
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('gradeContent').innerHTML = html;
+      $('#gradeModal').modal('show');
+    })
+    .catch(error => {
+      console.error('Error loading grade content:', error);
+      alert('Không thể tải nội dung chấm điểm!');
+    });
+}
+
+// Lưu điểm
+function saveGrades() {
+  // Lấy tất cả điểm từ form
+  const grades = [];
+  const gradeInputs = document.querySelectorAll('input[name^="grade_"]');
+  
+  gradeInputs.forEach(input => {
+    const questionId = input.name.replace('grade_', '');
+    const score = parseInt(input.value) || 0;
+    const feedback = document.querySelector(`textarea[name="feedback_${questionId}"]`)?.value || '';
+    
+    grades.push({
+      questionId,
+      score,
+      feedback
+    });
+  });
+  
+  // Gửi điểm lên server
+  const resultId = document.querySelector('input[name="result_id"]')?.value;
+  if (!resultId) {
+    alert('Không tìm thấy ID kết quả thi!');
+    return;
+  }
+  
+  // Gửi từng câu hỏi
+  Promise.all(grades.map(grade => 
+    fetch(`/admin/hsk-results/${resultId}/questions/${grade.questionId}/grade`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `score=${grade.score}&feedback=${encodeURIComponent(grade.feedback)}`
+    })
+  ))
+  .then(responses => {
+    const allSuccess = responses.every(response => response.ok);
+    if (allSuccess) {
+      alert('Chấm điểm thành công!');
+      $('#gradeModal').modal('hide');
+      location.reload();
+    } else {
+      alert('Có lỗi xảy ra khi chấm điểm!');
+    }
+  })
+  .catch(error => {
+    console.error('Error saving grades:', error);
+    alert('Có lỗi xảy ra khi chấm điểm!');
+  });
+}
+</script>
+
+<style>
+.user-info, .test-info {
+  line-height: 1.2;
+}
+
+.score-info .row {
+  margin: 0;
+}
+
+.score-info .col-4 {
+  padding: 0 2px;
+}
+
+.total-score {
+  text-align: center;
+  border-top: 1px solid #dee2e6;
+  padding-top: 5px;
+}
+
+.btn-group .btn {
+  margin: 0 1px;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.badge {
+  font-size: 0.8em;
+}
+</style>
+
+<%- include('footer') %>

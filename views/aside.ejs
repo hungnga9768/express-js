@@ -16,7 +16,19 @@
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
       <div class="image">
         <img
-          src="<%= typeof user !== 'undefined' && user.avatar ? user.avatar : '/dist/img/avatar4.png' %>"
+          <% 
+          let avatarUrl = '/dist/img/avatar4.png';
+          if (typeof user !== 'undefined' && user.avatar) {
+            if (user.avatar.includes('cloudinary.com')) {
+              avatarUrl = user.avatar;
+            } else if (!user.avatar.startsWith('/')) {
+              avatarUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+            } else {
+              avatarUrl = user.avatar;
+            }
+          }
+        %>
+        src="<%= avatarUrl %>"
           class="img-circle elevation-2"
           alt="User Image"
         />
@@ -109,6 +121,31 @@
           </ul>
         </li>
 
+        <!-- Quản lý Game -->
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-gamepad"></i>
+            <p>
+              Quản lý Game
+              <i class="fas fa-angle-left right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="/admin/games" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Danh sách Game</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/games/add-game" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Thêm Game mới</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
         <!-- Quản lý từ vựng - MỚI THÊM -->
         <li class="nav-item">
           <a href="#" class="nav-link">
@@ -176,6 +213,12 @@
         </a>
         <ul class="nav nav-treeview">
           <li class="nav-item">
+            <a href="/admin/hsk/dashboard" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Dashboard HSK</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/hsk" class="nav-link">
               <i class="far fa-circle nav-icon"></i>
               <p>Danh sách đề HSK</p>
@@ -187,6 +230,13 @@
               <p>Thêm đề HSK</p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="/admin/hsk-results" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Kết quả thi</p>
+            </a>
+          </li>
+
         </ul>
       </li>
         <!-- Quản lý người dùng -->

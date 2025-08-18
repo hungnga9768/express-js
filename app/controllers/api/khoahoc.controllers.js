@@ -1,5 +1,6 @@
 const Course = require("../../models/khoahoc");
 const { listItems } = require("../../utils/listItemsAPI");
+const cloudinaryService = require("../../services/cloudinaryService");
 
 module.exports = {
   async index(req, res) {
@@ -22,7 +23,13 @@ module.exports = {
         price,
       } = req.body;
 
-      const thumbnail_url = "/images/" + req.file.filename;
+      const result = await cloudinaryService.uploadImage(req.file.path, 'khoahoc-thumbnails');
+      if (result.success) {
+        const thumbnail_url = result.public_id;
+      } else {
+        console.error('Lỗi upload lên Cloudinary:', result.error);
+        throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+      }
 
       const newCourse = {
         title,
@@ -80,7 +87,25 @@ module.exports = {
       };
 
       if (req.file) {
-        dataUpdate.thumbnail_url = "/images/" + req.file.filename;
+        // Lấy thông tin khóa học cũ để xóa file
+        const oldCourse = await Course.getById(id);
+        if (oldCourse && oldCourse.thumbnail_url && oldCourse.thumbnail_url.includes('cloudinary.com')) {
+          try {
+            const oldPublicId = oldCourse.thumbnail_url.split('/').pop().split('.')[0];
+            await cloudinaryService.deleteFile(oldPublicId);
+    
+          } catch (deleteError) {
+            console.error('Lỗi khi xóa file cũ:', deleteError);
+          }
+        }
+        
+        const result = await cloudinaryService.uploadImage(req.file.path, 'khoahoc-thumbnails');
+        if (result.success) {
+          dataUpdate.thumbnail_url = result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       }
 
       await Course.update(id, dataUpdate);
@@ -96,7 +121,7 @@ module.exports = {
     const id = req.params.id;
     try {
       await Course.delete(id);
-      console.log("Đã xóa khóa học ID:", id);
+
       res.redirect("/admin/khoahoc/danhsach");
     } catch (err) {
       console.error("Lỗi xóa:", err);

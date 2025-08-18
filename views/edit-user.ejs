@@ -83,7 +83,19 @@
                   <img
                     data-group="avatar"
                     data-role="preview"
-                    src="<%= user.profile_picture ? user.profile_picture : '/dist/img/avatar4.png' %>"
+                    <% 
+                  let profileUrl = '/dist/img/avatar4.png';
+                  if (user.profile_picture) {
+                    if (user.profile_picture.includes('cloudinary.com')) {
+                      profileUrl = user.profile_picture;
+                    } else if (!user.profile_picture.startsWith('/')) {
+                      profileUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.profile_picture}`;
+                    } else {
+                      profileUrl = user.profile_picture;
+                    }
+                  }
+                %>
+                src="<%= profileUrl %>"
                     width="150"
                     class="avatar"
                   />
@@ -107,14 +119,14 @@
                     onchange="showImage(event, this)"
                   />
 
-                  <!-- Nút chọn từ thư viện -->
+                  <!-- Nút chọn từ thư viện Cloudinary -->
                   <button
                     type="button"
                     class="btn btn-secondary mt-2"
                     data-group="avatar"
-                    onclick="openImageModal(this)"
+                    onclick="openCloudinaryImageModal()"
                   >
-                    Chọn từ thư viện
+                    <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
                   </button>
                   <input
                     type="hidden"
@@ -123,10 +135,15 @@
                     data-role="selectedInput"
 />
                   <input
-                  type="hidden"
-                  name="old_thumbnail_url"
-                  value="<%= user.profile_picture || '/dist/img/avatar4.png' %>"
-                />
+                    type="hidden"
+                    name="old_thumbnail_url"
+                    value="<%= user.profile_picture || '/dist/img/avatar4.png' %>"
+                  />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
                 </div>
           
               <div class="form-group">

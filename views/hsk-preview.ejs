@@ -1,0 +1,441 @@
+<%- include('header') %>
+<%- include('aside') %>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Preview Đề thi HSK</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/admin/hsk">Đề HSK</a></li>
+            <li class="breadcrumb-item active">Preview - <%= test.title %></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="container-fluid">
+      <!-- Thông tin đề thi -->
+      <div class="card card-primary">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-certificate"></i> <%= test.title %>
+          </h3>
+          <div class="card-tools">
+            <span class="badge badge-info">HSK <%= test.hsk_level %></span>
+            <% if (test.time_limit) { %>
+              <span class="badge badge-warning"><%= test.time_limit %> phút</span>
+            <% } %>
+            <span class="badge badge-success">Điểm đạt: <%= test.passing_score %></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <% if (test.description) { %>
+            <p class="lead"><%= test.description %></p>
+          <% } %>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Trạng thái:</strong> 
+                <% if (test.status === 'draft') { %>
+                  <span class="badge badge-secondary">Nháp</span>
+                <% } else if (test.status === 'public') { %>
+                  <span class="badge badge-success">Công khai</span>
+                <% } else { %>
+                  <span class="badge badge-warning">Đã ẩn</span>
+                <% } %>
+              </p>
+              <p><strong>Trộn câu hỏi:</strong> 
+                <% if (test.randomize_questions) { %>
+                  <span class="badge badge-info">Bật</span>
+                <% } else { %>
+                  <span class="badge badge-secondary">Tắt</span>
+                <% } %>
+              </p>
+          </div>
+            <div class="col-md-6">
+              <p><strong>Tổng số câu:</strong> <span class="badge badge-primary"><%= questions.length %></span></p>
+              <p><strong>Ngày tạo:</strong> <%= new Date(test.created_at || Date.now()).toLocaleDateString('vi-VN') %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <!-- Danh sách câu hỏi -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-question-circle"></i> Danh sách câu hỏi (<%= questions.length %> câu)
+          </h3>
+          <div class="card-tools">
+            <button type="button" class="btn btn-success btn-sm" onclick="publishTest()">
+              <i class="fas fa-globe"></i> Công khai đề thi
+            </button>
+            <a href="/admin/hsk/<%= test.test_id %>/questions" class="btn btn-primary btn-sm">
+              <i class="fas fa-edit"></i> Chỉnh sửa câu hỏi
+            </a>
+            <a href="/admin/hsk" class="btn btn-secondary btn-sm">
+              <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+          </div>
+    </div>
+        <div class="card-body">
+      <% if (questions.length === 0) { %>
+            <div class="text-center text-muted py-5">
+              <i class="fas fa-inbox fa-3x mb-3"></i>
+              <h4>Chưa có câu hỏi nào</h4>
+              <p>Hãy thêm câu hỏi vào đề thi trước khi preview</p>
+              <a href="/admin/hsk/<%= test.test_id %>/questions" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Thêm câu hỏi
+          </a>
+        </div>
+      <% } else { %>
+        <% questions.forEach((question, index) => { %>
+              <div class="question-item mb-4 p-3 border rounded">
+                <div class="question-header d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="mb-0">
+                    <span class="badge badge-secondary mr-2">Câu <%= index + 1 %></span>
+                    <% if (question.skill_type === 'listening') { %>
+                      <span class="badge badge-info"><i class="fas fa-headphones"></i> Nghe hiểu</span>
+                    <% } else if (question.skill_type === 'reading') { %>
+                      <span class="badge badge-success"><i class="fas fa-book-open"></i> Đọc hiểu</span>
+                    <% } else { %>
+                      <span class="badge badge-warning"><i class="fas fa-pen"></i> Viết</span>
+                    <% } %>
+                    
+                    <% if (question.question_type === 'multiple_choice') { %>
+                      <span class="badge badge-primary"><i class="fas fa-dot-circle"></i> Trắc nghiệm</span>
+                    <% } else if (question.question_type === 'fill_blank') { %>
+                      <span class="badge badge-info"><i class="fas fa-square"></i> Điền từ</span>
+                    <% } else if (question.question_type === 'matching') { %>
+                      <span class="badge badge-success"><i class="fas fa-link"></i> Ghép nối</span>
+                    <% } else if (question.question_type === 'true_false') { %>
+                      <span class="badge badge-warning"><i class="fas fa-check"></i> Đúng/Sai</span>
+                    <% } else if (question.question_type === 'ordering') { %>
+                      <span class="badge badge-danger"><i class="fas fa-list-ol"></i> Sắp xếp</span>
+                    <% } else if (question.question_type === 'rewrite') { %>
+                      <span class="badge badge-dark"><i class="fas fa-edit"></i> Viết lại câu</span>
+                    <% } %>
+                  </h5>
+                  <div class="question-meta">
+                    <span class="badge badge-<%= question.difficulty_level === 'easy' ? 'success' : question.difficulty_level === 'medium' ? 'warning' : 'danger' %>">
+                      <%= question.difficulty_level === 'easy' ? 'Dễ' : question.difficulty_level === 'medium' ? 'Trung bình' : 'Khó' %>
+                    </span>
+                    <span class="badge badge-primary"><%= question.points %> điểm</span>
+              </div>
+            </div>
+
+                <!-- Nội dung câu hỏi -->
+                <div class="question-content mb-3">
+                  <p class="question-text"><%= question.question_text %></p>
+              
+                  <!-- Media -->
+              <% if (question.audio_url) { %>
+                    <div class="media-item mb-2">
+                    <strong>Audio:</strong>
+                      <audio controls class="w-100">
+                      <source src="<%= question.audio_url %>" type="audio/mpeg">
+                        Trình duyệt không hỗ trợ audio.
+                    </audio>
+                </div>
+              <% } %>
+              
+              <% if (question.image_url) { %>
+                    <div class="media-item mb-2">
+                      <strong>Hình ảnh:</strong>
+                      <img src="<%= question.image_url %>" class="img-fluid" style="max-width: 300px;" alt="Hình ảnh câu hỏi">
+                </div>
+              <% } %>
+            </div>
+
+                <!-- Tùy chọn theo loại câu hỏi -->
+                <div class="question-options">
+                  <% if (question.question_type === 'multiple_choice' && question.options && question.options.length > 0) { %>
+                    <div class="options-list">
+                      <p><strong>Lựa chọn:</strong></p>
+                      <div class="row">
+                <% question.options.forEach((option, optIndex) => { %>
+                          <div class="col-md-6">
+                            <div class="option-item p-2 border rounded mb-2 <%= option === question.correct_answer ? 'bg-success text-white' : '' %>">
+                              <strong><%= String.fromCharCode(65 + optIndex) %>.</strong> <%= option %>
+                              <% if (option === question.correct_answer) { %>
+                                <i class="fas fa-check ml-2"></i>
+                    <% } %>
+                  </div>
+              </div>
+                        <% }); %>
+                  </div>
+              </div>
+            <% } %>
+            
+                  <% if (question.question_type === 'fill_blank' && question.options && question.options.length > 0) { %>
+                    <div class="fill-blank-options">
+                      <p><strong>Ô trống:</strong></p>
+                      <% question.options.forEach((blank, blankIndex) => { %>
+                        <div class="blank-item mb-2">
+                          <strong>Ô <%= blankIndex + 1 %>:</strong>
+                          <div class="row">
+                            <% blank.forEach((option, optIndex) => { %>
+                              <div class="col-md-3">
+                                <div class="option-item p-2 border rounded <%= option === question.correct_answer.split(',')[blankIndex] ? 'bg-success text-white' : '' %>">
+                                  <%= option %>
+                                  <% if (option === question.correct_answer.split(',')[blankIndex]) { %>
+                                    <i class="fas fa-check ml-2"></i>
+                                  <% } %>
+                </div>
+              </div>
+                            <% }); %>
+                          </div>
+                  </div>
+                      <% }); %>
+              </div>
+            <% } %>
+            
+                  <% if (question.question_type === 'matching' && question.matching_pairs) { %>
+                    <div class="matching-pairs">
+                      <p><strong>Ghép nối:</strong></p>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <p><strong>Bên trái:</strong></p>
+                    <% question.matching_pairs.forEach((pair, index) => { %>
+                            <p><%= pair.left %></p>
+                          <% }); %>
+                      </div>
+                        <div class="col-md-6">
+                          <p><strong>Bên phải:</strong></p>
+                    <% question.matching_pairs.forEach((pair, index) => { %>
+                            <p><%= pair.right %></p>
+                          <% }); %>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+            
+                  <% if (question.question_type === 'ordering' && question.ordering_items) { %>
+                    <div class="ordering-items">
+                      <p><strong>Sắp xếp theo thứ tự đúng:</strong></p>
+                <div class="ordering-list">
+                        <% question.ordering_items.forEach((item, index) => { %>
+                          <div class="ordering-item p-2 border rounded mb-1">
+                            <strong><%= index + 1 %>.</strong> <%= item %>
+                      </div>
+                        <% }); %>
+                </div>
+                  </div>
+                <% } %>
+                  
+                  <% if (question.question_type === 'rewrite' && question.rewrite_instruction) { %>
+                    <div class="rewrite-instruction">
+                      <p><strong>Hướng dẫn viết lại:</strong></p>
+                      <p class="text-muted"><em><%= question.rewrite_instruction %></em></p>
+              </div>
+            <% } %>
+            
+            <% if (question.question_type === 'true_false') { %>
+                    <div class="true-false-options">
+                      <p><strong>Chọn Đúng hoặc Sai:</strong></p>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="option-item p-2 border rounded <%= question.correct_answer === 'true' ? 'bg-success text-white' : '' %>">
+                            <strong>Đúng</strong>
+                  <% if (question.correct_answer === 'true') { %>
+                              <i class="fas fa-check ml-2"></i>
+                  <% } %>
+                </div>
+                  </div>
+                        <div class="col-md-6">
+                          <div class="option-item p-2 border rounded <%= question.correct_answer === 'false' ? 'bg-success text-white' : '' %>">
+                            <strong>Sai</strong>
+                  <% if (question.correct_answer === 'false') { %>
+                              <i class="fas fa-check ml-2"></i>
+                  <% } %>
+                </div>
+              </div>
+                      </div>
+                  </div>
+                <% } %>
+              </div>
+
+                <!-- Giải thích -->
+                <% if (question.explanation) { %>
+                  <div class="question-explanation mt-3 p-2 bg-light rounded">
+                    <strong>Giải thích:</strong>
+                    <p class="mb-0"><%= question.explanation %></p>
+              </div>
+            <% } %>
+          </div>
+        <% }); %>
+      <% } %>
+        </div>
+    </div>
+
+      <!-- Thống kê đề thi -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-pie"></i> Phân bố theo kỹ năng
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="skillChart" style="height: 200px;"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-bar"></i> Phân bố theo độ khó
+              </h3>
+            </div>
+            <div class="card-body">
+              <canvas id="difficultyChart" style="height: 200px;"></canvas>
+            </div>
+          </div>
+      </div>
+    </div>
+    </div>
+  </section>
+  </div>
+  
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Dữ liệu thống kê
+  const skillData = {
+    listening: <%= questions.filter(q => q.skill_type === 'listening').length %>,
+    reading: <%= questions.filter(q => q.skill_type === 'reading').length %>,
+    writing: <%= questions.filter(q => q.skill_type === 'writing').length %>
+  };
+  
+  const difficultyData = {
+    easy: <%= questions.filter(q => q.difficulty_level === 'easy').length %>,
+    medium: <%= questions.filter(q => q.difficulty_level === 'medium').length %>,
+    hard: <%= questions.filter(q => q.difficulty_level === 'hard').length %>
+  };
+
+  // Biểu đồ phân bố kỹ năng
+  const skillCtx = document.getElementById('skillChart').getContext('2d');
+  new Chart(skillCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Nghe hiểu', 'Đọc hiểu', 'Viết'],
+      datasets: [{
+        data: [skillData.listening, skillData.reading, skillData.writing],
+        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+
+  // Biểu đồ phân bố độ khó
+  const difficultyCtx = document.getElementById('difficultyChart').getContext('2d');
+  new Chart(difficultyCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Dễ', 'Trung bình', 'Khó'],
+      datasets: [{
+        label: 'Số câu hỏi',
+        data: [difficultyData.easy, difficultyData.medium, difficultyData.hard],
+        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+});
+
+// Công khai đề thi
+  function publishTest() {
+  if (confirm('Bạn có chắc muốn công khai đề thi này? Đề thi sẽ có thể được truy cập bởi người dùng.')) {
+    // Gửi request cập nhật trạng thái
+      fetch('/admin/hsk/<%= test.test_id %>/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'status=public'
+      })
+      .then(response => {
+        if (response.ok) {
+        alert('Đề thi đã được công khai thành công!');
+          location.reload();
+        } else {
+        alert('Có lỗi xảy ra khi công khai đề thi!');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      alert('Có lỗi xảy ra khi công khai đề thi!');
+      });
+    }
+  }
+  </script>
+
+<style>
+.question-item {
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.question-item:hover {
+  background-color: #e9ecef;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.option-item {
+  transition: all 0.3s ease;
+}
+
+.option-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ordering-item {
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.ordering-item:hover {
+  background-color: #e9ecef;
+}
+
+.question-explanation {
+  border-left: 4px solid #007bff;
+}
+
+.media-item {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 5px;
+}
+</style>
+
+<%- include('footer') %>

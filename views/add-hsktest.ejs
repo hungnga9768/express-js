@@ -18,55 +18,102 @@
   </section>
 
   <section class="content">
-    <div class="box">
-      <div class="box-body card card-primary">
-        <form method="POST" action="<%= test ? ('/admin/hsk/update/' + test.test_id) : '/admin/hsk/create' %>">
-          <div class="form-group">
-            <label>HSK Level</label>
-            <select class="form-control" name="hsk_level" required>
-              <% [1,2,3,4,5,6].forEach(l=>{ %>
-                <option value="<%= l %>" <%= test && test.hsk_level===l?'selected':'' %>>HSK <%= l %></option>
-              <% }) %>
-            </select>
-          </div>
+    <div class="container-fluid">
+      <!-- Flash Messages -->
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert alert-danger alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <h5><i class="icon fas fa-ban"></i> Lỗi!</h5>
+          <%= error %>
+        </div>
+      <% } %>
+
+      <div class="card card-primary">
+        <div class="card-header">
+          <h3 class="card-title"><%= test ? 'Chỉnh sửa đề thi HSK' : 'Tạo đề thi HSK mới' %></h3>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="<%= test ? ('/admin/hsk/update/' + test.test_id) : '/admin/hsk/create' %>">
+                     <div class="row">
+             <div class="col-md-6">
+               <div class="form-group">
+                 <label><strong>HSK Level *</strong></label>
+                 <select class="form-control" name="hsk_level" required>
+                   <% [1,2,3,4,5,6].forEach(l=>{ %>
+                     <option value="<%= l %>" <%= test && test.hsk_level===l?'selected':'' %>>HSK <%= l %></option>
+                   <% }) %>
+                 </select>
+                 <small class="form-text text-muted">Chọn cấp độ HSK cho đề thi</small>
+               </div>
+             </div>
+             <div class="col-md-6">
+               <div class="form-group">
+                 <label><strong>Tiêu đề *</strong></label>
+                 <input class="form-control" name="title" value="<%= test?test.title:'' %>" required placeholder="Ví dụ: Đề thi HSK 1 - Kỳ thi tháng 12/2024">
+                 <small class="form-text text-muted">Tên đề thi để dễ nhận biết</small>
+               </div>
+             </div>
+           </div>
 
           <div class="form-group">
-            <label>Tiêu đề</label>
-            <input class="form-control" name="title" value="<%= test?test.title:'' %>" required>
+            <label><strong>Mô tả</strong></label>
+            <textarea class="form-control" name="description" rows="3" placeholder="Mô tả chi tiết về đề thi, nội dung chính, đối tượng phù hợp..."><%= test? (test.description||'') : '' %></textarea>
+            <small class="form-text text-muted">Mô tả chi tiết để người dùng hiểu rõ về đề thi</small>
           </div>
 
-          <div class="form-group">
-            <label>Mô tả</label>
-            <textarea class="form-control" name="description"><%= test? (test.description||'') : '' %></textarea>
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+                <label><strong>Tổng số câu hỏi</strong></label>
+                <input type="number" class="form-control" name="total_questions" min="0" value="<%= test? (test.total_questions||0) : 0 %>" placeholder="0">
+                <small class="form-text text-muted">Số câu hỏi trong đề thi</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label><strong>Thời gian làm bài (phút)</strong></label>
+                <input type="number" class="form-control" name="time_limit" min="0" value="<%= test? (test.time_limit||'') : '' %>" placeholder="120">
+                <small class="form-text text-muted">Thời gian tối đa cho phép</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label><strong>Điểm đạt</strong></label>
+                <input type="number" class="form-control" name="passing_score" min="0" value="<%= test? (test.passing_score||0) : 0 %>" placeholder="60">
+                <small class="form-text text-muted">Điểm tối thiểu để đạt</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label><strong>Trộn câu hỏi</strong></label>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="randomize_questions" name="randomize_questions" value="1" <%= test && test.randomize_questions ? 'checked' : '' %>>
+                  <label class="custom-control-label" for="randomize_questions">Bật trộn đề</label>
+                </div>
+                <small class="form-text text-muted">Xáo trộn thứ tự câu hỏi</small>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Tổng số câu</label>
-            <input type="number" class="form-control" name="total_questions" min="0" value="<%= test? (test.total_questions||0) : 0 %>">
+          <div class="card-footer">
+            <div class="row">
+              <div class="col-md-6">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-save"></i> <%= test ? 'Cập nhật đề thi' : 'Tạo đề thi' %>
+                </button>
+                <a href="/admin/hsk" class="btn btn-secondary btn-lg">
+                  <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+              </div>
+              <div class="col-md-6 text-right">
+                <% if (test) { %>
+                  <a href="/admin/hsk/<%= test.test_id %>/questions" class="btn btn-info btn-lg">
+                    <i class="fas fa-question-circle"></i> Quản lý câu hỏi
+                  </a>
+                <% } %>
+              </div>
+            </div>
           </div>
-
-          <div class="form-group">
-            <label>Thời gian (phút)</label>
-            <input type="number" class="form-control" name="time_limit" min="0" value="<%= test? (test.time_limit||'') : '' %>">
-          </div>
-
-          <div class="form-group">
-            <label>Điểm đạt</label>
-            <input type="number" class="form-control" name="passing_score" min="0" value="<%= test? (test.passing_score||0) : 0 %>">
-          </div>
-
-          <div class="checkbox">
-            <label>
-              <input type="checkbox" name="randomize_questions" value="1" <%= test && test.randomize_questions ? 'checked' : '' %>>
-              Bật trộn đề
-            </label>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Lưu</button>
-          <a href="/admin/hsk" class="btn btn-default">Quay lại</a>
-          <% if (test) { %>
-            <a href="/admin/hsk/<%= test.test_id %>/questions" class="btn btn-info">Quản lý câu hỏi</a>
-          <% } %>
         </form>
       </div>
     </div>

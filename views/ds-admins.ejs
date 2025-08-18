@@ -69,7 +69,13 @@
               <img
                 alt="Avatar"
                 class="table-avatar"
-                src="<%= ds.avatar %>"
+                                    <% 
+                      let avatarUrl = ds.avatar;
+                      if (ds.avatar && !ds.avatar.includes('cloudinary.com') && !ds.avatar.startsWith('/')) {
+                        avatarUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${ds.avatar}`;
+                      }
+                    %>
+                    src="<%= avatarUrl %>"
                 style="
                   width: 40px;
                   height: 40px;

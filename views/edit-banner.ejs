@@ -59,7 +59,19 @@
               <img
                 data-group="uploadImage"
                 data-role="preview"
-                src="<%= banner.image_url ? banner.image_url : '/dist/img/avatar4.png' %>"
+                <% 
+                  let imageUrl = '/dist/img/avatar4.png';
+                  if (banner.image_url) {
+                    if (banner.image_url.includes('cloudinary.com')) {
+                      imageUrl = banner.image_url;
+                    } else if (!banner.image_url.startsWith('/')) {
+                      imageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${banner.image_url}`;
+                    } else {
+                      imageUrl = banner.image_url;
+                    }
+                  }
+                %>
+                src="<%= imageUrl %>"
                 width="100%"
                 class="image_url"
               />
@@ -81,14 +93,14 @@
                 onchange="showImage(event, this)"
               />
 
-              <!-- Nút chọn từ thư viện -->
+              <!-- Nút chọn từ thư viện Cloudinary -->
               <button
                 type="button"
                 class="btn btn-secondary mt-2"
                 data-group="uploadImage"
-                onclick="openImageModal(this)"
+                onclick="openCloudinaryImageModal()"
               >
-                Chọn từ thư viện
+                <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
               </button>
               <input
                 type="hidden"
@@ -99,7 +111,17 @@
               <input
                 type="hidden"
                 name="old_thumbnail_url"
-                value="<%= banner.image_url || '/dist/img/avatar4.png' %>"
+                value="<%= banner.image_url || '/dist/img/avatar4.png' %>
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />"
               />
             </div>
                 <div class="box-footer mt-3">

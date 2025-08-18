@@ -2,6 +2,8 @@ const GameModel = require('../../models/game');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinaryService = require('../../services/cloudinaryService');
+const cloudinaryHelper = require('../../utils/cloudinaryHelper');
 
 // Cấu hình multer cho upload ảnh
 const storage = multer.diskStorage({
@@ -42,11 +44,22 @@ module.exports = {
   // Hiển thị trang quản lý game
   async index(req, res) {
     try {
-      const games = await GameModel.getAllGames();
+      const { search, gameType, difficulty } = req.query;
+      
+      const filters = {};
+      if (search) filters.search = search;
+      if (gameType) filters.gameType = gameType;
+      if (difficulty) filters.difficulty = difficulty;
+      
+      const games = await GameModel.getAllGames(filters);
+      
       res.render('ds-games', { 
         title: 'Quản lý Game',
         games: games,
-        user: req.user
+        user: req.user,
+        search: search,
+        gameType: gameType,
+        difficulty: difficulty
       });
     } catch (error) {
       console.error('Error loading games:', error);
@@ -76,7 +89,15 @@ module.exports = {
       // Xử lý upload ảnh
       let thumbnail_url = null;
       if (req.file) {
-        thumbnail_url = `/images/games/${req.file.filename}`;
+        // Upload lên Cloudinary - CHỈ LƯU TRÊN CLOUDINARY
+        const result = await cloudinaryService.uploadImage(req.file.path, 'game-thumbnails');
+        if (result.success) {
+          // Lưu public_id thay vì URL đầy đủ để dễ xóa file cũ
+          thumbnail_url = result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
       }
 
       const gameData = {
@@ -128,19 +149,58 @@ module.exports = {
       const { id } = req.params;
       const { name, description, game_type, difficulty, is_active } = req.body;
       
+      // Lấy thông tin game cũ để xóa file
+      const oldGame = await GameModel.getGameById(id);
+      
       // Xử lý upload ảnh mới
       let thumbnail_url = null;
+      const { selected_image } = req.body;
+      
       if (req.file) {
-        thumbnail_url = `/images/games/${req.file.filename}`;
-        
-        // Xóa ảnh cũ nếu có
-        const oldGame = await GameModel.getGameById(id);
-        if (oldGame && oldGame.thumbnail_url) {
-          const oldImagePath = path.join('public', oldGame.thumbnail_url);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
+        // Upload lên Cloudinary - CHỈ LƯU TRÊN CLOUDINARY
+        const result = await cloudinaryService.uploadImage(req.file.path, 'game-thumbnails');
+        if (result.success) {
+          // Xóa file cũ trên Cloudinary nếu có
+          if (oldGame && oldGame.thumbnail_url) {
+            try {
+              // Sử dụng helper để trích xuất public_id
+              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+              const oldPublicId = cloudinaryHelper.extractPublicId(oldGame.thumbnail_url);
+              
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
+            } catch (deleteError) {
+              console.error('❌ Exception khi xóa file cũ:', deleteError);
+            }
+          }
+          // Lưu public_id thay vì URL đầy đủ để dễ xóa file cũ
+          thumbnail_url = result.public_id;
+        } else {
+          console.error('Lỗi upload lên Cloudinary:', result.error);
+          throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
+        }
+      } else if (selected_image) {
+        // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
+        if (oldGame && oldGame.thumbnail_url && oldGame.thumbnail_url !== selected_image && selected_image) {
+          try {
+            // Sử dụng helper để trích xuất public_id
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const oldPublicId = cloudinaryHelper.extractPublicId(oldGame.thumbnail_url);
+            
+            const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+            if (!deleteResult.success) {
+              console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+            }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file cũ:', deleteError);
           }
         }
+        thumbnail_url = selected_image;
+      } else {
+        // Giữ nguyên file cũ
+        thumbnail_url = oldGame.thumbnail_url;
       }
 
       const gameData = {
@@ -175,9 +235,29 @@ module.exports = {
       // Xóa ảnh thumbnail nếu có
       const game = await GameModel.getGameById(id);
       if (game && game.thumbnail_url) {
-        const imagePath = path.join('public', game.thumbnail_url);
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
+        // Xóa file trên Cloudinary nếu có
+        if (game.thumbnail_url) {
+          try {
+            // Sử dụng helper để trích xuất public_id
+            const cloudinaryHelper = require('../../utils/cloudinaryHelper');
+            const publicId = cloudinaryHelper.extractPublicId(game.thumbnail_url);
+            
+            console.log('🔍 Thông tin xóa file khi delete:');
+            console.log('   Thumbnail:', game.thumbnail_url);
+            console.log('   Public ID để xóa:', publicId);
+            
+            const deleteResult = await cloudinaryService.deleteFile(publicId);
+            if (deleteResult.success) {
+              console.log('✅ Đã xóa file trên Cloudinary:', publicId);
+              console.log('   Kết quả:', deleteResult.result);
+            } else {
+              console.error('❌ Lỗi khi xóa file trên Cloudinary:', deleteResult.error);
+            }
+          } catch (deleteError) {
+            console.error('❌ Exception khi xóa file trên Cloudinary:', deleteError);
+          }
+        } else {
+          console.log('ℹ️  Không có thumbnail để xóa');
         }
       }
 

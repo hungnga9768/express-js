@@ -1,0 +1,142 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>Thêm Game Mới</h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li><a href="/admin/games">Game</a></li>
+      <li class="active">Thêm mới</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="box box-primary">
+          <div class="box-header with-border">
+            <h3 class="box-title">Thông tin Game</h3>
+          </div>
+          
+          <form method="POST" enctype="multipart/form-data" id="addGameForm">
+            <div class="box-body">
+              
+              <!-- Tên Game -->
+              <div class="form-group">
+                <label for="name">Tên Game <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       placeholder="Nhập tên game..." required>
+                <small class="text-muted">Ví dụ: Flashcard Master, Pinyin Puzzle, Sentence Builder...</small>
+              </div>
+
+              <!-- Mô tả -->
+              <div class="form-group">
+                <label for="description">Mô tả</label>
+                <textarea class="form-control" id="description" name="description" 
+                          rows="3" placeholder="Mô tả chi tiết về game..."></textarea>
+                <small class="text-muted">Giải thích cách chơi và mục đích của game</small>
+              </div>
+
+              <!-- Loại Game -->
+              <div class="form-group">
+                <label for="game_type">Loại Game <span class="text-danger">*</span></label>
+                <select class="form-control" id="game_type" name="game_type" required>
+                  <option value="">Chọn loại game...</option>
+                  <option value="vocabulary">Từ vựng</option>
+                  <option value="grammar">Ngữ pháp</option>
+                  <option value="listening">Nghe</option>
+                  <option value="writing">Viết</option>
+                  <option value="pronunciation">Phát âm</option>
+                  <option value="image_quiz">Quiz ảnh</option>
+                </select>
+                <small class="text-muted">Chọn loại kỹ năng mà game tập trung vào</small>
+              </div>
+
+              <!-- Độ khó -->
+              <div class="form-group">
+                <label for="difficulty">Độ khó</label>
+                <select class="form-control" id="difficulty" name="difficulty">
+                  <option value="beginner">Cơ bản</option>
+                  <option value="intermediate">Trung bình</option>
+                  <option value="advanced">Nâng cao</option>
+                </select>
+                <small class="text-muted">Mức độ khó của game</small>
+              </div>
+
+              <!-- Thumbnail -->
+              <div class="form-group">
+                <label for="thumbnail">Thumbnail</label>
+                <input type="file" class="form-control" id="thumbnail" name="thumbnail" 
+                       accept="image/*">
+                <small class="text-muted">Ảnh đại diện cho game (JPG, PNG, GIF - tối đa 5MB)</small>
+                <div id="thumbnailPreview" class="mt-2" style="display: none;">
+                  <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px;">
+                </div>
+              </div>
+
+              <!-- Trạng thái -->
+              <div class="form-group">
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" name="is_active" checked> Kích hoạt game
+                  </label>
+                </div>
+                <small class="text-muted">Game sẽ hiển thị cho người dùng khi được kích hoạt</small>
+              </div>
+
+            </div>
+
+            <div class="box-footer">
+              <button type="submit" class="btn btn-primary">
+                <i class="fa fa-save"></i> Lưu Game
+              </button>
+              <a href="/admin/games" class="btn btn-default">
+                <i class="fa fa-arrow-left"></i> Quay lại
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+// Preview thumbnail
+document.getElementById('thumbnail').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('thumbnailPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    document.getElementById('thumbnailPreview').style.display = 'none';
+  }
+});
+
+// Form validation
+document.getElementById('addGameForm').addEventListener('submit', function(e) {
+  const name = document.getElementById('name').value.trim();
+  const gameType = document.getElementById('game_type').value;
+  
+  if (!name) {
+    e.preventDefault();
+    alert('Vui lòng nhập tên game!');
+    document.getElementById('name').focus();
+    return false;
+  }
+  
+  if (!gameType) {
+    e.preventDefault();
+    alert('Vui lòng chọn loại game!');
+    document.getElementById('game_type').focus();
+    return false;
+  }
+});
+</script>
+
+<%- include('footer')%>

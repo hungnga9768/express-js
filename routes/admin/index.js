@@ -11,6 +11,8 @@ const setting = require("./setting");
 const Chatbot = require("./chatbot");
 const vocabulary = require("./vocabulary");
 const hsk = require("./hsk");
+const game = require("./game");
+const cloudinary = require("./cloudinary");
 const authenticateToken = require("../../middlewares/authenticateToken");
 const loadGrobalsettings = require("../../middlewares/loadGrobalsettings");
 router.use(loadGrobalsettings);
@@ -32,5 +34,8 @@ router.use("/setting", setting);
 router.use("/chatbot", Chatbot);
 router.use("/vocabulary", vocabulary);
 router.use("/hsk", require("./hsk"));
+router.use("/hsk-results", require("./hsk-results"));
+router.use("/games", game);
+router.use("/api/cloudinary", cloudinary);
 
 module.exports = router;

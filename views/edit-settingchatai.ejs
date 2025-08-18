@@ -46,7 +46,19 @@
                       <label>Ảnh đại diện hiện tại</label><br />
                       <!-- Ảnh xem trước -->
                       <img data-group="avatar_url" data-role="preview"
-                        src="<%= chat.avatar_url ? chat.avatar_url : '/dist/img/avatar4.png' %>" width="150" class="avatar_url" />
+                        <% 
+                  let avatarUrl = '/dist/img/avatar4.png';
+                  if (chat.avatar_url) {
+                    if (chat.avatar_url.includes('cloudinary.com')) {
+                      avatarUrl = chat.avatar_url;
+                    } else if (!chat.avatar_url.startsWith('/')) {
+                      avatarUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${chat.avatar_url}`;
+                    } else {
+                      avatarUrl = chat.avatar_url;
+                    }
+                  }
+                %>
+                src="<%= avatarUrl %>" width="150" class="avatar_url" />
                     </div>
 
                     <div class="form-group">
@@ -60,14 +72,24 @@
                       <input type="file" class="form-control" id="avatar_url" name="avatar_url" accept="image/*"
                         data-group="avatar_url" onchange="showImage(event, this)" />
 
-                      <!-- Nút chọn từ thư viện -->
+                      <!-- Nút chọn từ thư viện Cloudinary -->
                       <button type="button" class="btn btn-secondary mt-2" data-group="avatar_url"
-                        onclick="openImageModal(this)">
-                        Chọn từ thư viện
+                        onclick="openCloudinaryImageModal()">
+                        <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
                       </button>
                       <input type="hidden" name="selected_image" data-group="avatar_url" data-role="selectedInput" />
                       <input type="hidden" name="old_thumbnail_url"
-                        value="<%= chat.avatar_url || '/dist/img/avatar4.png' %>" />
+                        value="<%= chat.avatar_url || '/dist/img/avatar4.png' %>
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />
+                  <input
+                    type="hidden"
+                    name="old_image"
+                    value=""
+                  />" />
                     </div>
                 <div class="form-group">
                   <label for="is_active">trạng thái</label>

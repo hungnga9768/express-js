@@ -1,44 +1,116 @@
 <%- include('header')%>
 <%- include('aside')%>
+<link rel="stylesheet" href="/css/question-form-enhancements.css">
+<link rel="stylesheet" href="/css/question-list-enhancements.css">
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="/js/question-form-enhancements.js"></script>
+<script src="/js/question-list-management.js"></script>
+
+
 
 <div class="content-wrapper">
   <section class="content-header">
-    <h1><%= title %></h1>
-    <ol class="breadcrumb">
-      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
-      <li><a href="/admin/hsk">Đề HSK</a></li>
-      <li class="active">Câu hỏi</li>
-    </ol>
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/admin/hsk">Đề HSK</a></li>
+            <li class="breadcrumb-item active">Câu hỏi</li>
+          </ol>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="content">
-    <div class="row">
-      <div class="col-md-5">
-        <div class="box box-primary">
-          <div class="box-header with-border"><h3 class="box-title">Thêm câu hỏi</h3></div>
-          <div class="box-body">
-            <form method="POST" action="/admin/hsk/<%= test.test_id %>/questions">
-              <!-- Phần kỹ năng -->
-              <div class="form-group">
-                <label>Phần kỹ năng</label>
-                <select class="form-control" name="skill_type" required>
-                  <option value="listening">Nghe hiểu</option>
-                  <option value="reading">Đọc hiểu</option>
-                  <option value="writing">Viết</option>
-                </select>
+    <div class="container-fluid">
+      <!-- Flash Messages -->
+      <% if (messages && messages.success) { %>
+        <div class="alert alert-success alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <%= messages.success %>
+        </div>
+      <% } %>
+      <% if (messages && messages.error) { %>
+        <div class="alert alert-danger alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <%= messages.error %>
+        </div>
+      <% } %>
+      <!-- Test Info -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card card-info">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-info-circle"></i> Thông tin đề thi
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-3">
+                  <strong>Tiêu đề:</strong> <%= test.title %>
+                </div>
+                <div class="col-md-2">
+                  <strong>HSK Level:</strong> <span class="badge badge-info">HSK <%= test.hsk_level %></span>
+                </div>
+                <div class="col-md-2">
+                  <strong>Số câu hỏi:</strong> <span class="badge badge-primary"><%= questions ? questions.length : 0 %></span>
+                </div>
+                <div class="col-md-2">
+                  <strong>Thời gian:</strong> <%= test.time_limit ? test.time_limit + ' phút' : 'Không giới hạn' %>
+                </div>
+                <div class="col-md-3">
+                  <strong>Điểm đạt:</strong> <span class="badge badge-success"><%= test.passing_score %></span>
+                </div>
               </div>
-              <!-- Kiểu câu hỏi -->
-              <div class="form-group">
-                <label>Kiểu câu hỏi</label>
-                <select class="form-control" name="question_type" id="question_type" onchange="updateQuestionForm()">
-                  <option value="multiple_choice">Trắc nghiệm</option>
-                  <option value="fill_blank">Điền từ</option>
-                  <option value="matching">Ghép nối</option>
-                  <option value="true_false">Đúng/Sai</option>
-                  <option value="ordering">Sắp xếp</option>
-                  <option value="rewrite">Viết lại câu</option>
-                </select>
-              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-5">
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas <%= (typeof isEditMode !== 'undefined' && isEditMode) ? 'fa-edit' : 'fa-plus-circle' %>"></i> 
+                <%= (typeof isEditMode !== 'undefined' && isEditMode) ? 'Sửa câu hỏi' : 'Thêm câu hỏi mới' %>
+              </h3>
+            </div>
+            <div class="card-body">
+              <form method="POST" action="/admin/hsk/<%= test.test_id %>/questions<%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion) ? '/' + editQuestion.question_id + '/update' : '' %>" enctype="multipart/form-data" onsubmit="return validateForm()">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label><strong>Phần kỹ năng *</strong></label>
+                      <select class="form-control" name="skill_type" required>
+                        <option value="listening" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.skill_type === 'listening') ? 'selected' : '' %>><i class="fas fa-headphones"></i> Nghe hiểu</option>
+                        <option value="reading" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.skill_type === 'reading') ? 'selected' : '' %>><i class="fas fa-book-open"></i> Đọc hiểu</option>
+                        <option value="writing" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.skill_type === 'writing') ? 'selected' : '' %>><i class="fas fa-pen"></i> Viết</option>
+                      </select>
+                      <small class="form-text text-muted">Chọn kỹ năng chính của câu hỏi</small>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label><strong>Kiểu câu hỏi *</strong></label>
+                      <select class="form-control" name="question_type" id="question_type" onchange="updateQuestionForm()">
+                        <option value="multiple_choice" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.question_type === 'multiple_choice') ? 'selected' : '' %>><i class="fas fa-dot-circle"></i> Trắc nghiệm</option>
+                        <option value="fill_blank" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.question_type === 'fill_blank') ? 'selected' : '' %>><i class="fas fa-square"></i> Điền từ</option>
+                        <option value="matching" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.question_type === 'matching') ? 'selected' : '' %>><i class="fas fa-link"></i> Ghép nối</option>
+                        <option value="true_false" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.question_type === 'true_false') ? 'selected' : '' %>><i class="fas fa-check"></i> Đúng/Sai</option>
+                        <option value="ordering" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.question_type === 'ordering') ? 'selected' : '' %>><i class="fas fa-list-ol"></i> Sắp xếp</option>
+                        <option value="rewrite" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.question_type === 'rewrite') ? 'selected' : '' %>><i class="fas fa-edit"></i> Viết lại câu</option>
+                      </select>
+                      <small class="form-text text-muted">Chọn loại câu hỏi phù hợp</small>
+                    </div>
+                  </div>
+                </div>
               <!-- Trắc nghiệm -->
               <div class="form-group" id="options-group" style="display:none">
                 <label>Đáp án lựa chọn & chọn đáp án đúng</label>
@@ -46,7 +118,7 @@
                   <div class="input-group mb-2">
                     <div class="input-group-prepend">
                       <div class="input-group-text">
-                        <input type="radio" name="correct_answer" value="<%= opt %>" required>
+                        <input type="radio" name="correct_answer_multiple_choice" value="<%= opt %>">
                       </div>
                     </div>
                     <input type="text" class="form-control" name="option_<%= opt %>" placeholder="Nội dung cho lựa chọn <%= opt %>">
@@ -57,130 +129,325 @@
               
               <!-- Ghép nối -->
               <div class="form-group" id="matching-group" style="display:none">
-                <label>Cặp ghép nối (mỗi dòng một cặp, ví dụ: A - 1)</label>
-                <textarea class="form-control" name="matching_pairs"></textarea>
+                <label><strong><i class="fas fa-link"></i> Cấu hình ghép nối</strong></label>
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i> 
+                  <strong>Hướng dẫn:</strong> Nhập các cặp từ cần ghép nối. Bạn có thể thêm/bớt số lượng cặp tùy ý. Hệ thống sẽ tự động tạo labels cho từng cặp.
               </div>
+                
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <button type="button" class="btn btn-success btn-sm" onclick="addMatchingPair()">
+                      <i class="fas fa-plus"></i> Thêm cặp ghép nối
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm ml-2" onclick="clearMatchingPairs()">
+                      <i class="fas fa-trash"></i> Xóa tất cả
+                    </button>
+                  </div>
+                  <div class="col-md-6 text-right">
+                    <span class="badge badge-info" id="matching-pair-count">0 cặp</span>
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6><i class="fas fa-list"></i> Cột A (Từ tiếng Trung)</h6>
+                    <div id="matching-left-column">
+                      <!-- Các cặp sẽ được thêm động ở đây -->
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <h6><i class="fas fa-list"></i> Cột B (Nghĩa tiếng Việt)</h6>
+                    <div id="matching-right-column">
+                      <!-- Các cặp sẽ được thêm động ở đây -->
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mt-3" id="matching-answers-section" style="display:none;">
+                  <h6><i class="fas fa-cog"></i> Cấu hình đáp án đúng</h6>
+                  <div class="alert alert-warning">
+                    <i class="fas fa-lightbulb"></i> 
+                    <strong>Gợi ý:</strong> Chọn đáp án ghép nối cho từng cặp. Mỗi cặp chỉ được ghép với một đáp án duy nhất.
+                  </div>
+                  <div id="matching-answers-container">
+                    <!-- Các dropdown đáp án sẽ được thêm động ở đây -->
+                  </div>
+                </div>
+              </div>
+              
               <!-- Sắp xếp -->
               <div class="form-group" id="ordering-group" style="display:none">
-                <label>Các mục cần sắp xếp (mỗi dòng một mục)</label>
-                <textarea class="form-control" name="ordering_items"></textarea>
+                <label><strong><i class="fas fa-list-ol"></i> Cấu hình sắp xếp</strong></label>
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i> 
+                  <strong>Hướng dẫn:</strong> Nhập các từ/cụm từ cần sắp xếp. Hệ thống sẽ tự động tạo thứ tự và cho phép bạn kéo thả để sắp xếp đúng.
+                </div>
+                
+                <div id="ordering-items-container">
+                  <div class="ordering-item mb-2">
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-warning text-dark ordering-number">1</span>
+                        <span class="input-group-text bg-light">
+                          <i class="fas fa-grip-vertical text-muted"></i>
+                        </span>
+                      </div>
+                      <input type="text" class="form-control" name="ordering_item_1" placeholder="Nhập từ/cụm từ cần sắp xếp...">
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-danger" onclick="removeOrderingItem(this)">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ordering-item mb-2">
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-warning text-dark ordering-number">2</span>
+                        <span class="input-group-text bg-light">
+                          <i class="fas fa-grip-vertical text-muted"></i>
+                        </span>
+                      </div>
+                      <input type="text" class="form-control" name="ordering_item_2" placeholder="Nhập từ/cụm từ cần sắp xếp...">
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-danger" onclick="removeOrderingItem(this)">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ordering-item mb-2">
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-warning text-dark ordering-number">3</span>
+                        <span class="input-group-text bg-light">
+                          <i class="fas fa-grip-vertical text-muted"></i>
+                        </span>
+                      </div>
+                      <input type="text" class="form-control" name="ordering_item_3" placeholder="Nhập từ/cụm từ cần sắp xếp...">
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-danger" onclick="removeOrderingItem(this)">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ordering-item mb-2">
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text bg-warning text-dark ordering-number">4</span>
+                        <span class="input-group-text bg-light">
+                          <i class="fas fa-grip-vertical text-muted"></i>
+                        </span>
+                      </div>
+                      <input type="text" class="form-control" name="ordering_item_4" placeholder="Nhập từ/cụm từ cần sắp xếp...">
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-danger" onclick="removeOrderingItem(this)">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <button type="button" class="btn btn-info btn-sm" onclick="addOrderingItem()">
+                  <i class="fas fa-plus"></i> Thêm mục
+                </button>
+                
+                <div class="mt-3">
+                  <h6><i class="fas fa-cog"></i> Thứ tự đúng (kéo thả để sắp xếp)</h6>
+                  <div class="alert alert-warning">
+                    <i class="fas fa-lightbulb"></i> 
+                    <strong>Gợi ý:</strong> Kéo thả các mục bên dưới để tạo thứ tự đúng, hoặc click vào từng mục để chọn thứ tự.
+                  </div>
+                  <div id="ordering-preview" class="border p-3 bg-light">
+                    <div class="text-muted text-center">Thứ tự hiện tại: 1 → 2 → 3 → 4</div>
+                  </div>
+                </div>
               </div>
               <!-- Viết lại câu -->
               <div class="form-group" id="rewrite-group" style="display:none">
                 <label>Hướng dẫn viết lại câu</label>
-                <textarea class="form-control" name="rewrite_instruction"></textarea>
+                <textarea class="form-control" name="rewrite_instruction"><%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.rewrite_instruction) ? editQuestion.rewrite_instruction : '' %></textarea>
               </div>
               <!-- Điền từ/cloze test -->
               <div class="form-group" id="blanks-container" style="display:none"></div>
               <button type="button" class="btn btn-info mt-2" id="addBlankBtn" style="display:none" onclick="addBlank()">Thêm cấu hình cho một chỗ trống</button>
+              <div class="alert alert-info" id="fill-blank-hint" style="display:none">
+                <i class="fas fa-info-circle"></i> 
+                <strong>Gợi ý:</strong> Có thể sử dụng format "(1)", "(2)", "(3)" hoặc "____" để đánh dấu chỗ trống.
+                <br>Ví dụ: "Tôi (1) học tiếng Trung (2) năm nay." hoặc "Tôi ____ học tiếng Trung ____ năm nay."
+                <br>Hoặc dùng cho đoạn văn đọc hiểu: "Đọc đoạn văn sau và trả lời câu hỏi (1) đến (5):"
+              </div>
               <!-- Nội dung câu hỏi -->
               <div class="form-group">
-                <label>Nội dung câu hỏi</label>
-                <textarea class="form-control" name="question_text" rows="5" required placeholder="Nhập đoạn văn, dùng (1), (2), ... cho chỗ trống"></textarea>
+                <label><strong>Nội dung câu hỏi *</strong></label>
+                <textarea class="form-control" name="question_text" rows="4" required placeholder="Nhập nội dung câu hỏi, đoạn văn, hoặc dùng (1), (2), ... cho chỗ trống"><%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion) ? editQuestion.question_text : '' %></textarea>
+                <small class="form-text text-muted">Nội dung chính của câu hỏi</small>
               </div>
-              <!-- Các trường khác giữ nguyên -->
-              <div class="form-group">
-                <label>Audio URL</label>
-                <input class="form-control" name="audio_url">
+
+              <!-- Media và tài liệu hỗ trợ -->
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label><strong><i class="fas fa-music"></i> Audio File</strong></label>
+                    <div class="custom-file">
+                      <input type="file" class="custom-file-input" id="audioFile" name="audio" accept="audio/*">
+                      <label class="custom-file-label" for="audioFile">Chọn file âm thanh...</label>
+                    </div>
+                    <small class="form-text text-muted">Hỗ trợ: MP3, WAV, M4A (tối đa 10MB)</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label><strong><i class="fas fa-image"></i> Image File</strong></label>
+                    <div class="custom-file">
+                      <input type="file" class="custom-file-input" id="imageFile" name="image" accept="image/*">
+                      <label class="custom-file-label" for="imageFile">Chọn file ảnh...</label>
+                    </div>
+                    <small class="form-text text-muted">Hỗ trợ: JPG, PNG, GIF (tối đa 10MB)</small>
+                  </div>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Image URL</label>
-                <input class="form-control" name="image_url">
+
+              <!-- Cấu hình câu hỏi -->
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label><strong><i class="fas fa-chart-bar"></i> Độ khó</strong></label>
+                    <select class="form-control" name="difficulty_level">
+                      <option value="easy" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.difficulty_level === 'easy') ? 'selected' : '' %>><i class="fas fa-circle text-success"></i> Dễ</option>
+                      <option value="medium" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.difficulty_level === 'medium') ? 'selected' : '' %>><i class="fas fa-circle text-warning"></i> Trung bình</option>
+                      <option value="hard" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.difficulty_level === 'hard') ? 'selected' : '' %>><i class="fas fa-circle text-danger"></i> Khó</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label><strong><i class="fas fa-star"></i> Điểm</strong></label>
+                    <input type="number" class="form-control" name="points" value="<%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.points) ? editQuestion.points : '1' %>" min="1" max="10">
+                    <small class="form-text text-muted">Điểm số cho câu hỏi này</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label><strong><i class="fas fa-sort-numeric-up"></i> Thứ tự</strong></label>
+                    <input type="number" class="form-control" name="order_in_test" value="<%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.order_in_test !== undefined) ? editQuestion.order_in_test : '0' %>" min="0">
+                    <small class="form-text text-muted">Thứ tự hiển thị trong đề thi</small>
+                  </div>
+                </div>
               </div>
+
+              <!-- Giải thích -->
               <div class="form-group">
-                <label>Giải thích</label>
-                <textarea class="form-control" name="explanation"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Độ khó</label>
-                <select class="form-control" name="difficulty_level">
-                  <option value="easy">Dễ</option>
-                  <option value="medium">Trung bình</option>
-                  <option value="hard">Khó</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Điểm</label>
-                <input type="number" class="form-control" name="points" value="1" min="0">
-              </div>
-              <div class="form-group">
-                <label>Thứ tự trong đề</label>
-                <input type="number" class="form-control" name="order_in_test" value="0" min="0">
+                <label><strong><i class="fas fa-lightbulb"></i> Giải thích</strong></label>
+                <textarea class="form-control" name="explanation" rows="3" placeholder="Giải thích chi tiết cho đáp án đúng..."><%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.explanation) ? editQuestion.explanation : '' %></textarea>
+                <small class="form-text text-muted">Giải thích để người học hiểu rõ</small>
               </div>
               <div class="form-group" id="answer-text-group" style="display:none">
                 <label>Đáp án đúng</label>
-                <input class="form-control" name="correct_answer" id="answer-text-input" placeholder="Nhập đáp án đúng">
+                <input class="form-control" name="correct_answer_text" id="answer-text-input" placeholder="Nhập đáp án đúng" value="<%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.correct_answer && !['multiple_choice', 'matching', 'true_false'].includes(editQuestion.question_type)) ? editQuestion.correct_answer : '' %>">
                 <small class="text-muted" id="answer-text-hint"></small>
               </div>
-              <button class="btn btn-primary" type="submit"><i class="fa fa-plus"></i> Thêm câu hỏi</button>
-              <a href="/admin/hsk" class="btn btn-default">Quay lại</a>
+              
+              <!-- Select box cho True/False -->
+              <div class="form-group" id="true-false-group" style="display:none">
+                <label>Đáp án đúng</label>
+                <select class="form-control" name="correct_answer_true_false" id="true-false-select">
+                  <option value="">-- Chọn đáp án --</option>
+                  <option value="true" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.correct_answer === 'true') ? 'selected' : '' %>><i class="fas fa-check text-success"></i> Đúng</option>
+                  <option value="false" <%= (typeof isEditMode !== 'undefined' && isEditMode && editQuestion && editQuestion.correct_answer === 'false') ? 'selected' : '' %>><i class="fas fa-times text-danger"></i> Sai</option>
+                </select>
+                <small class="text-muted">Chọn đáp án đúng cho câu hỏi Đúng/Sai</small>
+              </div>
+              <div class="card-footer">
+                <button class="btn btn-primary btn-lg" type="submit">
+                  <i class="fas <%= (typeof isEditMode !== 'undefined' && isEditMode) ? 'fa-save' : 'fa-plus' %>"></i> 
+                  <%= (typeof isEditMode !== 'undefined' && isEditMode) ? 'Cập nhật câu hỏi' : 'Thêm câu hỏi' %>
+                </button>
+                <a href="/admin/hsk/<%= test.test_id %>/questions" class="btn btn-secondary btn-lg">
+                  <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+              </div>
             </form>
           </div>
         </div>
       </div>
 
       <div class="col-md-7">
-        <div class="box">
-          <div class="box-header with-border"><h3 class="box-title">Danh sách câu hỏi</h3></div>
-          <div class="box-body">
-            <table class="table table-bordered table-hover">
-              <thead>
-                <tr>
-                  <th>ID</th><th>Type</th><th>Nội dung</th><th>Đáp án</th><th>Điểm</th><th>Thứ tự</th><th style="width:160px">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-list"></i> Danh sách câu hỏi (<%= questions ? questions.length : 0 %>)
+            </h3>
+            <div class="card-tools">
+              <a href="/admin/hsk/<%= test.test_id %>/questions/export" class="btn btn-success btn-sm">
+                <i class="fas fa-download"></i> Export CSV
+              </a>
+              <button class="btn btn-info btn-sm" onclick="showImportModal()">
+                <i class="fas fa-upload"></i> Import CSV
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="toggleQuestionOrder()" id="toggleOrderBtn">
+                <i class="fas fa-sort"></i> Sắp xếp
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="questions-list" id="questionsList">
                 <% if (questions && questions.length) { %>
-                  <% questions.forEach(q => { %>
-                    <tr>
-                      <td><%= q.question_id %></td>
-                      <td><span class="label label-info"><%= q.question_type %></span></td>
-                      <td><%= (q.question_text || '').slice(0,80) %></td>
-                      <td>
-                        <% if (q.options && q.options.length) { %>
-                          <% q.options.forEach((opt, idx) => { %>
-                            <div><strong><%= String.fromCharCode(65+idx) %>.</strong> <%= opt %></div>
-                          <% }) %>
-                        <% } %>
-                      </td>
-                      <td><%= q.points || 1 %></td>
-                      <td><%= q.order_in_test || 0 %></td>
-                      <td>
-                        <form method="POST" action="/admin/hsk/<%= test.test_id %>/questions/<%= q.question_id %>/delete" style="display:inline" onsubmit="return confirm('Xóa câu hỏi?')">
-                          <button class="btn btn-xs btn-danger"><i class="fa fa-trash"></i></button>
+                <% questions.forEach((q, index) => { %>
+                  <div class="question-card" data-question-id="<%= q.question_id %>" data-order="<%= q.order_in_test || 0 %>">
+                    <div class="question-header">
+                      <div class="question-info">
+                        <span class="question-number">#<%= q.question_id %></span>
+                        <span class="question-order-badge" style="display: none;">
+                          <i class="fas fa-grip-vertical"></i> Thứ tự: <span class="order-number"><%= q.order_in_test || 0 %></span>
+                        </span>
+                        <span class="question-type-badge question-type-<%= q.question_type %>">
+                          <i class="fas <%= q.question_type === 'multiple_choice' ? 'fa-dot-circle' : q.question_type === 'fill_blank' ? 'fa-square' : q.question_type === 'matching' ? 'fa-link' : q.question_type === 'true_false' ? 'fa-check' : q.question_type === 'ordering' ? 'fa-list-ol' : q.question_type === 'rewrite' ? 'fa-edit' : 'fa-question' %>"></i>
+                          <%= q.question_type === 'multiple_choice' ? 'Trắc nghiệm' : q.question_type === 'fill_blank' ? 'Điền từ' : q.question_type === 'matching' ? 'Ghép nối' : q.question_type === 'true_false' ? 'Đúng/Sai' : q.question_type === 'ordering' ? 'Sắp xếp' : q.question_type === 'rewrite' ? 'Viết lại' : q.question_type %>
+                        </span>
+                        <span class="question-skill-badge skill-<%= q.skill_type %>">
+                          <i class="fas <%= q.skill_type === 'listening' ? 'fa-headphones' : q.skill_type === 'reading' ? 'fa-book-open' : q.skill_type === 'writing' ? 'fa-pen' : 'fa-question' %>"></i>
+                          <%= q.skill_type === 'listening' ? 'Nghe hiểu' : q.skill_type === 'reading' ? 'Đọc hiểu' : q.skill_type === 'writing' ? 'Viết' : q.skill_type %>
+                        </span>
+                      </div>
+                      <div class="question-actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="previewQuestion(<%= q.question_id %>)" title="Xem trước">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <a href="/admin/hsk/<%= test.test_id %>/questions/<%= q.question_id %>/edit" class="btn btn-sm btn-outline-warning" title="Chỉnh sửa">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <form method="POST" action="/admin/hsk/<%= test.test_id %>/questions/<%= q.question_id %>/delete" style="display:inline" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này?')">
+                          <button class="btn btn-sm btn-outline-danger" type="submit" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                          </button>
                         </form>
-                        <button class="btn btn-xs btn-warning" onclick="openEdit(<%= q.question_id %>)"><i class="fa fa-edit"></i></button>
-                      </td>
-                    </tr>
-                    <!-- Modal inline edit -->
-                    <tr id="edit-row-<%= q.question_id %>" style="display:none">
-                      <td colspan="7">
-                        <form class="form-inline" method="POST" action="/admin/hsk/<%= test.test_id %>/questions/<%= q.question_id %>/update">
-                          <input type="hidden" name="question_type" value="<%= q.question_type %>">
-                          <div class="form-group" style="min-width:220px;margin-right:10px">
-                            <input class="form-control" name="question_text" value="<%= q.question_text %>">
                           </div>
-                          <div class="form-group" style="min-width:220px;margin-right:10px">
-                            <input class="form-control" name="correct_answer" value="<%= q.correct_answer %>">
                           </div>
-                          <div class="form-group" style="min-width:120px;margin-right:10px">
-                            <input class="form-control" type="number" name="points" value="<%= q.points||1 %>">
+                    
+                    <div class="question-content">
+                      <div class="question-text">
+                        <div class="text-content">
+                          <%= (q.question_text || 'Không có nội dung').substring(0, 60) %><%= (q.question_text && q.question_text.length > 60) ? '...' : '' %>
                           </div>
-                          <div class="form-group" style="min-width:120px;margin-right:10px">
-                            <input class="form-control" type="number" name="order_in_test" value="<%= q.order_in_test||0 %>">
                           </div>
-                          <button class="btn btn-xs btn-primary" type="submit">Lưu</button>
-                          <button class="btn btn-xs btn-default" type="button" onclick="openEdit(<%= q.question_id %>, true)">Hủy</button>
-                        </form>
-                        <small class="text-muted">Sửa nhanh: nội dung/đáp án/điểm/thứ tự. (Sửa options chi tiết ở phần thêm mới.)</small>
-                      </td>
-                    </tr>
+                      <div class="question-details">
+                        <span class="badge badge-warning"><%= q.points || 1 %> điểm</span>
+                      </div>
+                    </div>
+                  </div>
                   <% }) %>
                 <% } else { %>
-                  <tr><td colspan="7" class="text-center">Chưa có câu hỏi</td></tr>
+                <div class="empty-state">
+                  <i class="fas fa-question-circle"></i>
+                  <h4>Chưa có câu hỏi nào</h4>
+                  <p>Bắt đầu tạo câu hỏi đầu tiên bằng cách sử dụng form bên trái.</p>
+                </div>
                 <% } %>
-              </tbody>
-            </table>
+            </div>
           </div>
         </div>
       </div>
@@ -188,59 +455,641 @@
   </section>
 </div>
 
+<!-- Question Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-eye"></i> Xem trước câu hỏi
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Content will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Questions Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-upload"></i> Import câu hỏi từ CSV
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <h6><i class="fas fa-info-circle"></i> Hướng dẫn import:</h6>
+          <ul class="mb-0">
+            <li>File CSV phải có các cột: Loại kỹ năng, Loại câu hỏi, Nội dung, Audio URL, Image URL, Đáp án đúng, Giải thích, Độ khó, Điểm, Thứ tự</li>
+            <li>Loại kỹ năng: listening, reading, writing</li>
+            <li>Loại câu hỏi: multiple_choice, fill_blank, matching, true_false, ordering, rewrite</li>
+            <li>Độ khó: easy, medium, hard</li>
+            <li>Điểm: số từ 1-10</li>
+          </ul>
+        </div>
+        
+        <div class="form-group">
+          <label for="csvFile">Chọn file CSV</label>
+          <input type="file" class="form-control-file" id="csvFile" accept=".csv" required>
+          <small class="form-text text-muted">Chỉ hỗ trợ file .csv</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="csvContent">Hoặc paste nội dung CSV trực tiếp</label>
+          <textarea class="form-control" id="csvContent" rows="10" placeholder="Paste nội dung CSV vào đây..."></textarea>
+        </div>
+        
+        <div id="previewData" style="display: none;">
+          <h6>Preview dữ liệu:</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered" id="previewTable">
+              <thead>
+                <tr>
+                  <th>Loại kỹ năng</th>
+                  <th>Loại câu hỏi</th>
+                  <th>Nội dung</th>
+                  <th>Đáp án đúng</th>
+                  <th>Điểm</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-info" onclick="previewCSV()">Preview</button>
+        <button type="button" class="btn btn-primary" onclick="importQuestions()">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <%- include('footer')%>
 
 <script>
-function openEdit(id, closeOnly) {
-  var row = document.getElementById('edit-row-' + id);
-  if (!row) return;
-  if (closeOnly) { row.style.display = 'none'; return; }
-  row.style.display = (row.style.display === 'none' || !row.style.display) ? '' : 'none';
+
+// Biến global để theo dõi trạng thái sắp xếp
+let isOrderMode = false;
+let sortableInstance = null;
+
+// Hiển thị modal import
+function showImportModal() {
+  const modal = document.getElementById('importModal');
+  if (modal && typeof $ !== 'undefined') {
+    $('#importModal').modal('show');
+  } else if (modal) {
+    modal.style.display = 'block';
+    modal.classList.add('show');
+  }
+}
+
+// Toggle chế độ sắp xếp
+function toggleQuestionOrder() {
+  const toggleBtn = document.getElementById('toggleOrderBtn');
+  const questionsList = document.getElementById('questionsList');
+  const orderBadges = document.querySelectorAll('.question-order-badge');
+  
+  isOrderMode = !isOrderMode;
+  
+  if (isOrderMode) {
+    // Bật chế độ sắp xếp
+    toggleBtn.innerHTML = '<i class="fas fa-save"></i> Lưu thứ tự';
+    toggleBtn.className = 'btn btn-sm btn-success';
+    
+    // Hiển thị badge thứ tự
+    orderBadges.forEach(badge => {
+      badge.style.display = 'inline-block';
+    });
+    
+    // Thêm class cho drag & drop
+    questionsList.classList.add('sortable-mode');
+    
+    // Khởi tạo Sortable.js
+    if (typeof Sortable !== 'undefined') {
+      sortableInstance = Sortable.create(questionsList, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        handle: '.question-order-badge',
+        onEnd: function(evt) {
+          updateOrderNumbers();
+        }
+      });
+    }
+    
+    // Hiển thị thông báo
+    showNotification('Chế độ sắp xếp đã bật. Kéo thả để sắp xếp thứ tự câu hỏi.', 'info');
+    
+  } else {
+    // Tắt chế độ sắp xếp và lưu
+    toggleBtn.innerHTML = '<i class="fas fa-sort"></i> Sắp xếp';
+    toggleBtn.className = 'btn btn-sm btn-outline-secondary';
+    
+    // Ẩn badge thứ tự
+    orderBadges.forEach(badge => {
+      badge.style.display = 'none';
+    });
+    
+    // Xóa class drag & drop
+    questionsList.classList.remove('sortable-mode');
+    
+    // Hủy Sortable instance
+    if (sortableInstance) {
+      sortableInstance.destroy();
+      sortableInstance = null;
+    }
+    
+    // Lưu thứ tự mới
+    saveNewOrder();
+  }
+}
+
+// Cập nhật số thứ tự hiển thị
+function updateOrderNumbers() {
+  const questionCards = document.querySelectorAll('.question-card');
+  questionCards.forEach((card, index) => {
+    const orderNumber = card.querySelector('.order-number');
+    if (orderNumber) {
+      orderNumber.textContent = index + 1;
+    }
+  });
+}
+
+// Lưu thứ tự mới lên server
+function saveNewOrder() {
+  const questionCards = document.querySelectorAll('.question-card');
+  const orders = [];
+  
+  questionCards.forEach((card, index) => {
+    const questionId = card.getAttribute('data-question-id');
+    orders.push({
+      question_id: parseInt(questionId),
+      order_in_test: index + 1
+    });
+  });
+  
+  // Hiển thị loading
+  showNotification('Đang lưu thứ tự mới...', 'info');
+  
+  // Gửi request lên server
+  fetch(`/admin/hsk/<%= test.test_id %>/questions/reorder`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ orders: orders })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Đã lưu thứ tự mới thành công!', 'success');
+      // Reload trang để cập nhật
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
+    } else {
+      showNotification('Lỗi khi lưu thứ tự: ' + data.message, 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error saving order:', error);
+    showNotification('Lỗi khi lưu thứ tự mới!', 'error');
+  });
+}
+
+// Hiển thị thông báo
+function showNotification(message, type = 'info') {
+  // Tạo toast notification
+  const toast = document.createElement('div');
+  toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  toast.innerHTML = `
+    ${message}
+    <button type="button" class="close" data-dismiss="alert">
+      <span>&times;</span>
+    </button>
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Tự động ẩn sau 3 giây
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 3000);
+}
+
+// Preview CSV data
+function previewCSV() {
+  const csvContent = document.getElementById('csvContent').value.trim();
+  if (!csvContent) {
+    alert('Vui lòng nhập nội dung CSV hoặc chọn file!');
+    return;
+  }
+  
+  try {
+    const lines = csvContent.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const data = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const row = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      return row;
+    });
+    
+    // Hiển thị preview
+    const tbody = document.getElementById('previewTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    data.slice(0, 5).forEach(row => { // Chỉ hiển thị 5 dòng đầu
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row['Loại kỹ năng'] || ''}</td>
+        <td>${row['Loại câu hỏi'] || ''}</td>
+        <td>${(row['Nội dung'] || '').substring(0, 50)}...</td>
+        <td>${row['Đáp án đúng'] || ''}</td>
+        <td>${row['Điểm'] || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    
+    if (data.length > 5) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="5" class="text-center text-muted">... và ${data.length - 5} dòng khác</td>`;
+      tbody.appendChild(tr);
+    }
+    
+    document.getElementById('previewData').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error parsing CSV:', error);
+    alert('Lỗi khi parse CSV. Vui lòng kiểm tra định dạng file!');
+  }
+}
+
+// Import questions
+function importQuestions() {
+  const csvContent = document.getElementById('csvContent').value.trim();
+  if (!csvContent) {
+    alert('Vui lòng nhập nội dung CSV!');
+    return;
+  }
+  
+  if (confirm(`Bạn có chắc muốn import câu hỏi? Hệ thống sẽ thêm ${csvContent.split('\n').length - 1} câu hỏi mới.`)) {
+    // Gửi dữ liệu lên server
+    fetch(`/admin/hsk/<%= test.test_id %>/questions/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `csvData=${encodeURIComponent(csvContent)}`
+    })
+    .then(response => {
+      if (response.ok) {
+        alert('Import câu hỏi thành công!');
+        $('#importModal').modal('hide');
+        location.reload();
+      } else {
+        alert('Có lỗi xảy ra khi import câu hỏi!');
+      }
+    })
+    .catch(error => {
+      console.error('Error importing questions:', error);
+      alert('Có lỗi xảy ra khi import câu hỏi!');
+    });
+  }
 }
 
 function updateQuestionForm() {
   const type = document.getElementById('question_type').value;
+  
+  // Hiển thị/ẩn các nhóm tùy chọn
   document.getElementById('options-group').style.display = (type === 'multiple_choice') ? '' : 'none';
+  document.getElementById('matching-group').style.display = (type === 'matching') ? '' : 'none';
+  document.getElementById('ordering-group').style.display = (type === 'ordering') ? '' : 'none';
+  document.getElementById('rewrite-group').style.display = (type === 'rewrite') ? '' : 'none';
   document.getElementById('blanks-container').style.display = (type === 'fill_blank' || type === 'cloze') ? '' : 'none';
   document.getElementById('addBlankBtn').style.display = (type === 'fill_blank' || type === 'cloze') ? '' : 'none';
+  document.getElementById('fill-blank-hint').style.display = (type === 'fill_blank' || type === 'cloze') ? '' : 'none';
 
-  // Đáp án đúng cho các kiểu khác
+  // Xử lý hiển thị các nhóm đáp án
   const answerTextGroup = document.getElementById('answer-text-group');
+  const trueFalseGroup = document.getElementById('true-false-group');
   const answerTextInput = document.getElementById('answer-text-input');
   const answerTextHint = document.getElementById('answer-text-hint');
-  if (['matching', 'ordering', 'true_false', 'rewrite'].includes(type)) {
+  
+  // Ẩn tất cả các nhóm đáp án trước
+  answerTextGroup.style.display = 'none';
+  trueFalseGroup.style.display = 'none';
+  
+  // Reset required attributes cho tất cả các field
+  if (answerTextInput) answerTextInput.required = false;
+  const trueFalseSelect = document.getElementById('true-false-select');
+  if (trueFalseSelect) trueFalseSelect.required = false;
+  
+  // Reset required cho radio buttons
+  const radioButtons = document.querySelectorAll('input[name="correct_answer_multiple_choice"]');
+  radioButtons.forEach(radio => {
+    radio.required = false;
+  });
+  
+  if (type === 'true_false') {
+    // Hiển thị select box cho True/False
+    trueFalseGroup.style.display = '';
+    if (trueFalseSelect) trueFalseSelect.required = true;
+  } else if (['ordering', 'rewrite'].includes(type)) {
+    // Hiển thị input text cho ordering và rewrite (không phải matching)
     answerTextGroup.style.display = '';
-    answerTextInput.required = true;
-    if (type === 'matching') {
-      answerTextHint.innerText = 'Nhập đáp án ghép nối, ví dụ: A-1,B-2,...';
-    } else if (type === 'ordering') {
+    if (answerTextInput) answerTextInput.required = true;
+    
+    if (type === 'ordering') {
       answerTextHint.innerText = 'Nhập thứ tự đúng, ví dụ: 2,1,3,4.';
-    } else if (type === 'true_false') {
-      answerTextHint.innerText = 'Nhập "true" hoặc "false".';
     } else if (type === 'rewrite') {
       answerTextHint.innerText = 'Nhập đáp án mẫu hoặc yêu cầu viết lại.';
     }
-  } else {
-    answerTextGroup.style.display = 'none';
-    answerTextInput.required = false;
-    answerTextHint.innerText = '';
-  }
-  // Xử lý radio required cho trắc nghiệm
-  if (type !== 'multiple_choice') {
-    document.querySelectorAll('input[name="correct_answer"]').forEach(radio => {
-      radio.required = false;
-    });
-  } else {
-    document.querySelectorAll('input[name="correct_answer"]').forEach(radio => {
+  } else if (type === 'multiple_choice') {
+    // Set required cho radio buttons của trắc nghiệm
+    radioButtons.forEach(radio => {
       radio.required = true;
     });
   }
+  // Note: matching không hiển thị answer-text-group vì đã có phần cấu hình đáp án riêng
 }
-document.addEventListener('DOMContentLoaded', updateQuestionForm);
-document.getElementById('question_type').addEventListener('change', updateQuestionForm);
+
+function initializeEditForm() {
+  // Khởi tạo form với dữ liệu hiện tại khi edit
+  <% if (typeof isEditMode !== 'undefined' && isEditMode && editQuestion) { %>
+    const editData = <%- JSON.stringify(editQuestion) %>;
+    
+    console.log('🔍 Debug initializeEditForm - editData:', editData);
+    
+    // Điền các field cơ bản
+    if (editData.question_text) {
+      const questionTextArea = document.querySelector('textarea[name="question_text"]');
+      if (questionTextArea) {
+        questionTextArea.value = editData.question_text;
+        console.log('✅ Filled question_text:', editData.question_text);
+      }
+    }
+    
+    if (editData.points) {
+      const pointsInput = document.querySelector('input[name="points"]');
+      if (pointsInput) {
+        pointsInput.value = editData.points;
+        console.log('✅ Filled points:', editData.points);
+      }
+    }
+    
+    if (editData.order_in_test !== undefined) {
+      const orderInput = document.querySelector('input[name="order_in_test"]');
+      if (orderInput) {
+        orderInput.value = editData.order_in_test;
+        console.log('✅ Filled order_in_test:', editData.order_in_test);
+      }
+    }
+    
+    if (editData.explanation) {
+      const explanationTextArea = document.querySelector('textarea[name="explanation"]');
+      if (explanationTextArea) {
+        explanationTextArea.value = editData.explanation;
+        console.log('✅ Filled explanation:', editData.explanation);
+      }
+    }
+    
+    // Set skill_type và question_type
+    if (editData.skill_type) {
+      const skillSelect = document.querySelector('select[name="skill_type"]');
+      if (skillSelect) {
+        skillSelect.value = editData.skill_type;
+        console.log('✅ Set skill_type:', editData.skill_type);
+      }
+    }
+    
+    if (editData.question_type) {
+      const questionTypeSelect = document.getElementById('question_type');
+      if (questionTypeSelect) {
+        questionTypeSelect.value = editData.question_type;
+        console.log('✅ Set question_type:', editData.question_type);
+        // Trigger change event để hiển thị đúng section
+        updateQuestionForm();
+      }
+    }
+    
+    // Xử lý theo từng loại câu hỏi - Đợi form update xong rồi mới fill data
+    setTimeout(() => {
+      if (editData.question_type === 'multiple_choice' && editData.options) {
+        console.log('🔍 Processing multiple_choice options:', editData.options);
+        // Điền options cho multiple choice
+        editData.options.forEach((option, index) => {
+          const optionInput = document.querySelector(`input[name="option_${String.fromCharCode(65 + index)}"]`);
+          if (optionInput) {
+            optionInput.value = option;
+            console.log(`✅ Filled option_${String.fromCharCode(65 + index)}:`, option);
+          }
+        });
+        
+        // Chọn đáp án đúng
+        if (editData.correct_answer) {
+          const correctRadio = document.querySelector(`input[name="correct_answer_multiple_choice"][value="${editData.correct_answer}"]`);
+          if (correctRadio) {
+            correctRadio.checked = true;
+            console.log('✅ Set correct_answer_multiple_choice:', editData.correct_answer);
+          }
+        }
+      } else if (editData.question_type === 'matching' && editData.matching_pairs) {
+        console.log('🔍 Processing matching_pairs:', editData.matching_pairs);
+        // Clear existing pairs first
+        clearMatchingPairs();
+        
+        // Điền matching pairs
+        editData.matching_pairs.forEach((pair, index) => {
+          addMatchingPair(); // Add new pair elements
+          const leftInput = document.querySelector(`input[name="matching_left_${index + 1}"]`);
+          const rightInput = document.querySelector(`input[name="matching_right_${index + 1}"]`);
+          if (leftInput) {
+            leftInput.value = pair.left;
+            console.log(`✅ Filled matching_left_${index + 1}:`, pair.left);
+          }
+          if (rightInput) {
+            rightInput.value = pair.right;
+            console.log(`✅ Filled matching_right_${index + 1}:`, pair.right);
+          }
+        });
+        
+        // Update matching answers if correct_answer exists
+        if (editData.correct_answer) {
+          console.log('🔍 Processing matching correct_answer:', editData.correct_answer);
+          // Parse correct_answer format like "A-1,B-2,C-3,D-4"
+          const answers = editData.correct_answer.split(',');
+          answers.forEach(ans => {
+            const [letter, num] = ans.split('-');
+            const index = letter.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+            const select = document.querySelector(`select[name="matching_answer_${index + 1}"]`);
+            if (select) {
+              select.value = num;
+              console.log(`✅ Set matching_answer_${index + 1}:`, num);
+            }
+          });
+        }
+      } else if (editData.question_type === 'ordering' && editData.ordering_items) {
+        console.log('🔍 Processing ordering_items:', editData.ordering_items);
+        // Clear existing items first
+        const orderingContainer = document.getElementById('ordering-items-container');
+        if (orderingContainer) {
+          orderingContainer.innerHTML = '';
+        }
+        
+        // Điền ordering items
+        editData.ordering_items.forEach((item, index) => {
+          addOrderingItem(); // Add new item elements
+          const itemInput = document.querySelector(`input[name="ordering_item_${index + 1}"]`);
+          if (itemInput) {
+            itemInput.value = item;
+            console.log(`✅ Filled ordering_item_${index + 1}:`, item);
+          }
+        });
+        
+        // Fill correct answer for ordering
+        if (editData.correct_answer) {
+          const answerInput = document.getElementById('answer-text-input');
+          if (answerInput) {
+            answerInput.value = editData.correct_answer;
+            console.log('✅ Filled ordering correct_answer:', editData.correct_answer);
+          }
+        }
+      } else if (editData.question_type === 'rewrite' && editData.rewrite_instruction) {
+        console.log('🔍 Processing rewrite_instruction:', editData.rewrite_instruction);
+        const instructionInput = document.querySelector('textarea[name="rewrite_instruction"]');
+        if (instructionInput) {
+          instructionInput.value = editData.rewrite_instruction;
+          console.log('✅ Filled rewrite_instruction:', editData.rewrite_instruction);
+        }
+        
+        // Fill correct answer for rewrite
+        if (editData.correct_answer) {
+          const answerInput = document.getElementById('answer-text-input');
+          if (answerInput) {
+            answerInput.value = editData.correct_answer;
+            console.log('✅ Filled rewrite correct_answer:', editData.correct_answer);
+          }
+        }
+      } else if (editData.question_type === 'true_false') {
+        console.log('🔍 Processing true_false correct_answer:', editData.correct_answer);
+        const trueFalseSelect = document.getElementById('true-false-select');
+        if (trueFalseSelect && editData.correct_answer) {
+          trueFalseSelect.value = editData.correct_answer;
+          console.log('✅ Set true_false correct_answer:', editData.correct_answer);
+        }
+      } else if (editData.question_type === 'fill_blank' && editData.options) {
+        console.log('🔍 Processing fill_blank options:', editData.options);
+        // Clear existing blanks first
+        const blanksContainer = document.getElementById('blanks-container');
+        if (blanksContainer) {
+          blanksContainer.innerHTML = '';
+        }
+        
+        // Điền fill blank options
+        editData.options.forEach((blankOptions, blankIndex) => {
+          addBlank(); // Add new blank group
+          blankOptions.forEach((option, optionIndex) => {
+            const optionInput = document.querySelector(`input[name="option_${blankIndex + 1}_${String.fromCharCode(65 + optionIndex)}"]`);
+            if (optionInput) {
+              optionInput.value = option;
+              console.log(`✅ Filled option_${blankIndex + 1}_${String.fromCharCode(65 + optionIndex)}:`, option);
+            }
+          });
+          
+          // Set correct answer for this blank
+          if (editData.correct_answer) {
+            const answers = editData.correct_answer.split(',');
+            const correctAnswer = answers[blankIndex];
+            if (correctAnswer) {
+              const correctRadio = document.querySelector(`input[name="correct_answer_${blankIndex + 1}"][value="${correctAnswer}"]`);
+              if (correctRadio) {
+                correctRadio.checked = true;
+                console.log(`✅ Set correct_answer_${blankIndex + 1}:`, correctAnswer);
+              }
+            }
+          }
+        });
+      }
+      
+      // Điền đáp án đúng chung (nếu có)
+      if (editData.correct_answer && !['multiple_choice', 'matching', 'true_false'].includes(editData.question_type)) {
+        const answerInput = document.getElementById('answer-text-input');
+        if (answerInput) {
+          answerInput.value = editData.correct_answer;
+          console.log('✅ Filled general correct_answer:', editData.correct_answer);
+        }
+      }
+      
+      console.log('✅ initializeEditForm completed');
+    }, 200); // Đợi 200ms để form update xong
+    
+    console.log('✅ initializeEditForm completed');
+  <% } %>
+}
+document.addEventListener('DOMContentLoaded', function() {
+  updateQuestionForm();
+  const questionTypeSelect = document.getElementById('question_type');
+  if (questionTypeSelect) {
+    questionTypeSelect.addEventListener('change', updateQuestionForm);
+  }
+  
+  // Nếu đang ở chế độ edit, khởi tạo form với dữ liệu hiện tại
+  <% if (typeof isEditMode !== 'undefined' && isEditMode && editQuestion) { %>
+    initializeEditForm();
+  <% } %>
+});
 let blankCount = 0;
 
+// Hiển thị tên file đã chọn
+document.addEventListener('DOMContentLoaded', function() {
+  const audioFile = document.getElementById('audioFile');
+  const imageFile = document.getElementById('imageFile');
+  
+  if (audioFile) {
+    audioFile.addEventListener('change', function(e) {
+      const fileName = e.target.files[0] ? e.target.files[0].name : 'Chọn file âm thanh...';
+      const label = e.target.nextElementSibling;
+      if (label) label.textContent = fileName;
+    });
+  }
+  
+  if (imageFile) {
+    imageFile.addEventListener('change', function(e) {
+      const fileName = e.target.files[0] ? e.target.files[0].name : 'Chọn file ảnh...';
+      const label = e.target.nextElementSibling;
+      if (label) label.textContent = fileName;
+    });
+  }
+});
+
+
+
 function addBlank() {
+    const container = document.getElementById('blanks-container');
+    if (!container) return;
+    
     const blankDiv = document.createElement('div');
     blankDiv.className = 'border p-3 mt-3 mb-3 blank-group';
 
@@ -267,7 +1116,7 @@ function addBlank() {
         blankDiv.appendChild(optionGroup);
     });
 
-    document.getElementById('blanks-container').appendChild(blankDiv);
+    container.appendChild(blankDiv);
     updateBlankTitles();
 }
 
@@ -283,7 +1132,10 @@ function removeBlank(btn) {
 function updateBlankTitles() {
     const blanks = document.querySelectorAll('.blank-group');
     blanks.forEach((blankDiv, idx) => {
-        blankDiv.querySelector('.blank-title').textContent = `Cấu hình cho Chỗ trống (${idx + 1})`;
+        const titleElement = blankDiv.querySelector('.blank-title');
+        if (titleElement) {
+            titleElement.textContent = `Cấu hình cho Chỗ trống (${idx + 1})`;
+        }
         const radios = blankDiv.querySelectorAll('input[type="radio"]');
         const texts = blankDiv.querySelectorAll('input[type="text"]');
         radios.forEach(radio => {
@@ -294,5 +1146,24 @@ function updateBlankTitles() {
             text.name = `option_${idx + 1}_${opt}`;
         });
     });
+}
+
+// Function để toggle hiển thị nội dung câu hỏi
+function toggleQuestionText(btn) {
+    const questionCard = btn.closest('.question-card');
+    const preview = questionCard.querySelector('.question-preview');
+    const full = questionCard.querySelector('.question-full');
+    
+    if (preview && full) {
+        if (preview.style.display !== 'none') {
+            preview.style.display = 'none';
+            full.style.display = 'block';
+            btn.textContent = 'Thu gọn';
+        } else {
+            preview.style.display = 'block';
+            full.style.display = 'none';
+            btn.textContent = 'Xem thêm';
+        }
+    }
 }
 </script>

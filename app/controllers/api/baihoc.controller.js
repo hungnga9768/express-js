@@ -5,7 +5,7 @@ module.exports = {
   async index(req, res) {
     const search = req.query.search || "";
     const data = await lessons.getDs(search);
-    console.log(data);
+
     res.send({
       data: data ? data : [],
       message: "lấy dữ liệu thành công",

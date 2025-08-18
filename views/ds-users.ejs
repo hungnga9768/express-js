@@ -70,7 +70,13 @@
               <img
                 alt="Avatar"
                 class="table-avatar"
-                src="<%= ds.profile_picture %>"
+                                    <% 
+                      let profileUrl = ds.profile_picture;
+                      if (ds.profile_picture && !ds.profile_picture.includes('cloudinary.com') && !ds.profile_picture.startsWith('/')) {
+                        profileUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${ds.profile_picture}`;
+                      }
+                    %>
+                    src="<%= profileUrl %>"
                 style="
                   width: 40px;
                   height: 40px;

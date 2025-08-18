@@ -293,16 +293,19 @@ module.exports = {
   async getGameData(req, res) {
     try {
       const { game_id } = req.params;
-      const { limit = 10 } = req.query;
+      const { limit = 20, hsk_level } = req.query;
       
-      const gameData = await GameModel.getGameData(game_id);
+      // Tạo filters object
+      const filters = { limit: parseInt(limit) };
+      if (hsk_level) {
+        filters.hsk_level = parseInt(hsk_level);
+      }
       
-      // Giới hạn số lượng câu hỏi
-      const limitedData = gameData.slice(0, parseInt(limit));
+      const gameData = await GameModel.getGameData(game_id, filters);
       
       res.json({
         success: true,
-        data: limitedData,
+        data: gameData,
         message: 'Lấy dữ liệu game thành công'
       });
     } catch (error) {
@@ -403,6 +406,65 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra khi lấy thống kê'
+      });
+    }
+  },
+
+  // ==================== ADDITIONAL METHODS ====================
+  
+  // Lấy session hiện tại
+  async getCurrentSession(req, res) {
+    try {
+      const user_id = req.user.user_id;
+      
+      const sqlQuery = `
+        SELECT * FROM GameSessions 
+        WHERE user_id = ? AND end_time IS NULL
+        ORDER BY start_time DESC 
+        LIMIT 1
+      `;
+      
+      const rows = await GameModel.query(sqlQuery, [user_id]);
+      
+      if (rows.length === 0) {
+        return res.json({
+          success: true,
+          data: null,
+          message: 'Không có session đang chạy'
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: rows[0],
+        message: 'Lấy session hiện tại thành công'
+      });
+    } catch (error) {
+      console.error('Error getting current session:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi lấy session hiện tại'
+      });
+    }
+  },
+
+  // Cập nhật tiến độ user
+  async updateUserProgress(req, res) {
+    try {
+      const user_id = req.user.user_id;
+      const { game_id, progress_data } = req.body;
+      
+      await GameModel.updateUserProgress(user_id, game_id, progress_data);
+      
+      res.json({
+        success: true,
+        message: 'Cập nhật tiến độ thành công'
+      });
+    } catch (error) {
+      console.error('Error updating user progress:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Có lỗi xảy ra khi cập nhật tiến độ'
       });
     }
   }
