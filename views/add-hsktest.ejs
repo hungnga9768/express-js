@@ -95,6 +95,35 @@
             </div>
           </div>
 
+          <!-- Quản lý trạng thái -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label><strong>Trạng thái đề thi *</strong></label>
+                <select class="form-control" name="status" required>
+                  <option value="draft" <%= test && test.status === 'draft' ? 'selected' : '' %>>Nháp</option>
+                  <option value="public" <%= test && test.status === 'public' ? 'selected' : '' %>>Công khai</option>
+                  <option value="hidden" <%= test && test.status === 'hidden' ? 'selected' : '' %>>Ẩn</option>
+                </select>
+                <small class="form-text text-muted">
+                  <strong>Nháp:</strong> Chỉ admin thấy, <strong>Công khai:</strong> Người dùng có thể thi, <strong>Ẩn:</strong> Không hiển thị
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label><strong>Trạng thái hoạt động</strong></label>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" <%= test && test.is_active ? 'checked' : '' %>>
+                  <label class="custom-control-label" for="is_active">Kích hoạt đề thi</label>
+                </div>
+                <small class="form-text text-muted">
+                  <strong>Bật:</strong> Đề thi hoạt động bình thường, <strong>Tắt:</strong> Tạm ngưng đề thi
+                </small>
+              </div>
+            </div>
+          </div>
+
           <div class="card-footer">
             <div class="row">
               <div class="col-md-6">

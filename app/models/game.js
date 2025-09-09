@@ -1,18 +1,6 @@
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 module.exports = {
-  // Thêm method query để controller có thể sử dụng
-  async query(sqlQuery, params = []) {
-    try {
-      const rows = await query(sqlQuery, params);
-      return rows;
-    } catch (error) {
-      console.error("Error executing query:", error);
-      throw error;
-    }
-  },
   // Lấy danh sách tất cả games
   async getAllGames(filters = {}) {
     try {
@@ -51,7 +39,7 @@ module.exports = {
       
       sqlQuery += ` ORDER BY name ASC`;
       
-      const rows = await query(sqlQuery, params);
+      const [rows] = await pool.query(sqlQuery, params);
       return rows;
     } catch (error) {
       console.error("Error getting games:", error);
@@ -67,7 +55,7 @@ module.exports = {
         WHERE game_id = ? AND is_active = TRUE
       `;
       
-      const rows = await query(sqlQuery, [gameId]);
+      const [rows] = await pool.query(sqlQuery, [gameId]);
       return rows[0];
     } catch (error) {
       console.error("Error getting game by ID:", error);
@@ -85,7 +73,7 @@ module.exports = {
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
       
-      const result = await query(sqlQuery, [
+      const [result] = await pool.query(sqlQuery, [
         name, description, game_type, difficulty_level, thumbnail_url, is_active, created_at
       ]);
       return result.insertId;
@@ -115,7 +103,7 @@ module.exports = {
       sqlQuery += ' WHERE game_id = ?';
       params.push(gameId);
       
-      await query(sqlQuery, params);
+      await pool.query(sqlQuery, params);
     } catch (error) {
       console.error("Error updating game:", error);
       throw error;
@@ -126,12 +114,12 @@ module.exports = {
   async deleteGame(gameId) {
     try {
       // Xóa các dữ liệu liên quan trước
-      await query('DELETE FROM GameSessions WHERE game_id = ?', [gameId]);
-      await query('DELETE FROM GameLeaderboard WHERE game_id = ?', [gameId]);
-      await query('DELETE FROM UserGameProgress WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM GameSessions WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM GameLeaderboard WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM UserGameProgress WHERE game_id = ?', [gameId]);
       
       // Xóa game
-      await query('DELETE FROM Games WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM Games WHERE game_id = ?', [gameId]);
     } catch (error) {
       console.error("Error deleting game:", error);
       throw error;
@@ -165,7 +153,7 @@ module.exports = {
           sqlQuery += ` ORDER BY RAND() LIMIT 20`;
         }
         
-        const rows = await query(sqlQuery, params);
+        const [rows] = await pool.query(sqlQuery, params);
         return rows;
       }
       
@@ -193,7 +181,7 @@ module.exports = {
           sqlQuery += ` ORDER BY RAND() LIMIT 20`;
         }
         
-        const rows = await query(sqlQuery, params);
+        const [rows] = await pool.query(sqlQuery, params);
         return rows;
       }
     } catch (error) {
@@ -210,7 +198,7 @@ module.exports = {
         WHERE question_id = ?
       `;
       
-      const rows = await query(sqlQuery, [dataId]);
+      const [rows] = await pool.query(sqlQuery, [dataId]);
       return rows[0];
     } catch (error) {
       console.error("Error getting game data by ID:", error);
@@ -228,7 +216,7 @@ module.exports = {
         VALUES (?, ?, ?, ?, ?, ?, 'multiple_choice', 1, 0)
       `;
       
-      const result = await query(sqlQuery, [
+      const [result] = await pool.query(sqlQuery, [
         game_id, question, answer, options, explanation, image_url
       ]);
       return result.insertId;
@@ -258,7 +246,7 @@ module.exports = {
       sqlQuery += ' WHERE question_id = ?';
       params.push(dataId);
       
-      await query(sqlQuery, params);
+      await pool.query(sqlQuery, params);
     } catch (error) {
       console.error("Error updating game data:", error);
       throw error;
@@ -268,7 +256,7 @@ module.exports = {
   // Xóa dữ liệu game
   async deleteGameData(dataId) {
     try {
-      await query('DELETE FROM HSKQuestions WHERE question_id = ?', [dataId]);
+      await pool.query('DELETE FROM HSKQuestions WHERE question_id = ?', [dataId]);
     } catch (error) {
       console.error("Error deleting game data:", error);
       throw error;
@@ -287,7 +275,7 @@ module.exports = {
         VALUES (?, ?, ?, ?, NOW())
       `;
       
-      const result = await query(sqlQuery, [game_id, user_id, score, duration_seconds]);
+      const [result] = await pool.query(sqlQuery, [game_id, user_id, score, duration_seconds]);
       return result.insertId;
     } catch (error) {
       console.error("Error creating session:", error);
@@ -306,7 +294,7 @@ module.exports = {
         WHERE session_id = ?
       `;
       
-      await query(sqlQuery, [score, duration_seconds, end_time, sessionId]);
+      await pool.query(sqlQuery, [score, duration_seconds, end_time, sessionId]);
     } catch (error) {
       console.error("Error updating session:", error);
       throw error;
@@ -321,7 +309,7 @@ module.exports = {
         WHERE session_id = ?
       `;
       
-      const rows = await query(sqlQuery, [sessionId]);
+      const [rows] = await pool.query(sqlQuery, [sessionId]);
       return rows[0]?.game_id;
     } catch (error) {
       console.error("Error getting game ID from session:", error);
@@ -342,7 +330,7 @@ module.exports = {
         date_achieved = NOW()
       `;
       
-      await query(sqlQuery, [gameId, userId, score]);
+      await pool.query(sqlQuery, [gameId, userId, score]);
     } catch (error) {
       console.error("Error updating leaderboard:", error);
       throw error;
@@ -361,7 +349,7 @@ module.exports = {
         LIMIT ?
       `;
       
-      const rows = await query(sqlQuery, [gameId, limit]);
+      const [rows] = await pool.query(sqlQuery, [gameId, limit]);
       return rows;
     } catch (error) {
       console.error("Error getting leaderboard:", error);
@@ -381,7 +369,7 @@ module.exports = {
         )
       `;
       
-      const rows = await query(sqlQuery, [gameId, gameId, userId]);
+      const [rows] = await pool.query(sqlQuery, [gameId, gameId, userId]);
       return rows[0]?.rank || 0;
     } catch (error) {
       console.error("Error getting user rank:", error);
@@ -402,7 +390,7 @@ module.exports = {
         ORDER BY ugp.last_played DESC
       `;
       
-      const rows = await query(sqlQuery, [userId]);
+      const [rows] = await pool.query(sqlQuery, [userId]);
       return rows;
     } catch (error) {
       console.error("Error getting user progress:", error);
@@ -425,7 +413,7 @@ module.exports = {
         last_played = NOW()
       `;
       
-      await query(sqlQuery, [userId, gameId, level, current_xp, JSON.stringify(unlocked_rewards)]);
+      await pool.query(sqlQuery, [userId, gameId, level, current_xp, JSON.stringify(unlocked_rewards)]);
     } catch (error) {
       console.error("Error updating user progress:", error);
       throw error;
@@ -447,7 +435,7 @@ module.exports = {
         WHERE gs.user_id = ?
       `;
       
-      const rows = await query(sqlQuery, [userId]);
+      const [rows] = await pool.query(sqlQuery, [userId]);
       return rows[0];
     } catch (error) {
       console.error("Error getting user game stats:", error);
@@ -467,7 +455,7 @@ module.exports = {
         ORDER BY ua.unlocked_at DESC
       `;
       
-      const rows = await query(sqlQuery, [userId]);
+      const [rows] = await pool.query(sqlQuery, [userId]);
       return rows;
     } catch (error) {
       console.error("Error getting user badges:", error);
@@ -483,7 +471,7 @@ module.exports = {
         ORDER BY achievement_id ASC
       `;
       
-      const rows = await query(sqlQuery);
+      const [rows] = await pool.query(sqlQuery);
       return rows;
     } catch (error) {
       console.error("Error getting achievements:", error);
@@ -500,7 +488,7 @@ module.exports = {
         ORDER BY reward_id ASC
       `;
       
-      const rows = await query(sqlQuery, [gameId]);
+      const [rows] = await pool.query(sqlQuery, [gameId]);
       return rows;
     } catch (error) {
       console.error("Error getting game rewards:", error);
@@ -522,7 +510,7 @@ module.exports = {
         FROM GameSessions gs
       `;
       
-      const rows = await query(sqlQuery);
+      const [rows] = await pool.query(sqlQuery);
       return rows[0];
     } catch (error) {
       console.error("Error getting global stats:", error);

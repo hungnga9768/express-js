@@ -9,10 +9,23 @@ class ChatController {
   async handleChat(req, res) {
     try {
       const { message, topicInternalName, sessionId } = req.body;
-      const userId = req.user.user_id; // Giả định req.user.id nếu bạn có middleware Auth
+      const userId = req.user?.user_id || req.user?.id; // Fallback cho user_id
+
+      console.log('🔍 Debug handleChat:', { 
+        message: message?.substring(0, 50), 
+        topicInternalName, 
+        sessionId, 
+        userId,
+        userObject: req.user 
+      });
 
       if (!message) {
         return res.status(400).json({ error: "Tin nhắn không được để trống." });
+      }
+
+      if (!userId) {
+        console.error('❌ Missing userId:', req.user);
+        return res.status(401).json({ error: "User ID không tồn tại." });
       }
 
       let currentSessionId = sessionId;
@@ -74,7 +87,20 @@ class ChatController {
 
       // 5. Gửi tin nhắn hiện tại của người dùng đến Gemini và nhận phản hồi
       // Tin nhắn người dùng hiện tại được gửi riêng biệt trong sendMessageToGemini
-      const reply = await geminiModel.sendMessageToGemini(message, chat);
+      let reply;
+      try {
+        reply = await geminiModel.sendMessageToGemini(message, chat);
+      } catch (geminiError) {
+        if (geminiError.message.includes('429') || geminiError.message.includes('RATE_LIMIT_EXCEEDED')) {
+          console.warn('⚠️ Gemini API rate limit exceeded, using fallback response...');
+          reply = "Xin lỗi, hệ thống AI đang quá tải. Vui lòng thử lại sau vài phút.";
+        } else if (geminiError.message.includes('403') || geminiError.message.includes('SERVICE_DISABLED')) {
+          console.warn('⚠️ Gemini API not enabled, using fallback response...');
+          reply = "Xin lỗi, dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau.";
+        } else {
+          throw geminiError;
+        }
+      }
 
       // 6. Lưu phản hồi của AI vào database
       await ChatHistoryModel.saveMessage({
@@ -88,6 +114,13 @@ class ChatController {
       // 7. Gửi phản hồi về client cùng với sessionId mới (hoặc hiện tại)
       res.json({ reply: reply, sessionId: currentSessionId });
     } catch (error) {
+      console.error('❌ Error in handleChat:', {
+        message: error.message,
+        stack: error.stack,
+        userId: req.user?.user_id || req.user?.id,
+        body: req.body
+      });
+      
       let errorMessage = "Đã xảy ra lỗi khi xử lý yêu cầu chat.";
       if (error.response && error.response.data && error.response.data.error) {
         errorMessage = error.response.data.error.message || errorMessage;

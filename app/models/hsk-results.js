@@ -1,6 +1,4 @@
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 module.exports = {
   // Lấy danh sách kết quả thi
@@ -28,7 +26,8 @@ module.exports = {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     vals.push(offset, parseInt(limit));
     
-    return await query(sql, vals);
+    const [rows] = await pool.query(sql, vals);
+    return rows;
   },
 
   // Lấy tổng số kết quả
@@ -49,7 +48,7 @@ module.exports = {
       vals.push(status);
     }
     
-    const result = await query(sql, vals);
+    const [result] = await pool.query(sql, vals);
     return result[0]?.total || 0;
   },
 
@@ -63,7 +62,7 @@ module.exports = {
       LEFT JOIN users u ON r.user_id = u.user_id
       WHERE r.result_id = ?
     `;
-    const result = await query(sql, [resultId]);
+    const [result] = await pool.query(sql, [resultId]);
     return result[0];
   },
 
@@ -77,7 +76,7 @@ module.exports = {
       WHERE ua.result_id = ?
       ORDER BY ua.question_order
     `;
-    const answers = await query(sql, [resultId]);
+    const [answers] = await pool.query(sql, [resultId]);
     
     // Parse options JSON
     return answers.map(answer => {
@@ -114,13 +113,15 @@ module.exports = {
       data.time_spent || 0,
       data.is_passed ? 1 : 0
     ];
-    return await query(sql, vals);
+    const [rows] = await pool.query(sql, vals);
+    return rows;
   },
 
   // Cập nhật kết quả thi
   async updateResult(resultId, data) {
     const sql = "UPDATE hskresults SET ? WHERE result_id = ?";
-    return await query(sql, [data, resultId]);
+    const [rows] = await pool.query(sql, [data, resultId]);
+    return rows;
   },
 
   // Lưu câu trả lời của user
@@ -145,7 +146,8 @@ module.exports = {
       data.question_order,
       data.time_spent || 0
     ];
-    return await query(sql, vals);
+    const [rows] = await pool.query(sql, vals);
+    return rows;
   },
 
   // Chấm điểm thủ công (cho phần Writing)
@@ -155,7 +157,7 @@ module.exports = {
       SET score = ?, feedback = ?, graded_at = NOW()
       WHERE result_id = ? AND question_id = ?
     `;
-    await query(sql, [score, feedback, resultId, questionId]);
+    await pool.query(sql, [score, feedback, resultId, questionId]);
     
     // Cập nhật tổng điểm
     await this.recalculateTotalScore(resultId);
@@ -174,12 +176,12 @@ module.exports = {
       WHERE ua.result_id = ?
     `;
     
-    const scores = await query(sql, [resultId]);
+    const [scores] = await pool.query(sql, [resultId]);
     if (scores[0]) {
       const { listening_score, reading_score, writing_score, total_score } = scores[0];
       
       // Lấy điểm đạt của đề thi
-      const testInfo = await query(`
+      const [testInfo] = await pool.query(`
         SELECT t.passing_score FROM hskresults r
         LEFT JOIN hsktests t ON r.test_id = t.test_id
         WHERE r.result_id = ?
@@ -228,7 +230,8 @@ module.exports = {
     }
     
     sql += " GROUP BY period ORDER BY period";
-    return await query(sql, vals);
+    const [rows] = await pool.query(sql, vals);
+    return rows;
   },
 
   // Export kết quả thi
@@ -268,7 +271,7 @@ module.exports = {
     }
     
     sql += " ORDER BY r.submitted_at DESC";
-    const results = await query(sql, vals);
+    const [results] = await pool.query(sql, vals);
     
     return results.map(r => ({
       'ID Kết quả': r.result_id,

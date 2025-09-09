@@ -1,8 +1,20 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
   <!-- Brand Logo -->
   <a href="/admin" class="brand-link">
+    <% 
+      let logoUrl = '/dist/img/AdminLTELogo.png';
+      if (typeof logo !== 'undefined' && logo) {
+        if (logo.includes('cloudinary.com')) {
+          logoUrl = logo;
+        } else if (!logo.startsWith('/')) {
+          logoUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${logo}`;
+        } else {
+          logoUrl = logo;
+        }
+      }
+    %>
     <img
-      src="<%= typeof logo !== 'undefined' ? logo : '/dist/img/AdminLTELogo.png' %>"
+      src="<%= logoUrl %>"
       alt="AdminLTE Logo"
       class="brand-image img-circle elevation-3"
       style="opacity: 0.8"
@@ -18,7 +30,7 @@
         <img
           <% 
           let avatarUrl = '/dist/img/avatar4.png';
-          if (typeof user !== 'undefined' && user.avatar) {
+          if (typeof user !== 'undefined' && user && user.avatar) {
             if (user.avatar.includes('cloudinary.com')) {
               avatarUrl = user.avatar;
             } else if (!user.avatar.startsWith('/')) {
@@ -34,7 +46,7 @@
         />
       </div>
       <div class="info">
-        <a href="#" class="d-block"><%= typeof user !== 'undefined' && user.username ? user.username : 'Admin' %></a>
+        <a href="#" class="d-block"><%= typeof user !== 'undefined' && user && user.username ? user.username : 'Admin' %></a>
       </div>
     </div>
 

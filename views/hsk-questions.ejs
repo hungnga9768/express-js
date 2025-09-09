@@ -2,6 +2,125 @@
 <%- include('aside')%>
 <link rel="stylesheet" href="/css/question-form-enhancements.css">
 <link rel="stylesheet" href="/css/question-list-enhancements.css">
+<style>
+  /* Sortable Drag & Drop Styles */
+  .sortable-mode .question-card {
+    cursor: move;
+    transition: all 0.2s ease;
+  }
+  
+  .sortable-mode .question-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .sortable-mode .question-order-badge {
+    cursor: grab;
+    background-color: #007bff !important;
+    color: white !important;
+    border: 2px solid #0056b3;
+    transition: all 0.2s ease;
+  }
+  
+  .sortable-mode .question-order-badge:hover {
+    background-color: #0056b3 !important;
+    transform: scale(1.05);
+  }
+  
+  .sortable-mode .question-order-badge:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+  }
+  
+  .sortable-ghost {
+    opacity: 0.5;
+    background-color: #f8f9fa;
+    border: 2px dashed #007bff;
+  }
+  
+  .sortable-chosen {
+    background-color: #e3f2fd;
+    border: 2px solid #2196f3;
+    transform: rotate(2deg);
+  }
+  
+  .sortable-drag {
+    opacity: 0.8;
+    transform: rotate(5deg);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  }
+  
+  .dragging {
+    z-index: 1000;
+    position: relative;
+  }
+  
+  /* Question order badge styling */
+  .question-order-badge {
+    background-color: #6c757d;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    display: none;
+    transition: all 0.3s ease;
+  }
+  
+  .question-order-badge .fa-grip-vertical {
+    margin-right: 4px;
+    color: #dee2e6;
+  }
+  
+  /* HSK Common Options Styling */
+  .hsk-option-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+  
+  .hsk-option-item:hover {
+    background-color: #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .hsk-option-item .badge {
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .hsk-option-item input[type="text"] {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+  }
+  
+  .hsk-option-item input[type="text"]:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+  }
+  
+  #hsk-answer-section {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+  }
+  
+  #hsk-answer-section h6 {
+    color: #856404;
+    margin-bottom: 10px;
+  }
+  
+  #hsk-correct-answer {
+    border: 2px solid #ffc107;
+    border-radius: 6px;
+  }
+  
+  #hsk-correct-answer:focus {
+    border-color: #e0a800;
+    box-shadow: 0 0 0 0.2rem rgba(255,193,7,.25);
+  }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="/js/question-form-enhancements.js"></script>
 <script src="/js/question-list-management.js"></script>
@@ -274,12 +393,6 @@
               <!-- Điền từ/cloze test -->
               <div class="form-group" id="blanks-container" style="display:none"></div>
               <button type="button" class="btn btn-info mt-2" id="addBlankBtn" style="display:none" onclick="addBlank()">Thêm cấu hình cho một chỗ trống</button>
-              <div class="alert alert-info" id="fill-blank-hint" style="display:none">
-                <i class="fas fa-info-circle"></i> 
-                <strong>Gợi ý:</strong> Có thể sử dụng format "(1)", "(2)", "(3)" hoặc "____" để đánh dấu chỗ trống.
-                <br>Ví dụ: "Tôi (1) học tiếng Trung (2) năm nay." hoặc "Tôi ____ học tiếng Trung ____ năm nay."
-                <br>Hoặc dùng cho đoạn văn đọc hiểu: "Đọc đoạn văn sau và trả lời câu hỏi (1) đến (5):"
-              </div>
               <!-- Nội dung câu hỏi -->
               <div class="form-group">
                 <label><strong>Nội dung câu hỏi *</strong></label>
@@ -391,6 +504,9 @@
               <button class="btn btn-sm btn-outline-secondary" onclick="toggleQuestionOrder()" id="toggleOrderBtn">
                 <i class="fas fa-sort"></i> Sắp xếp
               </button>
+              <button class="btn btn-sm btn-outline-info" onclick="debugSortableState()" title="Debug Sortable">
+                <i class="fas fa-bug"></i>
+              </button>
             </div>
           </div>
           <div class="card-body">
@@ -405,8 +521,8 @@
                           <i class="fas fa-grip-vertical"></i> Thứ tự: <span class="order-number"><%= q.order_in_test || 0 %></span>
                         </span>
                         <span class="question-type-badge question-type-<%= q.question_type %>">
-                          <i class="fas <%= q.question_type === 'multiple_choice' ? 'fa-dot-circle' : q.question_type === 'fill_blank' ? 'fa-square' : q.question_type === 'matching' ? 'fa-link' : q.question_type === 'true_false' ? 'fa-check' : q.question_type === 'ordering' ? 'fa-list-ol' : q.question_type === 'rewrite' ? 'fa-edit' : 'fa-question' %>"></i>
-                          <%= q.question_type === 'multiple_choice' ? 'Trắc nghiệm' : q.question_type === 'fill_blank' ? 'Điền từ' : q.question_type === 'matching' ? 'Ghép nối' : q.question_type === 'true_false' ? 'Đúng/Sai' : q.question_type === 'ordering' ? 'Sắp xếp' : q.question_type === 'rewrite' ? 'Viết lại' : q.question_type %>
+                          <i class="fas <%= q.question_type === 'hsk_common' ? 'fa-list' : q.question_type === 'multiple_choice' ? 'fa-dot-circle' : q.question_type === 'fill_blank' ? 'fa-square' : q.question_type === 'matching' ? 'fa-link' : q.question_type === 'true_false' ? 'fa-check' : q.question_type === 'ordering' ? 'fa-list-ol' : q.question_type === 'rewrite' ? 'fa-edit' : 'fa-question' %>"></i>
+                          <%= q.question_type === 'hsk_common' ? 'HSK 1-4 Danh sách chung' : q.question_type === 'multiple_choice' ? 'Trắc nghiệm' : q.question_type === 'fill_blank' ? 'Điền từ' : q.question_type === 'matching' ? 'Ghép nối' : q.question_type === 'true_false' ? 'Đúng/Sai' : q.question_type === 'ordering' ? 'Sắp xếp' : q.question_type === 'rewrite' ? 'Viết lại' : q.question_type %>
                         </span>
                         <span class="question-skill-badge skill-<%= q.skill_type %>">
                           <i class="fas <%= q.skill_type === 'listening' ? 'fa-headphones' : q.skill_type === 'reading' ? 'fa-book-open' : q.skill_type === 'writing' ? 'fa-pen' : 'fa-question' %>"></i>
@@ -425,15 +541,15 @@
                             <i class="fas fa-trash"></i>
                           </button>
                         </form>
-                          </div>
-                          </div>
+                      </div>
+                    </div>
                     
                     <div class="question-content">
                       <div class="question-text">
                         <div class="text-content">
                           <%= (q.question_text || 'Không có nội dung').substring(0, 60) %><%= (q.question_text && q.question_text.length > 60) ? '...' : '' %>
-                          </div>
-                          </div>
+                        </div>
+                      </div>
                       <div class="question-details">
                         <span class="badge badge-warning"><%= q.points || 1 %> điểm</span>
                       </div>
@@ -547,6 +663,16 @@
 let isOrderMode = false;
 let sortableInstance = null;
 
+// Debug function để kiểm tra trạng thái
+function debugSortableState() {
+  console.log('🔍 Debug Sortable State:');
+  console.log('- isOrderMode:', isOrderMode);
+  console.log('- sortableInstance:', sortableInstance);
+  console.log('- Sortable library loaded:', typeof Sortable !== 'undefined');
+  console.log('- Questions list element:', document.getElementById('questionsList'));
+  console.log('- Order badges:', document.querySelectorAll('.question-order-badge').length);
+}
+
 // Hiển thị modal import
 function showImportModal() {
   const modal = document.getElementById('importModal');
@@ -587,14 +713,31 @@ function toggleQuestionOrder() {
         chosenClass: 'sortable-chosen',
         dragClass: 'sortable-drag',
         handle: '.question-order-badge',
+        onStart: function(evt) {
+          // Thêm visual feedback khi bắt đầu kéo
+          evt.item.classList.add('dragging');
+        },
         onEnd: function(evt) {
+          // Xóa visual feedback
+          evt.item.classList.remove('dragging');
+          // Cập nhật số thứ tự
           updateOrderNumbers();
+        },
+        onMove: function(evt) {
+          // Kiểm tra xem có thể di chuyển không
+          return true;
         }
       });
+      
+      console.log('✅ Sortable initialized successfully');
+    } else {
+      console.error('❌ Sortable.js not loaded');
+      showNotification('Lỗi: Sortable.js chưa được tải!', 'error');
+      return;
     }
     
     // Hiển thị thông báo
-    showNotification('Chế độ sắp xếp đã bật. Kéo thả để sắp xếp thứ tự câu hỏi.', 'info');
+    showNotification('Chế độ sắp xếp đã bật. Kéo thả badge thứ tự để sắp xếp câu hỏi.', 'info');
     
   } else {
     // Tắt chế độ sắp xếp và lưu
@@ -613,6 +756,7 @@ function toggleQuestionOrder() {
     if (sortableInstance) {
       sortableInstance.destroy();
       sortableInstance = null;
+      console.log('✅ Sortable destroyed');
     }
     
     // Lưu thứ tự mới
@@ -627,8 +771,12 @@ function updateOrderNumbers() {
     const orderNumber = card.querySelector('.order-number');
     if (orderNumber) {
       orderNumber.textContent = index + 1;
+      // Cập nhật data-order attribute
+      card.setAttribute('data-order', index + 1);
     }
   });
+  
+  console.log(`✅ Updated order numbers for ${questionCards.length} questions`);
 }
 
 // Lưu thứ tự mới lên server
@@ -638,38 +786,54 @@ function saveNewOrder() {
   
   questionCards.forEach((card, index) => {
     const questionId = card.getAttribute('data-question-id');
+    const currentOrder = card.getAttribute('data-order');
+    
     orders.push({
       question_id: parseInt(questionId),
-      order_in_test: index + 1
+      order_in_test: index + 1,
+      previous_order: parseInt(currentOrder) || 0
     });
   });
+  
+  console.log('📤 Sending order data:', orders);
   
   // Hiển thị loading
   showNotification('Đang lưu thứ tự mới...', 'info');
   
   // Gửi request lên server
+  const requestData = { orders: orders };
+  console.log('📤 Request data:', requestData);
+  console.log('📤 Request URL:', `/admin/hsk/<%= test.test_id %>/questions/reorder`);
+  
   fetch(`/admin/hsk/<%= test.test_id %>/questions/reorder`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ orders: orders })
+    body: JSON.stringify(requestData)
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(data => {
     if (data.success) {
       showNotification('Đã lưu thứ tự mới thành công!', 'success');
+      console.log('✅ Order saved successfully:', data);
       // Reload trang để cập nhật
       setTimeout(() => {
         location.reload();
-      }, 1000);
+      }, 1500);
     } else {
-      showNotification('Lỗi khi lưu thứ tự: ' + data.message, 'error');
+      showNotification('Lỗi khi lưu thứ tự: ' + (data.message || 'Không xác định'), 'error');
+      console.error('❌ Server error:', data);
     }
   })
   .catch(error => {
-    console.error('Error saving order:', error);
-    showNotification('Lỗi khi lưu thứ tự mới!', 'error');
+    console.error('❌ Error saving order:', error);
+    showNotification('Lỗi khi lưu thứ tự mới: ' + error.message, 'error');
   });
 }
 

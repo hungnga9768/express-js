@@ -59,6 +59,17 @@
             </div>
             <div class="col-md-3">
               <div class="form-group">
+                <label>Trạng thái</label>
+                <select class="form-control" name="status">
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="draft" <%= String(status)==='draft'?'selected':'' %>>Nháp</option>
+                  <option value="public" <%= String(status)==='public'?'selected':'' %>>Công khai</option>
+                  <option value="hidden" <%= String(status)==='hidden'?'selected':'' %>>Ẩn</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
                 <label>&nbsp;</label>
                 <div>
                   <button class="btn btn-primary" type="submit">
@@ -104,6 +115,7 @@
                   <th width="120">Thời gian</th>
                   <th width="100">Điểm đạt</th>
                   <th width="120">Trộn đề</th>
+                  <th width="150">Trạng thái</th>
                   <th width="280">Hành động</th>
                 </tr>
               </thead>
@@ -149,6 +161,31 @@
                         </form>
                       </td>
                       <td class="text-center">
+                        <!-- Trạng thái đề thi -->
+                        <% let statusBadge = 'badge-secondary'; let statusText = 'Ẩn'; %>
+                        <% if (t.status === 'public') { statusBadge = 'badge-success'; statusText = 'Công khai'; } %>
+                        <% if (t.status === 'draft') { statusBadge = 'badge-warning'; statusText = 'Nháp'; } %>
+                        <% if (t.status === 'hidden') { statusBadge = 'badge-secondary'; statusText = 'Ẩn'; } %>
+                        
+                        <form method="POST" action="/admin/hsk/toggle-status/<%= t.test_id %>" style="display:inline">
+                          <select name="status" class="form-control form-control-sm" onchange="this.form.submit()">
+                            <option value="draft" <%= t.status === 'draft' ? 'selected' : '' %>>Nháp</option>
+                            <option value="public" <%= t.status === 'public' ? 'selected' : '' %>>Công khai</option>
+                            <option value="hidden" <%= t.status === 'hidden' ? 'selected' : '' %>>Ẩn</option>
+                          </select>
+                        </form>
+                        
+                        <!-- Trạng thái hoạt động -->
+                        <br>
+                        <form method="POST" action="/admin/hsk/toggle-active/<%= t.test_id %>" style="display:inline">
+                          <input type="hidden" name="value" value="<%= t.is_active ? 0 : 1 %>"/>
+                          <button class="btn btn-sm <%= t.is_active ? 'btn-success' : 'btn-outline-danger' %>" type="submit" title="<%= t.is_active ? 'Tạm ngưng' : 'Kích hoạt' %>">
+                            <i class="fas fa-<%= t.is_active ? 'check-circle' : 'times-circle' %>"></i>
+                            <%= t.is_active ? 'Hoạt động' : 'Tạm ngưng' %>
+                          </button>
+                        </form>
+                      </td>
+                      <td class="text-center">
                         <div class="btn-group" role="group">
 
                           <a class="btn btn-sm btn-primary" href="/admin/hsk/<%= t.test_id %>/questions" title="Quản lý câu hỏi">
@@ -167,7 +204,7 @@
                   <% }) %>
                 <% } else { %>
                   <tr>
-                    <td colspan="8" class="text-center text-muted">
+                    <td colspan="9" class="text-center text-muted">
                       <i class="fas fa-inbox fa-3x mb-3"></i>
                       <br>Không có đề thi nào
                       <br><small>Hãy tạo đề thi đầu tiên!</small>
@@ -187,17 +224,17 @@
             <nav aria-label="Page navigation">
               <ul class="pagination justify-content-center">
                 <li class="page-item <%= Page === 1 ? 'disabled' : '' %>">
-                  <a class="page-link" href="?page=<%= Page > 1 ? Page - 1 : 1 %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>">
+                  <a class="page-link" href="?page=<%= Page > 1 ? Page - 1 : 1 %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>&status=<%= status||'' %>">
                     <i class="fas fa-chevron-left"></i> Trước
                   </a>
                 </li>
                 <% for (let i = 1; i <= totalPage; i++) { %>
                   <li class="page-item <%= i === Page ? 'active' : '' %>">
-                    <a class="page-link" href="?page=<%= i %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>"><%= i %></a>
+                    <a class="page-link" href="?page=<%= i %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>&status=<%= status||'' %>"><%= i %></a>
                   </li>
                 <% } %>
                 <li class="page-item <%= Page === totalPage ? 'disabled' : '' %>">
-                  <a class="page-link" href="?page=<%= Page < totalPage ? Page + 1 : totalPage %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>">
+                  <a class="page-link" href="?page=<%= Page < totalPage ? Page + 1 : totalPage %>&search=<%= encodeURIComponent(search||'') %>&level=<%= level||'' %>&status=<%= status||'' %>">
                     Sau <i class="fas fa-chevron-right"></i>
                   </a>
                 </li>

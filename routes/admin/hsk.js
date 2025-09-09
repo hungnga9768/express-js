@@ -12,6 +12,10 @@ router.get("/edit/:id", ctrl.editForm);
 router.post("/update/:id", ctrl.update);
 router.post("/delete/:id", ctrl.delete);
 
+// Toggle trạng thái
+router.post("/toggle-randomize/:id", ctrl.toggleRandomize);
+router.post("/toggle-status/:id", ctrl.toggleStatus);
+router.post("/toggle-active/:id", ctrl.toggleActive);
 
 router.get("/:testId/questions", ctrl.questionsPage);
 router.post("/:testId/questions", uploadMedia, ctrl.createQuestion);

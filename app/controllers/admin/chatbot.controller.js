@@ -71,7 +71,7 @@ module.exports = {
           throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
         }
       })();
-      } else if (selected_image) {
+      } else if (selected_image && selected_image.trim() !== '') {
         // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
         if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
           try {
@@ -84,7 +84,8 @@ module.exports = {
         }
         avatar_url = selected_image;
       } else {
-        avatar_url = old_thumbnail_url;
+        // Nếu không có file upload và không có selected_image, sử dụng giá trị mặc định
+        avatar_url = old_thumbnail_url || null;
       }
       const createChatbot = {
         name,
@@ -124,6 +125,14 @@ module.exports = {
         selected_image,
         old_thumbnail_url,
       } = req.body;
+      
+      // Debug logging
+      console.log('🔧 Chatbot update request:', {
+        id,
+        selected_image: selected_image || 'null',
+        old_thumbnail_url: old_thumbnail_url || 'null',
+        hasFile: !!req.file
+      });
       const is_active = req.body.is_active === "1" ? 1 : 0;
       const checktitle = await chatModel.checkDuplicateTitle(name, id);
       if (checktitle) {
@@ -156,7 +165,7 @@ module.exports = {
           console.error('Lỗi upload lên Cloudinary:', result.error);
           throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
         }
-      } else if (selected_image) {
+      } else if (selected_image && selected_image.trim() !== '') {
         // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
         if (oldChatbot && oldChatbot.avatar_url && oldChatbot.avatar_url !== selected_image && selected_image) {
           try {
@@ -164,8 +173,8 @@ module.exports = {
             const cloudinaryHelper = require('../../utils/cloudinaryHelper');
             const oldPublicId = cloudinaryHelper.extractPublicId(oldChatbot.avatar_url);
             
-                          // Kiểm tra xem có phải là public_id hợp lệ không
-              if (oldPublicId) {
+            // Kiểm tra xem có phải là public_id hợp lệ không
+            if (oldPublicId) {
               const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
               if (!deleteResult.success) {
                 console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
@@ -177,8 +186,12 @@ module.exports = {
         }
         avatar_url = selected_image;
       } else {
-        avatar_url = old_thumbnail_url;
+        // Nếu không có file upload và không có selected_image, giữ nguyên ảnh cũ từ database
+        avatar_url = oldChatbot.avatar_url;
+        console.log('🔧 Giữ nguyên avatar cũ:', avatar_url);
       }
+      
+      console.log('🔧 Final avatar_url:', avatar_url);
       const dataUpdate = {
         name,
         internal_name,

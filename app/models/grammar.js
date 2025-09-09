@@ -1,6 +1,4 @@
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 module.exports = {
   // Lấy tất cả ngữ pháp
@@ -21,7 +19,8 @@ module.exports = {
     sql += ` ORDER BY hsk_level ASC, grammar_id DESC LIMIT ?, ?`;
     params.push(offset, limit);
 
-    return await query(sql, params);
+    const [rows] = await pool.query(sql, params);
+    return rows;
   },
 
   // Lấy tổng số ngữ pháp
@@ -39,13 +38,13 @@ module.exports = {
       params.push(hskLevel);
     }
 
-    const result = await query(sql, params);
+    const [result] = await pool.query(sql, params);
     return result[0].totalRow;
   },
 
   // Lấy ngữ pháp theo ID
   async getById(id) {
-    const rows = await query("SELECT * FROM Grammar WHERE grammar_id = ?", [id]);
+    const [rows] = await pool.query("SELECT * FROM Grammar WHERE grammar_id = ?", [id]);
     return rows[0];
   },
 
@@ -57,7 +56,8 @@ module.exports = {
       ORDER BY RAND() 
       LIMIT ?
     `;
-    return await query(sql, [level, limit]);
+    const [rows] = await pool.query(sql, [level, limit]);
+    return rows;
   },
 
   // Tạo ngữ pháp mới
@@ -80,7 +80,7 @@ module.exports = {
       grammarData.hsk_level || 1
     ];
 
-    const result = await query(sql, values);
+    const [result] = await pool.query(sql, values);
     return result.insertId;
   },
 
@@ -106,74 +106,87 @@ module.exports = {
       id
     ];
 
-    const result = await query(sql, values);
-    return result.affectedRows > 0;
+    const [result] = await pool.query(sql, values);
+    return result.affectedRows;
   },
 
   // Xóa ngữ pháp
   async delete(id) {
-    const result = await query("DELETE FROM Grammar WHERE grammar_id = ?", [id]);
-    return result.affectedRows > 0;
+    const [result] = await pool.query("DELETE FROM Grammar WHERE grammar_id = ?", [id]);
+    return result.affectedRows;
   },
 
   // Kiểm tra trùng lặp
-  async checkDuplicate(title, grammarId = null) {
-    let sql = "SELECT * FROM Grammar WHERE title = ?";
+  async checkDuplicate(title, id = null) {
+    let sql = "SELECT COUNT(*) as count FROM Grammar WHERE title = ?";
     const params = [title];
-
-    if (grammarId) {
+    
+    if (id) {
       sql += " AND grammar_id != ?";
-      params.push(grammarId);
+      params.push(id);
     }
-
-    const rows = await query(sql, params);
-    return rows.length > 0;
+    
+    const [rows] = await pool.query(sql, params);
+    return rows[0].count > 0;
   },
 
-  // Lấy ngữ pháp ngẫu nhiên cho bài tập
-  async getRandomGrammar(limit = 10, hskLevel = null) {
-    let sql = "SELECT * FROM Grammar";
+  // Lấy ngữ pháp ngẫu nhiên
+  async getRandomGrammar(level = null, limit = 5) {
+    let sql = "SELECT * FROM Grammar WHERE 1=1";
     const params = [];
 
-    if (hskLevel) {
-      sql += " WHERE hsk_level = ?";
-      params.push(hskLevel);
+    if (level) {
+      sql += " AND hsk_level = ?";
+      params.push(level);
     }
 
     sql += " ORDER BY RAND() LIMIT ?";
     params.push(limit);
 
-    return await query(sql, params);
+    const [rows] = await pool.query(sql, params);
+    return rows;
   },
 
-  // Tìm kiếm ngữ pháp nâng cao
-  async searchAdvanced(filters) {
+  // Lấy ngữ pháp theo độ khó
+  async getByDifficulty(difficulty, limit = 10) {
+    const sql = `
+      SELECT * FROM Grammar 
+      WHERE difficulty_level = ? 
+      ORDER BY hsk_level ASC, grammar_id DESC 
+      LIMIT ?
+    `;
+    const [rows] = await pool.query(sql, [difficulty, limit]);
+    return rows;
+  },
+
+  // Tìm kiếm nâng cao
+  async searchAdvanced(searchParams) {
     let sql = "SELECT * FROM Grammar WHERE 1=1";
     const params = [];
 
-    if (filters.search) {
+    if (searchParams.search) {
       sql += ` AND (title LIKE ? OR structure LIKE ? OR explanation LIKE ?)`;
-      const searchTerm = `%${filters.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
+      params.push(`%${searchParams.search}%`, `%${searchParams.search}%`, `%${searchParams.search}%`);
     }
 
-    if (filters.hskLevel) {
+    if (searchParams.hskLevel) {
       sql += ` AND hsk_level = ?`;
-      params.push(filters.hskLevel);
+      params.push(searchParams.hskLevel);
     }
 
-    if (filters.difficultyLevel) {
+    if (searchParams.difficulty) {
       sql += ` AND difficulty_level = ?`;
-      params.push(filters.difficultyLevel);
+      params.push(searchParams.difficulty);
     }
 
     sql += ` ORDER BY hsk_level ASC, grammar_id DESC`;
-    
-    if (filters.limit) {
+
+    if (searchParams.limit) {
       sql += ` LIMIT ?`;
-      params.push(filters.limit);
+      params.push(searchParams.limit);
     }
 
-    return await query(sql, params);
+    const [rows] = await pool.query(sql, params);
+    return rows;
   }
 };

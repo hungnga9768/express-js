@@ -1,6 +1,142 @@
 const hskModel = require("../../models/hsk");
 
 module.exports = {
+  // Helper function để chuyển đổi datetime sang MySQL format
+  formatDateTime(date) {
+    if (!date) return null;
+    if (typeof date === 'string') {
+      date = new Date(date);
+    }
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+  },
+
+  // Helper function để kiểm tra đáp án và tính điểm từng phần
+  checkAnswer(question, userAnswer) {
+    if (!question.correct_answer || !userAnswer) return { isCorrect: false, points: 0, partialScore: 0 };
+    
+    const correctAnswer = question.correct_answer.trim();
+    const userAns = userAnswer.trim();
+    
+    // So sánh trực tiếp (không phân biệt hoa thường)
+    if (correctAnswer.toLowerCase() === userAns.toLowerCase()) {
+      return { isCorrect: true, points: question.points, partialScore: question.points };
+    }
+    
+    // Xử lý các trường hợp đặc biệt
+    if (question.question_type === 'multiple_choice') {
+      // Chuyển đổi A,B,C,D thành 0,1,2,3
+      const letterToNumber = { 'A': '0', 'B': '1', 'C': '2', 'D': '3' };
+      const userNum = letterToNumber[userAns.toUpperCase()];
+      if (userNum && correctAnswer === userNum) {
+        return { isCorrect: true, points: question.points, partialScore: question.points };
+      }
+    }
+    
+    // Xử lý true/false
+    if (question.question_type === 'true_false') {
+      const userBool = userAns.toLowerCase();
+      if ((correctAnswer === 'true' && userBool === 'true') ||
+          (correctAnswer === 'false' && userBool === 'false')) {
+        return { isCorrect: true, points: question.points, partialScore: question.points };
+      }
+    }
+    
+    // Xử lý fill_blank (có thể có nhiều chỗ trống) - TÍNH ĐIỂM TỪNG PHẦN
+    if (question.question_type === 'fill_blank') {
+      // Đáp án có thể là "A,A,A" hoặc "A,B,C" cho nhiều chỗ trống
+      const correctAnswers = correctAnswer.split(',');
+      const userAnswers = userAns.split(',');
+      
+      if (correctAnswers.length !== userAnswers.length) {
+        return { isCorrect: false, points: 0, partialScore: 0 };
+      }
+      
+      // Đếm số chỗ trống đúng
+      let correctBlanks = 0;
+      for (let i = 0; i < correctAnswers.length; i++) {
+        if (correctAnswers[i].trim() === userAnswers[i].trim()) {
+          correctBlanks++;
+        }
+      }
+      
+      // Tính điểm từng phần
+      const totalBlanks = correctAnswers.length;
+      const partialScore = Math.round((correctBlanks / totalBlanks) * question.points);
+      const isFullyCorrect = correctBlanks === totalBlanks;
+      
+      return { 
+        isCorrect: isFullyCorrect, 
+        points: isFullyCorrect ? question.points : partialScore, 
+        partialScore: partialScore 
+      };
+    }
+    
+    // Xử lý matching (ghép nối) - TÍNH ĐIỂM TỪNG PHẦN
+    if (question.question_type === 'matching') {
+      // Đáp án có thể là "A-1,B-2,C-3" hoặc "A-1,B-2"
+      const correctPairsArray = correctAnswer.split(',').map(pair => pair.trim());
+      const userPairs = userAns.split(',').map(pair => pair.trim());
+      
+      if (correctPairsArray.length !== userPairs.length) {
+        return { isCorrect: false, points: 0, partialScore: 0 };
+      }
+      
+      // Đếm số cặp ghép nối đúng
+      let correctPairsCount = 0;
+      const sortedCorrect = correctPairsArray.sort();
+      const sortedUser = userPairs.sort();
+      
+      for (let i = 0; i < sortedCorrect.length; i++) {
+        if (sortedCorrect[i] === sortedUser[i]) {
+          correctPairsCount++;
+        }
+      }
+      
+      // Tính điểm từng phần
+      const totalPairs = correctPairsArray.length;
+      const partialScore = Math.round((correctPairsCount / totalPairs) * question.points);
+      const isFullyCorrect = correctPairsCount === totalPairs;
+      
+      return { 
+        isCorrect: isFullyCorrect, 
+        points: isFullyCorrect ? question.points : partialScore, 
+        partialScore: partialScore 
+      };
+    }
+    
+    // Xử lý ordering (sắp xếp) - TÍNH ĐIỂM TỪNG PHẦN
+    if (question.question_type === 'ordering') {
+      // Đáp án có thể là "1,2,3,4" hoặc "2,1,3,4"
+      const correctOrder = correctAnswer.split(',').map(num => num.trim());
+      const userOrder = userAns.split(',').map(num => num.trim());
+      
+      if (correctOrder.length !== userOrder.length) {
+        return { isCorrect: false, points: 0, partialScore: 0 };
+      }
+      
+      // Đếm số vị trí đúng thứ tự
+      let correctPositions = 0;
+      for (let i = 0; i < correctOrder.length; i++) {
+        if (correctOrder[i] === userOrder[i]) {
+          correctPositions++;
+        }
+      }
+      
+      // Tính điểm từng phần
+      const totalPositions = correctOrder.length;
+      const partialScore = Math.round((correctPositions / totalPositions) * question.points);
+      const isFullyCorrect = correctPositions === totalPositions;
+      
+      return { 
+        isCorrect: isFullyCorrect, 
+        points: isFullyCorrect ? question.points : partialScore, 
+        partialScore: partialScore 
+      };
+    }
+    
+    return { isCorrect: false, points: 0, partialScore: 0 };
+  },
+
   // 1. Lấy danh sách đề thi
   async getTests(req, res) {
     try {
@@ -135,8 +271,8 @@ module.exports = {
       // Lấy 50 câu trả lời gần nhất
       const sql = `
         SELECT ua.question_id, ua.user_answer, ua.is_correct, q.skill_type, q.question_type, t.hsk_level
-        FROM HSKUserAnswers ua
-        JOIN HSKResults r ON ua.result_id = r.result_id
+        FROM hskuseranswers ua
+        JOIN hskresults r ON ua.result_id = r.result_id
         JOIN HSKQuestions q ON ua.question_id = q.question_id
         JOIN hsktests t ON q.test_id = t.test_id
         WHERE r.user_id = ?
@@ -223,7 +359,7 @@ module.exports = {
           },
           question_count: questionCount,
           estimated_time: estimatedTime,
-          can_take: test.is_active && test.status === 'published'
+          can_take: test.is_active && test.status === 'public'
         }
       });
     } catch (error) {
@@ -249,6 +385,16 @@ module.exports = {
         });
       }
       
+      // Kiểm tra user có tồn tại không
+      const userModel = require('../../models/user');
+      const user = await userModel.getById(user_id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy người dùng với ID: ' + user_id
+        });
+      }
+      
       // Kiểm tra đề thi
       const test = await hskModel.getTestById(testId);
       if (!test) {
@@ -258,29 +404,29 @@ module.exports = {
         });
       }
       
-      if (!test.is_active || test.status !== 'published') {
+      if (!test.is_active || test.status !== 'public') {
         return res.status(400).json({
           success: false,
           message: 'Đề thi không khả dụng'
         });
       }
       
-      // Tạo kết quả bài thi mới
-      const resultData = {
-        user_id: parseInt(user_id),
-        test_id: parseInt(testId),
-        status: 'in_progress',
-        started_at: new Date(),
-        total_questions: test.total_questions,
-        time_limit: test.time_limit
-      };
+             // Tạo kết quả bài thi mới
+       const resultData = {
+         user_id: parseInt(user_id),
+         test_id: parseInt(testId),
+         status: 'in_progress',
+         started_at: module.exports.formatDateTime(new Date()),
+         total_questions: test.total_questions,
+         time_limit: test.time_limit
+       };
       
-      const result = await hskModel.createResult(resultData);
+      const resultId = await hskModel.createResult(resultData);
       
       res.json({
         success: true,
         data: {
-          result_id: result.insertId,
+          result_id: resultId,
           test_info: {
             test_id: test.test_id,
             title: test.title,
@@ -327,7 +473,7 @@ module.exports = {
         questions = questions.sort(() => Math.random() - 0.5);
       }
       
-      // Format câu hỏi cho frontend (ẩn đáp án đúng)
+      // Format câu hỏi cho frontend (ẩn đáp án đúng nhưng giữ cấu trúc câu hỏi)
       const formattedQuestions = questions.map(q => ({
         question_id: q.question_id,
         question_type: q.question_type,
@@ -339,6 +485,10 @@ module.exports = {
         points: q.points,
         order_in_test: q.order_in_test,
         difficulty_level: q.difficulty_level,
+        // Giữ các trường cấu trúc câu hỏi nhưng ẩn đáp án đúng
+        matching_pairs: q.matching_pairs,
+        ordering_items: q.ordering_items,
+        rewrite_instruction: q.rewrite_instruction,
         // Ẩn đáp án đúng và giải thích
         // correct_answer: q.correct_answer,
         // explanation: q.explanation
@@ -400,59 +550,65 @@ module.exports = {
       
       const answerDetails = [];
       
-      for (const answer of answers) {
-        const question = questionMap[answer.question_id];
-        if (!question) continue;
-        
-        const isCorrect = this.checkAnswer(question, answer.user_answer);
-        const points = isCorrect ? question.points : 0;
-        
-        // Tính điểm theo kỹ năng
-        if (question.skill_type === 'listening') {
-          listeningScore += points;
-        } else if (question.skill_type === 'reading') {
-          readingScore += points;
-        } else if (question.skill_type === 'writing') {
-          writingScore += points;
-        }
-        
-        totalScore += points;
-        if (isCorrect) correctAnswers++;
-        
-        // Lưu chi tiết đáp án
-        answerDetails.push({
-          question_id: answer.question_id,
-          user_answer: answer.user_answer,
-          is_correct: isCorrect,
-          points: points
-        });
-      }
+             for (const answer of answers) {
+         const question = questionMap[answer.question_id];
+         if (!question) continue;
+         
+                   const result = module.exports.checkAnswer(question, answer.user_answer);
+         const points = result.points;
+         
+         // Tính điểm theo kỹ năng
+         if (question.skill_type === 'listening') {
+           listeningScore += points;
+         } else if (question.skill_type === 'reading') {
+           readingScore += points;
+         } else if (question.skill_type === 'writing') {
+           writingScore += points;
+         }
+         
+         totalScore += points;
+         if (result.isCorrect) correctAnswers++;
+         
+         // Lưu chi tiết đáp án
+         answerDetails.push({
+           question_id: answer.question_id,
+           user_answer: answer.user_answer,
+           is_correct: result.isCorrect,
+           points: points,
+           partial_score: result.partialScore
+         });
+       }
       
       // Kiểm tra đạt/không đạt
       const test = await hskModel.getTestById(result.test_id);
       const passed = totalScore >= test.passing_score;
       
-      // Cập nhật kết quả
+                   // Cập nhật kết quả
       const updateData = {
-        status: 'submitted',
-        ended_at: ended_at || new Date(),
+        status: 'graded',
+        ended_at: module.exports.formatDateTime(ended_at || new Date()),
         time_spent: time_spent || 0,
         total_score: totalScore,
         listening_score: listeningScore,
         reading_score: readingScore,
         writing_score: writingScore,
-        passed: passed
+        is_passed: passed ? 1 : 0
       };
       
-      await hskModel.updateResult(resultId, updateData);
+      await hskModel.completeTest(resultId, updateData);
       
       // Lưu chi tiết đáp án
-      for (const answerDetail of answerDetails) {
+      for (let i = 0; i < answerDetails.length; i++) {
+        const answerDetail = answerDetails[i];
         await hskModel.createUserAnswer({
           result_id: resultId,
           question_id: answerDetail.question_id,
           user_answer: answerDetail.user_answer,
-          is_correct: answerDetail.is_correct
+          is_correct: answerDetail.is_correct,
+          score: answerDetail.points,
+          question_order: i + 1,
+          time_spent: 0, // Có thể tính từ frontend
+          feedback: null
         });
       }
       
@@ -479,40 +635,6 @@ module.exports = {
         error: error.message
       });
     }
-  },
-
-  // Helper function để kiểm tra đáp án
-  checkAnswer(question, userAnswer) {
-    if (!question.correct_answer || !userAnswer) return false;
-    
-    const correctAnswer = question.correct_answer.trim();
-    const userAns = userAnswer.trim();
-    
-    // So sánh trực tiếp
-    if (correctAnswer.toLowerCase() === userAns.toLowerCase()) {
-      return true;
-    }
-    
-    // Xử lý các trường hợp đặc biệt
-    if (question.question_type === 'multiple_choice') {
-      // Chuyển đổi A,B,C,D thành 0,1,2,3
-      const letterToNumber = { 'A': '0', 'B': '1', 'C': '2', 'D': '3' };
-      const userNum = letterToNumber[userAns.toUpperCase()];
-      if (userNum && correctAnswer === userNum) {
-        return true;
-      }
-    }
-    
-    // Xử lý true/false
-    if (question.question_type === 'true_false') {
-      const userBool = userAns.toLowerCase();
-      if ((correctAnswer === 'true' && userBool === 'true') ||
-          (correctAnswer === 'false' && userBool === 'false')) {
-        return true;
-      }
-    }
-    
-    return false;
   },
 
   // ===== PHASE 2 - RESULTS & ANALYTICS =====
@@ -594,12 +716,34 @@ module.exports = {
           },
           skill_stats: skillStats,
           answers: userAnswers.map(answer => ({
+            // Thông tin từ bảng hskuseranswers
+            answer_id: answer.answer_id,
+            result_id: answer.result_id,
             question_id: answer.question_id,
-            question_text: answer.question_text,
             user_answer: answer.user_answer,
-            correct_answer: answer.correct_answer,
             is_correct: answer.is_correct,
-            explanation: answer.explanation
+            score: answer.score,
+            question_order: answer.question_order,
+            time_spent: answer.time_spent,
+            feedback: answer.feedback,
+            graded_at: answer.graded_at,
+            created_at: answer.created_at,
+            
+            // Thông tin từ bảng HSKQuestions
+            test_id: answer.test_id,
+            question_type: answer.question_type,
+            question_text: answer.question_text,
+            audio_url: answer.audio_url,
+            image_url: answer.image_url,
+            options: answer.options,
+            correct_answer: answer.correct_answer,
+            explanation: answer.explanation,
+            difficulty_level: answer.difficulty_level,
+            points: answer.points,
+            order_in_test: answer.order_in_test,
+            matching_pairs: answer.matching_pairs,
+            ordering_items: answer.ordering_items,
+            rewrite_instruction: answer.rewrite_instruction
           }))
         }
       });
@@ -629,7 +773,7 @@ module.exports = {
       const results = await hskModel.getUserResults(userId, options);
       
       // Lấy tổng số bài thi
-      const allResults = await hskModel.getUserResults(userId);
+      const allResults = await hskModel.getUserResults(userId, {});
       const total = allResults.length;
       const totalPages = Math.ceil(total / limit);
       
@@ -686,7 +830,7 @@ module.exports = {
       
       // Tính toán các chỉ số bổ sung
       const passRate = stats.total_tests > 0 ? Math.round((stats.passed_tests / stats.total_tests) * 100) : 0;
-      const avgTimePerTest = stats.total_tests > 0 ? Math.round(stats.total_time_spent / stats.total_tests) : 0;
+      const avgTimePerTest = stats.total_tests > 0 ? Math.round((stats.total_time_spent || 0) / stats.total_tests) : 0;
       
       // Phân tích xu hướng
       const recentResults = await hskModel.getUserResults(userId, { limit: 5 });
@@ -702,7 +846,7 @@ module.exports = {
             total_tests: stats.total_tests,
             passed_tests: stats.passed_tests,
             pass_rate: passRate,
-            average_score: Math.round(stats.average_score || 0),
+            average_score: Math.round(stats.avg_score || 0),
             best_score: stats.best_score,
             total_time_spent: stats.total_time_spent,
             avg_time_per_test: avgTimePerTest
@@ -781,6 +925,43 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: 'Lỗi khi lấy bảng xếp hạng',
+        error: error.message
+      });
+    }
+  },
+
+  // 14. Tạo user test (chỉ để test API)
+  async createTestUser(req, res) {
+    try {
+      const userModel = require('../../models/user');
+      const bcrypt = require('bcrypt');
+      
+      // Tạo user test
+      const testUser = {
+        username: 'testuser_' + Date.now(),
+        email: 'test_' + Date.now() + '@example.com',
+        password_hash: await bcrypt.hash('123456', 10),
+        full_name: 'Test User',
+        account_status: 'active',
+        subscription_type: 'free'
+      };
+      
+      const resultId = await userModel.create(testUser);
+      
+      res.json({
+        success: true,
+        data: {
+          user_id: resultId,
+          username: testUser.username,
+          email: testUser.email,
+          message: 'Tạo user test thành công. Sử dụng user_id này để test API.'
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error creating test user:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi tạo user test',
         error: error.message
       });
     }

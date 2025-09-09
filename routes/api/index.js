@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const baitapCtrl = require("../../app/controllers/api/baitap.controller");
 const tailieuCtrl = require("../../app/controllers/api/tailieu.controller");
 const userCtrl = require("../../app/controllers/api/user.controllers");
 const SettingsCtrl = require("../../app/controllers/api/setting.controller");
@@ -11,20 +10,21 @@ const vocabulary = require("../api/vocabulary");
 const auth = require("../api/auth");
 const games = require("../api/games");
 const hsk = require("../api/hsk");
+const baitap = require("../api/baitap");
 const geminiCtrl = require("../../app/controllers/api/gemini.controller");
+const speechPractice = require("../api/speechPractice");
 // router baor vệ check đăng nhập thông qua cái này mới chạy
 const authenticateTokenUser = require("../../middlewares/authAPI");
 
 router.use("/auth", auth);
 router.use("/khoahoc", khoahoc);
-router.use("/baihoc", baihoc);
+router.use("/baihoc",authenticateTokenUser, baihoc);
 router.use("/vocabulary", vocabulary);
-router.use("/games", games);
-router.use("/hsk", hsk);
+router.use("/games",authenticateTokenUser, games);
+router.use("/hsk",authenticateTokenUser, hsk);
+router.use("/baitap", baitap);
 router.get("/tailieu/", tailieuCtrl.index);
 router.get("/tailieu/:id", tailieuCtrl.getID);
-router.get("/baitap/", baitapCtrl.index);
-
 // api quan li nguoi dung
 router.post("/login", userCtrl.Login);
 router.post("/register", userCtrl.create);
@@ -73,5 +73,8 @@ router.patch("/user-profile-fullname",authenticateTokenUser, userCtrl.userprofil
 );
 router.post("/user-profile-change-password",authenticateTokenUser, userCtrl.userprofilechangepassword
 );
+
+// ===== SPEECH PRACTICE (PHÁT ÂM + LUYỆN NGHE) =====
+router.use("/speech-practice", speechPractice);
 
 module.exports = router;

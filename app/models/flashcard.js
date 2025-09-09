@@ -1,6 +1,4 @@
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 module.exports = {
   // Lấy flashcards của user
@@ -14,7 +12,8 @@ module.exports = {
       ORDER BY f.next_review_date ASC, f.creation_date DESC
       LIMIT ?
     `;
-    return await query(sql, [userId, limit]);
+    const [rows] = await pool.query(sql, [userId, limit]);
+    return rows;
   },
 
   // Lấy flashcard theo ID và user_id
@@ -26,7 +25,7 @@ module.exports = {
       LEFT JOIN vocabulary v ON f.word_id = v.word_id
       WHERE f.flashcard_id = ? AND f.user_id = ?
     `;
-    const result = await query(sql, [id, userId]);
+    const [result] = await pool.query(sql, [id, userId]);
     return result[0] || null;
   },
 
@@ -37,7 +36,7 @@ module.exports = {
       FROM flashcards 
       WHERE user_id = ? AND front_content = ? AND back_content = ?
     `;
-    const result = await query(sql, [userId, frontContent.trim(), backContent.trim()]);
+    const [result] = await pool.query(sql, [userId, frontContent.trim(), backContent.trim()]);
     return result[0].count > 0;
   },
 
@@ -48,7 +47,7 @@ module.exports = {
       FROM flashcards 
       WHERE user_id = ? AND word_id = ?
     `;
-    const result = await query(sql, [userId, wordId]);
+    const [result] = await pool.query(sql, [userId, wordId]);
     return result[0].count > 0;
   },
 
@@ -70,7 +69,7 @@ module.exports = {
       flashcardData.next_review_date || new Date()
     ];
 
-    const result = await query(sql, values);
+    const [result] = await pool.query(sql, values);
     return result.insertId;
   },
 
@@ -85,7 +84,8 @@ module.exports = {
       ORDER BY f.next_review_date ASC
       LIMIT ?
     `;
-    return await query(sql, [userId, limit]);
+    const [rows] = await pool.query(sql, [userId, limit]);
+    return rows;
   },
 
   // Cập nhật trạng thái ôn tập
@@ -98,7 +98,7 @@ module.exports = {
       WHERE flashcard_id = ?
     `;
     
-    const result = await query(sql, [nextReviewDate, difficulty, id]);
+    const [result] = await pool.query(sql, [nextReviewDate, difficulty, id]);
     return result.affectedRows > 0;
   },
 
@@ -119,13 +119,13 @@ module.exports = {
       id
     ];
 
-    const result = await query(sql, values);
+    const [result] = await pool.query(sql, values);
     return result.affectedRows > 0;
   },
 
   // Xóa flashcard
   async delete(id, userId) {
-    const result = await query(
+    const [result] = await pool.query(
       "DELETE FROM flashcards WHERE flashcard_id = ? AND user_id = ?", 
       [id, userId]
     );
@@ -139,7 +139,7 @@ module.exports = {
       FROM flashcards 
       WHERE user_id = ?
     `;
-    const result = await query(sql, [userId]);
+    const [result] = await pool.query(sql, [userId]);
     return result[0].count;
   }
 };

@@ -49,7 +49,7 @@ module.exports = {
         description,
       };
       const id_baitap = await dsBaitap.create(newbaitap);
-      res.redirect(`/admin/baitap/edit/${id_baitap.insertId}`);
+      res.redirect(`/admin/baitap/edit/${id_baitap}`);
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
       return res.render("error", {

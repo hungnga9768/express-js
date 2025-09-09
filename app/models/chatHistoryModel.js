@@ -1,7 +1,6 @@
 // backend/models/chatHistoryModel.js
-const db = require("../../connect-mysql"); // Đường dẫn đến file kết nối DB của bạn
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql"); // Đường dẫn đến file kết nối DB của bạn
+
 class ChatHistoryModel {
   /**
    * Lưu một tin nhắn vào lịch sử chat.
@@ -15,7 +14,7 @@ class ChatHistoryModel {
   static async saveMessage(data) {
     try {
       const { userId, sessionId, role, content, topicInternalName } = data;
-      const result = await query(
+      const [result] = await pool.query(
         "INSERT INTO chat_history (user_id, session_id, role, content, topic_internal_name) VALUES (?, ?, ?, ?, ?)",
         [userId, sessionId, role, content, topicInternalName]
       );
@@ -32,7 +31,7 @@ class ChatHistoryModel {
    */
   static async getHistoryBySessionId(sessionId) {
     try {
-      const rows = await query(
+      const [rows] = await pool.query(
         "SELECT role, content FROM chat_history WHERE session_id = ? ORDER BY timestamp ASC",
         [sessionId]
       );
@@ -54,7 +53,7 @@ class ChatHistoryModel {
    */
   static async getSessionsByUserId(userId) {
     try {
-      const rows = await query(
+      const [rows] = await pool.query(
         `SELECT
                     ch.session_id,
                     ch.content AS last_message,

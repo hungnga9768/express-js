@@ -12,6 +12,7 @@
 function getCloudinaryUrl(publicId, resourceType = 'image', version = null) {
   if (!publicId) return null;
   
+  // Sử dụng giá trị mặc định nếu không có biến môi trường
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'dviufwqfi';
   const baseUrl = `https://res.cloudinary.com/${cloudName}/${resourceType}/upload`;
   

@@ -3,7 +3,10 @@ const router = express.Router();
 const { uploadAvatar } = require("../../middlewares/upload");
 const userCtr = require("../../app/controllers/admin/user.controllers");
 
-// Quản lý khóa học
+// Import phân quyền admin
+const { requireAnyAdmin } = require("../../middlewares/checkAdminRole");
+
+// Quản lý user - Tất cả admin
 router.get("/danhsach", userCtr.index);
 router.get("/add", userCtr.showAddForm);
 router.post("/add", uploadAvatar, userCtr.create);

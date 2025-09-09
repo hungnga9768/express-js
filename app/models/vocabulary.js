@@ -1,11 +1,9 @@
 
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 module.exports = {
-  // Lấy danh sách từ vựng với phân trang và tìm kiếm
-  async getAll(search, offset, limit, hskLevel = null) {
+  // Lấy danh sách từ vựng (có phân trang và tìm kiếm)
+  async getAll(search, offset = 0, limit = 20, hskLevel = null) {
     let sql = "SELECT * FROM vocabulary WHERE 1=1";
     const params = [];
 
@@ -22,7 +20,8 @@ module.exports = {
     sql += ` ORDER BY hsk_level ASC, word_id DESC LIMIT ?, ?`;
     params.push(offset, limit);
 
-    return await query(sql, params);
+    const [rows] = await pool.query(sql, params);
+    return rows;
   },
 
   // Lấy tổng số từ vựng
@@ -40,19 +39,20 @@ module.exports = {
       params.push(hskLevel);
     }
 
-    const result = await query(sql, params);
+    const [result] = await pool.query(sql, params);
     return result[0].totalRow;
   },
 
   // Lấy từ vựng theo ID
   async getById(id) {
-    const rows = await query("SELECT * FROM vocabulary WHERE word_id = ?", [id]);
+    const [rows] = await pool.query("SELECT * FROM vocabulary WHERE word_id = ?", [id]);
     return rows[0];
   },
 
   // Lấy từ vựng theo HSK level
   async getByHSKLevel(level) {
-    return await query("SELECT * FROM vocabulary WHERE hsk_level = ? ORDER BY word_id", [level]);
+    const [rows] = await pool.query("SELECT * FROM vocabulary WHERE hsk_level = ? ORDER BY word_id", [level]);
+    return rows;
   },
 
   // Lấy từ vựng theo khóa học
@@ -63,7 +63,8 @@ module.exports = {
       WHERE cv.course_id = ?
       ORDER BY v.hsk_level ASC, v.word_id
     `;
-    return await query(sql, [courseId]);
+    const [rows] = await pool.query(sql, [courseId]);
+    return rows;
   },
 
   // Tạo từ vựng mới
@@ -90,7 +91,7 @@ module.exports = {
       vocabData.audio_url || null
     ];
 
-    const result = await query(sql, values);
+    const [result] = await pool.query(sql, values);
     return result.insertId;
   },
 
@@ -119,100 +120,70 @@ module.exports = {
       id
     ];
 
-    const result = await query(sql, values);
-    return result.affectedRows > 0;
+    const [result] = await pool.query(sql, values);
+    return result.affectedRows; // Trả về số dòng bị ảnh hưởng
   },
 
   // Xóa từ vựng
   async delete(id) {
-    const result = await query("DELETE FROM vocabulary WHERE word_id = ?", [id]);
-    return result.affectedRows > 0;
-  },
-
-  // Kiểm tra trùng lặp
-  async checkDuplicate(simplifiedChinese, wordId = null) {
-    let sql = "SELECT * FROM vocabulary WHERE simplified_chinese = ?";
-    const params = [simplifiedChinese];
-
-    if (wordId) {
-      sql += " AND word_id != ?";
-      params.push(wordId);
-    }
-
-    const rows = await query(sql, params);
-    return rows.length > 0;
-  },
-
-  // Lấy từ vựng ngẫu nhiên cho bài tập
-  async getRandomWords(limit = 10, hskLevel = null) {
-    let sql = "SELECT * FROM vocabulary";
-    const params = [];
-
-    if (hskLevel) {
-      sql += " WHERE hsk_level = ?";
-      params.push(hskLevel);
-    }
-
-    sql += " ORDER BY RAND() LIMIT ?";
-    params.push(limit);
-
-    return await query(sql, params);
+    const [result] = await pool.query("DELETE FROM vocabulary WHERE word_id = ?", [id]);
+    return result.affectedRows; // Trả về số dòng bị xóa
   },
 
   // Tìm kiếm từ vựng nâng cao
-  async searchAdvanced(filters) {
+  async searchAdvanced(searchParams) {
     let sql = "SELECT * FROM vocabulary WHERE 1=1";
     const params = [];
 
-    if (filters.search) {
+    if (searchParams.search) {
       sql += ` AND (simplified_chinese LIKE ? OR english_meaning LIKE ? OR pinyin LIKE ?)`;
-      const searchTerm = `%${filters.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
+      params.push(`%${searchParams.search}%`, `%${searchParams.search}%`, `%${searchParams.search}%`);
     }
 
-    if (filters.hskLevel) {
+    if (searchParams.hskLevel) {
       sql += ` AND hsk_level = ?`;
-      params.push(filters.hskLevel);
+      params.push(searchParams.hskLevel);
     }
 
-    if (filters.partOfSpeech) {
+    if (searchParams.partOfSpeech) {
       sql += ` AND part_of_speech = ?`;
-      params.push(filters.partOfSpeech);
+      params.push(searchParams.partOfSpeech);
     }
 
-    if (filters.hasAudio) {
-      sql += ` AND audio_url IS NOT NULL`;
+    if (searchParams.minLevel && searchParams.maxLevel) {
+      sql += ` AND hsk_level BETWEEN ? AND ?`;
+      params.push(searchParams.minLevel, searchParams.maxLevel);
     }
 
     sql += ` ORDER BY hsk_level ASC, word_id DESC`;
-    
-    if (filters.limit) {
+
+    if (searchParams.limit) {
       sql += ` LIMIT ?`;
-      params.push(filters.limit);
+      params.push(searchParams.limit);
     }
 
-    return await query(sql, params);
+    const [rows] = await pool.query(sql, params);
+    return rows;
   },
 
-  // Lấy từ vựng theo HSK level với limit (cho game)
-  async getByHSKLevel(level, limit = 10) {
-    const sql = `
-      SELECT * FROM vocabulary 
-      WHERE hsk_level = ? 
-      ORDER BY RAND() 
-      LIMIT ?
-    `;
-    return await query(sql, [level, limit]);
+  // Lấy từ vựng theo cấp độ HSK với giới hạn
+  async getByHSKLevelWithLimit(hskLevel, limit = 50) {
+    const sql = "SELECT * FROM vocabulary WHERE hsk_level = ? ORDER BY word_id LIMIT ?";
+    const [rows] = await pool.query(sql, [hskLevel, limit]);
+    return rows;
   },
 
-  // Lấy từ vựng có audio theo HSK level
-  async getWithAudio(hskLevel, limit = 10) {
-    const sql = `
-      SELECT * FROM vocabulary 
-      WHERE hsk_level = ? AND audio_url IS NOT NULL
-      ORDER BY RAND() 
-      LIMIT ?
-    `;
-    return await query(sql, [hskLevel, limit]);
+  // Kiểm tra từ vựng trùng lặp
+  async checkDuplicate(simplifiedChinese, excludeId = null) {
+    let sql = "SELECT COUNT(*) as count FROM vocabulary WHERE simplified_chinese = ?";
+    const params = [simplifiedChinese];
+    
+    if (excludeId) {
+      sql += " AND word_id != ?";
+      params.push(excludeId);
+    }
+    
+    const [rows] = await pool.query(sql, params);
+    return rows[0].count > 0;
   }
 };

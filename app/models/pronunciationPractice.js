@@ -1,6 +1,4 @@
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 module.exports = {
   // Lấy tất cả bài luyện phát âm của user
@@ -13,7 +11,8 @@ module.exports = {
       ORDER BY pp.submission_time DESC
       LIMIT ?
     `;
-    return await query(sql, [userId, limit]);
+    const [rows] = await pool.query(sql, [userId, limit]);
+    return rows;
   },
 
   // Lấy bài luyện phát âm theo ID
@@ -31,7 +30,7 @@ module.exports = {
       params.push(userId);
     }
 
-    const rows = await query(sql, params);
+    const [rows] = await pool.query(sql, params);
     return rows[0];
   },
 
@@ -55,7 +54,7 @@ module.exports = {
       practiceData.pronunciation_errors || null
     ];
 
-    const result = await query(sql, values);
+    const [result] = await pool.query(sql, values);
     return result.insertId;
   },
 
@@ -80,7 +79,7 @@ module.exports = {
       values.push(userId);
     }
 
-    const result = await query(sql, values);
+    const [result] = await pool.query(sql, values);
     return result.affectedRows > 0;
   },
 
@@ -94,7 +93,7 @@ module.exports = {
       params.push(userId);
     }
 
-    const result = await query(sql, params);
+     const [result] = await pool.query(sql, params);
     return result.affectedRows > 0;
   },
 
@@ -111,7 +110,7 @@ module.exports = {
       WHERE user_id = ?
     `;
     
-    const rows = await query(sql, [userId]);
+    const [rows] = await pool.query(sql, [userId]);
     return rows[0];
   },
 
@@ -130,7 +129,8 @@ module.exports = {
 
     sql += " ORDER BY submission_time DESC";
     
-    return await query(sql, params);
+    const [result] = await pool.query(sql, params);
+    return rows;
   },
 
   // Lấy bài luyện phát âm theo ngữ pháp
@@ -148,7 +148,8 @@ module.exports = {
 
     sql += " ORDER BY submission_time DESC";
     
-    return await query(sql, params);
+    const [result] = await pool.query(sql, params);
+    return rows;
   },
 
   // Lấy bài luyện phát âm cần cải thiện
@@ -162,7 +163,8 @@ module.exports = {
       LIMIT ?
     `;
     
-    return await query(sql, [userId, limit]);
+    const [rows] = await pool.query(sql, [userId, limit]);
+    return rows;
   },
 
   // Lấy bài luyện phát âm tốt nhất
@@ -176,6 +178,7 @@ module.exports = {
       LIMIT ?
     `;
     
-    return await query(sql, [userId, limit]);
+    const [rows] = await pool.query(sql, [userId, limit]);
+    return rows;
   }
 };

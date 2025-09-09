@@ -1,39 +1,55 @@
-const db = require("../../connect-mysql");
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
+
 module.exports = {
-  // 检查有电子邮箱吗
+  // Kiểm tra admin theo email (dùng cho đăng nhập)
   async check_emaill(email) {
     const sql = "SELECT * FROM admins WHERE email = ?";
-    return await query(sql, [email]);
+    const [rows] = await pool.query(sql, [email]);
+    return rows[0]; // Trả về admin đầu tiên tìm thấy hoặc undefined
   },
+
+  // Lấy danh sách tất cả admin
   async getDs() {
     let sql = "SELECT * FROM admins";
-    return await query(sql);
+    const [rows] = await pool.query(sql);
+    return rows;
   },
-  //  Lấy danh sách khóa học (có phân trang và tìm kiếm)
+
+  // Lấy danh sách admin (có phân trang và tìm kiếm)
   async getAll(search, offset, limit) {
     let sql = "SELECT * FROM admins";
-    if (search) sql += ` WHERE username LIKE '%${search}%'`; // nếu có từ khóa
-    sql += ` ORDER BY admin_id DESC LIMIT ${offset}, ${limit}`; // phân trang
-    return await query(sql);
+    if (search && search.trim()) sql += " WHERE username LIKE ?"; // nếu có từ khóa
+    
+    // Xử lý offset và limit an toàn
+    const safeOffset = parseInt(offset) || 0;
+    const safeLimit = parseInt(limit) || 10;
+    
+    sql += " ORDER BY admin_id DESC LIMIT ?, ?"; // phân trang với prepared statement
+    const params = search && search.trim() ? [`%${search.trim()}%`, safeOffset, safeLimit] : [safeOffset, safeLimit];
+    const [rows] = await pool.query(sql, params);
+    return rows;
   },
 
-  //  Lấy tổng số dòng (dùng để phân trang)
+  // Lấy tổng số dòng (dùng để phân trang)
   async getTotalRow(search) {
     let sql = "SELECT COUNT(*) AS totalRow FROM admins";
-    if (search) sql += ` WHERE username LIKE '%${search}%'`; // điều kiện tìm kiếm
-    const result = await query(sql);
-    return result[0].totalRow; // trả về tổng số dòng
+    if (search && search.trim()) {
+      sql += " WHERE username LIKE ?"; // điều kiện tìm kiếm với prepared statement
+      const [result] = await pool.query(sql, [`%${search.trim()}%`]);
+      return result[0].totalRow; // trả về tổng số dòng
+    } else {
+      const [result] = await pool.query(sql);
+      return result[0].totalRow; // trả về tổng số dòng
+    }
   },
 
-  //  Lấy chi tiết 1 khóa học theo ID
+  // Lấy chi tiết 1 admin theo ID
   async getById(id) {
-    const result = await query("SELECT * FROM admins WHERE admin_id = ?", [id]);
+    const [result] = await pool.query("SELECT * FROM admins WHERE admin_id = ?", [id]);
     return result[0]; // trả về 1 object duy nhất
   },
 
-  //  Thêm khóa học mới
+  //  Thêm admin mới
   async create(user) {
     const sql = `
       INSERT INTO admins (username, email, password_hash, full_name, avatar, role, status)
@@ -48,45 +64,45 @@ module.exports = {
       user.role,
       user.status,
     ];
-    return await query(sql, values);
+    const [result] = await pool.query(sql, values);
+    return result.insertId; // Trả về ID của admin vừa tạo
   },
 
-  //  Cập nhật khóa học
+  //  Cập nhật admin
   async update(id, data) {
     const sql = `UPDATE admins SET ? WHERE admin_id = ?`;
-    return await query(sql, [data, id]);
+    const [result] = await pool.query(sql, [data, id]);
+    return result.affectedRows; // Trả về số dòng bị ảnh hưởng
   },
 
-  // Xóa khóa học
+  // Xóa admin
   async delete(id) {
-    return await query("DELETE FROM admins WHERE admin_id = ?", [id]);
+    const [result] = await pool.query("DELETE FROM admins WHERE admin_id = ?", [id]);
+    return result.affectedRows; // Trả về số dòng bị xóa
   },
 
-  // Kiểm tra trùng tiêu đề khi sửa
+  // Kiểm tra trùng username hoặc email khi sửa admin
   async checkDuplicateUsernameOrEmailUpdate(username, email, userId) {
-    return new Promise((resolve, reject) => {
-      db.query(
-        `SELECT * FROM admins WHERE (username = ? OR email = ?) AND admin_id != ?`,
-        [username, email, userId],
-        (err, rows) => {
-          if (err) return reject(err);
-          resolve(rows.length > 0); // Kiểm tra xem có kết quả trả về không
-        }
-      );
-    });
+    const [result] = await pool.query(
+      `SELECT * FROM admins WHERE (username = ? OR email = ?) AND admin_id != ?`,
+      [username, email, userId]
+    );
+    return result.length > 0; // Kiểm tra xem có kết quả trả về không
   },
-  // Kiểm tra trùng tiêu đề khi create
+  
+  // Kiểm tra trùng username hoặc email khi tạo admin mới
   async checkDuplicateUsernameOrEmail(username, email) {
-    return new Promise((resolve, reject) => {
-      db.query(
-        "SELECT * FROM admins WHERE username = ? OR email = ?",
-        [username, email],
-        (err, rows) => {
-          if (err) return reject(err);
+    const [result] = await pool.query(
+      "SELECT * FROM admins WHERE username = ? OR email = ?",
+      [username, email]
+    );
+    return result.length > 0; // Kiểm tra xem có kết quả trả về không
+  },
 
-          resolve(rows.length > 0); // Kiểm tra xem có kết quả trả về không
-        }
-      );
-    });
+  // Phương thức để kiểm tra admin_id (BẮT BUỘC cho deserializeUser)
+  async check_userid(id) {
+    const sql = "SELECT * FROM admins WHERE admin_id = ?";
+    const [rows] = await pool.query(sql, [id]);
+    return rows[0]; // Trả về admin đầu tiên tìm thấy hoặc undefined
   },
 };

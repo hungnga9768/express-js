@@ -1,5 +1,19 @@
 <%- include('header') %> <%- include('aside') %>
 
+<style>
+.banner-table img {
+  transition: transform 0.2s ease;
+}
+.banner-table img:hover {
+  transform: scale(1.2);
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.banner-table .table td {
+  vertical-align: middle;
+}
+</style>
+
 <div class="content-wrapper" style="min-height: 1604.44px">
   <section class="content-header">
     <div class="container-fluid">
@@ -39,7 +53,7 @@
     </div>
 
     <div class="card-body p-0">
-      <table class="table projects table-bordered table-hover">
+      <table class="table projects table-bordered table-hover banner-table">
         <thead class="thead-light">
           <tr>
             <th>#</th>
@@ -59,18 +73,34 @@
             <td><%= banner.title %></td>
             <td><%= banner.description %></td>
             <td>
-              <% if (banner.image_url) { %>
               <% 
-                let bannerImageUrl = banner.image_url;
-                if (banner.image_url && !banner.image_url.includes('cloudinary.com') && !banner.image_url.startsWith('/')) {
-                  bannerImageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${banner.image_url}`;
+                let bannerImageUrl = '/dist/img/avatar4.png';
+                let imageName = 'Chưa có ảnh';
+                if (banner.image_url) {
+                  if (banner.image_url.includes('cloudinary.com')) {
+                    bannerImageUrl = banner.image_url;
+                    imageName = banner.image_url.split('/').pop() || 'Cloudinary Image';
+                  } else if (!banner.image_url.startsWith('/')) {
+                    bannerImageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${banner.image_url}`;
+                    imageName = banner.image_url || 'Cloudinary Image';
+                  } else {
+                    bannerImageUrl = banner.image_url;
+                    imageName = banner.image_url.split('/').pop() || 'Local Image';
+                  }
                 }
               %>
-              <img
-                src="<%= bannerImageUrl %>"
-                style="width: 50px; height: 50px; object-fit: cover"
-              />
-              <% } else { %> - <% } %>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img
+                  src="<%= bannerImageUrl %>"
+                  style="width: 80px; height: 60px; object-fit: cover; border: 1px solid #ddd; border-radius: 5px;"
+                  alt="Banner <%= banner.id %>"
+                  title="<%= imageName %>"
+                />
+                <div>
+                  <small style="color: #666; display: block;"><%= imageName %></small>
+                  <small style="color: #999; display: block;">Banner ID: <%= banner.id %></small>
+                </div>
+              </div>
             </td>
             <td><%= banner.link_url || '' %></td>
             <td><%= banner.display_order %></td>

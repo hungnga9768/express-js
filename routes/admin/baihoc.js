@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const baihocCtrl = require("../../app/controllers/admin/baihoc.controller");
 
-// Quản lý khóa học
+// Import phân quyền admin
+const { requireContentManager } = require("../../middlewares/checkAdminRole");
+
+// Quản lý bài học - Content manager trở lên
 router.get("/danhsach", baihocCtrl.index);
 router.get("/add-baihoc", baihocCtrl.showAddForm);
 router.post("/add-baihoc", baihocCtrl.create);

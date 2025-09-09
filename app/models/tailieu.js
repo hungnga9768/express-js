@@ -1,35 +1,44 @@
 // Kết nối MySQL
-const db = require("../../connect-mysql");
-
-// Dùng util để hỗ trợ async/await cho truy vấn
-const util = require("util");
-const query = util.promisify(db.query).bind(db);
+const pool = require("../../connect-mysql");
 
 // Export object chứa các hàm xử lý database liên quan đến Courses
 module.exports = {
   async getDs() {
     let sql = "SELECT * FROM chinese_documents";
-    return await query(sql);
+    const [rows] = await pool.query(sql);
+    return rows;
   },
   //  Lấy danh sách khóa học (có phân trang và tìm kiếm)
   async getAll(search, offset, limit) {
     let sql = "SELECT * FROM chinese_documents";
-    if (search) sql += ` WHERE title LIKE '%${search}%'`; // nếu có từ khóa
-    sql += ` ORDER BY document_id DESC LIMIT ${offset}, ${limit}`; // phân trang
-    return await query(sql);
+    if (search && search.trim()) sql += " WHERE title LIKE ?"; // nếu có từ khóa
+    
+    // Xử lý offset và limit an toàn
+    const safeOffset = parseInt(offset) || 0;
+    const safeLimit = parseInt(limit) || 10;
+    
+    sql += " ORDER BY document_id DESC LIMIT ?, ?"; // phân trang với prepared statement
+    const params = search && search.trim() ? [`%${search.trim()}%`, safeOffset, safeLimit] : [safeOffset, safeLimit];
+    const [rows] = await pool.query(sql, params);
+    return rows;
   },
 
   //  Lấy tổng số dòng (dùng để phân trang)
   async getTotalRow(search) {
     let sql = "SELECT COUNT(*) AS totalRow FROM chinese_documents";
-    if (search) sql += ` WHERE title LIKE '%${search}%'`; // điều kiện tìm kiếm
-    const result = await query(sql);
-    return result[0].totalRow; // trả về tổng số dòng
+    if (search && search.trim()) {
+      sql += " WHERE title LIKE ?"; // điều kiện tìm kiếm với prepared statement
+      const [result] = await pool.query(sql, [`%${search.trim()}%`]);
+      return result[0].totalRow; // trả về tổng số dòng
+    } else {
+      const [result] = await pool.query(sql);
+      return result[0].totalRow; // trả về tổng số dòng
+    }
   },
 
   //  Lấy chi tiết 1 khóa học theo ID
   async getById(id) {
-    const result = await query(
+    const [result] = await pool.query(
       "SELECT * FROM chinese_documents WHERE document_id = ?",
       [id]
     );
@@ -56,23 +65,26 @@ module.exports = {
       doc.is_free,
       doc.price,
     ];
-    return await query(sql, values);
+    const [rows] = await pool.query(sql, values);
+    return rows.insertId; // Trả về ID của bản ghi vừa tạo
   },
 
   //  Cập nhật khóa học
   async update(id, data) {
     const sql = `UPDATE chinese_documents SET ? WHERE document_id = ?`;
-    return await query(sql, [data, id]);
+    const [rows] = await pool.query(sql, [data, id]);
+    return rows.affectedRows; // Trả về số dòng bị ảnh hưởng
   },
 
   // Xóa khóa học
   async delete(id) {
-    return await query("DELETE FROM chinese_documents WHERE document_id = ?", [id]);
+    const [result] = await pool.query("DELETE FROM chinese_documents WHERE document_id = ?", [id]);
+    return result.affectedRows; // Trả về số dòng bị xóa
   },
 
   // Kiểm tra trùng tiêu đề khi sửa
   async checkDuplicateTitle(title, id) {
-    const result = await query(
+    const [result] = await pool.query(
       `SELECT * FROM chinese_documents WHERE title = ? AND document_id != ?`,
       [title, id]
     );

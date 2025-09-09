@@ -12,14 +12,13 @@ module.exports = function (passport) {
       { usernameField: "email" },
       async (email, password, done) => {
         try {
-          const userRows = await User.check_emaill(email);
-          if (!userRows || userRows.length === 0) {
+          const user = await User.check_emaill(email);
+          if (!user) {
             return done(null, false, {
               message: "Email người dùng không tồn tại.",
             });
           }
-          const user = userRows[0];
-          if (!user || !user.password_hash)
+          if (!user.password_hash)
             return done(null, false, {
               message: "Dữ liệu người dùng không hợp lệ.",
             });
@@ -47,14 +46,13 @@ module.exports = function (passport) {
       { usernameField: "email" },
       async (email, password, done) => {
         try {
-          const adminRows = await Admin.check_emaill(email); // Dùng model Admin
-          if (!adminRows || adminRows.length === 0) {
+          const admin = await Admin.check_emaill(email); // Dùng model Admin
+          if (!admin) {
             return done(null, false, {
               message: "Email quản trị viên không tồn tại.",
             });
           }
-          const admin = adminRows[0];
-          if (!admin || !admin.password_hash)
+          if (!admin.password_hash)
             return done(null, false, {
               message: "Dữ liệu quản trị viên không hợp lệ.",
             });
@@ -93,18 +91,17 @@ module.exports = function (passport) {
               : null;
 
           // 1. Tìm người dùng theo google_id
-          let userRows = await User.check_google_id(profile.id);
+          let user = await User.check_google_id(profile.id);
 
-          if (userRows && userRows.length > 0) {
+          if (user) {
             // Người dùng đã tồn tại với google_id này (đã đăng nhập Google trước đó)
-            return done(null, userRows[0]);
+            return done(null, user);
           } else if (userEmail) {
             // 2. Nếu google_id không tồn tại, kiểm tra xem email có tồn tại không
-            let existingUserByEmailRows = await User.check_emaill(userEmail); // Giả sử hàm này tìm kiếm theo email
+            let existingUser = await User.check_emaill(userEmail); // Giả sử hàm này tìm kiếm theo email
 
-            if (existingUserByEmailRows && existingUserByEmailRows.length > 0) {
+            if (existingUser) {
               // Email đã tồn tại (người dùng đã đăng ký bằng email/mật khẩu trước đó)
-              const existingUser = existingUserByEmailRows[0];
 
               // Rất quan trọng: Liên kết tài khoản Google này với tài khoản đã có
               // Cập nhật google_id cho người dùng hiện tại
@@ -116,11 +113,11 @@ module.exports = function (passport) {
               // Trả về người dùng đã được cập nhật
               // Bạn có thể cần lấy lại thông tin user sau khi update nếu User.update_google_id_for_user
               // chỉ là một truy vấn update đơn thuần và không trả về đối tượng user đầy đủ.
-              const updatedUserRows = await User.check_userid(
+              const updatedUser = await User.check_userid(
                 existingUser.user_id
               );
-              if (updatedUserRows && updatedUserRows.length > 0) {
-                return done(null, updatedUserRows[0]);
+              if (updatedUser) {
+                return done(null, updatedUser);
               } else {
                 return done(null, false, {
                   message: "Lỗi khi cập nhật và lấy lại thông tin người dùng.",
@@ -176,12 +173,12 @@ module.exports = function (passport) {
     // Có thể cần logic để kiểm tra trong cả User và Admin models
     try {
       let foundUser = await User.check_userid(id);
-      if (foundUser && foundUser.length > 0) {
-        return done(null, foundUser[0]);
+      if (foundUser) {
+        return done(null, foundUser);
       }
       let foundAdmin = await Admin.check_userid(id);
-      if (foundAdmin && foundAdmin.length > 0) {
-        return done(null, foundAdmin[0]);
+      if (foundAdmin) {
+        return done(null, foundAdmin);
       }
       return done(null, false);
     } catch (err) {

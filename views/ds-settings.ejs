@@ -1,5 +1,22 @@
 <%- include('header') %> <%- include('aside') %>
 
+<style>
+.settings-table img {
+  transition: transform 0.2s ease;
+}
+.settings-table img:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+.color-preview {
+  transition: all 0.2s ease;
+}
+.color-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+</style>
+
 <div class="content-wrapper">
   <section class="content-header">
     <div class="container-fluid">
@@ -11,14 +28,14 @@
     <div class="box mb-4"></div>
 
     <div class="card-body p-0">
-      <table class="table table-bordered table-hover">
+      <table class="table table-bordered table-hover settings-table">
         <thead class="thead-light">
           <tr>
-            <th>#</th>
-            <th>Key</th>
-            <th>Ghi chú</th>
-            <th>Giá trị</th>
-            <th>Thao tác</th>
+            <th width="5%">#</th>
+            <th width="15%">Key</th>
+            <th width="25%">Ghi chú</th>
+            <th width="40%">Giá trị</th>
+            <th width="15%">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -29,19 +46,69 @@
             <td><%= item.note %></td>
             <td>
               <% if (item.key === 'logo' || item.key === 'favicon') { %>
-              <img src="<%= item.value %>" style="max-height: 50px" />
+                <% 
+                  let imageUrl = '/dist/img/avatar4.png';
+                  let imageName = 'Chưa có ảnh';
+                  if (item.value) {
+                    if (item.value.includes('cloudinary.com')) {
+                      imageUrl = item.value;
+                      imageName = item.value.split('/').pop() || 'Cloudinary Image';
+                    } else if (!item.value.startsWith('/')) {
+                      imageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${item.value}`;
+                      imageName = item.value || 'Cloudinary Image';
+                    } else {
+                      imageUrl = item.value;
+                      imageName = item.value.split('/').pop() || 'Local Image';
+                    }
+                  }
+                %>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <img src="<%= imageUrl %>" style="max-height: 50px; max-width: 150px; object-fit: contain; border: 1px solid #ddd; border-radius: 5px;" alt="<%= item.key %>" />
+                  <div>
+                    <small style="color: #666; display: block;"><%= imageName %></small>
+                    <small style="color: #999; display: block;"><%= item.key === 'logo' ? 'Logo chính' : 'Favicon' %></small>
+                  </div>
+                </div>
               <% } else if ( item.key === 'primary_color' || item.key ===
               'header_color' || item.key === 'gradient-end' || item.key ===
               'gradient-start' || item.key === 'text_color' ) { %>
-              <div
-                class="color-web"
-                style="
-                  background-color: <%= item.value %>;
-                  width: 100px;
-                  height: 20px;
-                "
-              ></div>
-              <% } else { %> <%= item.value %> <% } %>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div
+                  class="color-web"
+                  style="
+                    background-color: <%= item.value %>;
+                    width: 50px;
+                    height: 30px;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                  "
+                ></div>
+                <div>
+                  <small style="color: #666; display: block;"><%= item.value %></small>
+                  <small style="color: #999; display: block;">
+                    <% if (item.key === 'primary_color') { %>Màu chính<% } %>
+                    <% if (item.key === 'header_color') { %>Màu header<% } %>
+                    <% if (item.key === 'gradient-start') { %>Màu gradient bắt đầu<% } %>
+                    <% if (item.key === 'gradient-end') { %>Màu gradient kết thúc<% } %>
+                    <% if (item.key === 'text_color') { %>Màu chữ<% } %>
+                  </small>
+                </div>
+              </div>
+              <% } else { %> 
+                <div style="max-width: 300px;">
+                  <% if (item.value && item.value.length > 100) { %>
+                    <span style="word-break: break-word; display: block;">
+                      <%= item.value.substring(0, 100) %>...
+                    </span>
+                    <small style="color: #999;">(Xem đầy đủ khi chỉnh sửa)</small>
+                  <% } else { %>
+                    <span style="word-break: break-word; display: block;">
+                      <%= item.value || 'Chưa có giá trị' %>
+                    </span>
+                  <% } %>
+                </div>
+              <% } %>
             </td>
 
             <td>

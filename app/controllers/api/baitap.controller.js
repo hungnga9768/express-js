@@ -264,6 +264,11 @@ module.exports = {
     }
   },
 
+  // Xóa bộ bài tập (alias cho delete)
+  async remove(req, res) {
+    return this.delete(req, res);
+  },
+
   // Xóa câu hỏi
   async deleteQuestion(req, res) {
     try {
@@ -282,6 +287,11 @@ module.exports = {
         error: error.message
       });
     }
+  },
+
+  // Xóa câu hỏi (alias cho deleteQuestion)
+  async removeQuestion(req, res) {
+    return this.deleteQuestion(req, res);
   },
 
   // Kiểm tra đáp án
@@ -308,6 +318,91 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: "Lỗi server khi kiểm tra đáp án",
+        error: error.message
+      });
+    }
+  },
+
+  // Nộp bài tập và nhận kết quả
+  async submitExercise(req, res) {
+    try {
+      const { exerciseSetId, answers } = req.body;
+      
+      if (!exerciseSetId || !answers || !Array.isArray(answers)) {
+        return res.status(400).json({
+          success: false,
+          message: "ID bài tập và danh sách đáp án là bắt buộc"
+        });
+      }
+
+      // Lấy thông tin bài tập và câu hỏi
+      const exerciseSet = await baitap.getById(exerciseSetId);
+      if (!exerciseSet) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy bài tập"
+        });
+      }
+
+      const questions = await baitap.getWithQuestions(exerciseSetId);
+      
+      // Kiểm tra từng đáp án
+      const results = [];
+      let correctCount = 0;
+      let totalQuestions = questions.length;
+
+      for (const answer of answers) {
+        const question = questions.find(q => q.exercise_id == answer.questionId);
+        if (question) {
+          const result = await baitap.checkAnswer(answer.questionId, answer.userAnswer);
+          results.push({
+            questionId: answer.questionId,
+            question: question.question,
+            userAnswer: answer.userAnswer,
+            correctAnswer: question.correct_answer,
+            isCorrect: result.isCorrect,
+            explanation: question.explanation,
+            options: question.options
+          });
+          
+          if (result.isCorrect) {
+            correctCount++;
+          }
+        }
+      }
+
+      // Tính điểm và kết quả tổng thể
+      const score = Math.round((correctCount / totalQuestions) * 100);
+      const grade = score >= 80 ? "Xuất sắc" : 
+                   score >= 70 ? "Tốt" : 
+                   score >= 60 ? "Khá" : 
+                   score >= 50 ? "Trung bình" : "Cần cải thiện";
+
+      res.json({
+        success: true,
+        data: {
+          exerciseSet: {
+            exercise_set_id: exerciseSet.exercise_set_id,
+            title: exerciseSet.title,
+            description: exerciseSet.description
+          },
+          summary: {
+            totalQuestions,
+            correctCount,
+            incorrectCount: totalQuestions - correctCount,
+            score,
+            grade
+          },
+          results,
+          message: `Bạn đã hoàn thành bài tập với ${correctCount}/${totalQuestions} câu đúng (${score}%)`
+        },
+        message: "Đã nộp bài tập thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi nộp bài tập:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi nộp bài tập",
         error: error.message
       });
     }

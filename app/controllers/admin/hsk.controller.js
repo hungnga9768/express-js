@@ -1,5 +1,6 @@
 const hskModel = require("../../models/hsk");
 const cloudinaryService = require("../../services/cloudinaryService");
+const cloudinaryHelper = require("../../utils/cloudinaryHelper");
 
 
 
@@ -23,17 +24,17 @@ module.exports = {
 
   async index(req, res) {
     try {
-      const { search = "", level = "", page = 1, limit = 20 } = req.query;
+      const { search = "", level = "", status = "", page = 1, limit = 20 } = req.query;
       const offset = (parseInt(page) - 1) * parseInt(limit);
       const [rows, total] = await Promise.all([
-        hskModel.getTests({ search, level: level || null, offset, limit: parseInt(limit) }),
-        hskModel.getTestsTotal({ search, level: level || null })
+        hskModel.getTests({ search, level: level || null, status: status || null, offset, limit: parseInt(limit) }),
+        hskModel.getTestsTotal({ search, level: level || null, status: status || null })
       ]);
       const totalPages = Math.max(1, Math.ceil(total / parseInt(limit)));
       res.render("ds-hsktests", {
         title: "Quản lý đề thi HSK",
         data: rows,
-        search, level,
+        search, level, status,
         Page: parseInt(page),
         totalPage: totalPages
       });
@@ -61,8 +62,8 @@ module.exports = {
         status: b.status || 'draft',
         is_active: b.is_active ? 1 : 0
       };
-      const r = await hskModel.createTest(payload);
-      return res.redirect(`/admin/hsk/${r.insertId}/questions?success=Tạo đề thi HSK thành công!`);
+      const testId = await hskModel.createTest(payload);
+      return res.redirect(`/admin/hsk/${testId}/questions?success=Tạo đề thi HSK thành công!`);
     } catch (e) {
       console.error(e);
       res.status(500).render("add-hsktest", { title: "Thêm đề HSK", error: "Không tạo được đề thi", test: req.body });
@@ -85,7 +86,9 @@ module.exports = {
         total_questions: parseInt(b.total_questions || 0),
         time_limit: b.time_limit ? parseInt(b.time_limit) : null,
         passing_score: parseInt(b.passing_score || 0),
-        randomize_questions: b.randomize_questions ? 1 : 0
+        randomize_questions: b.randomize_questions ? 1 : 0,
+        status: b.status || 'draft',
+        is_active: b.is_active ? 1 : 0
       };
       await hskModel.updateTest(req.params.id, payload);
       res.redirect("/admin/hsk?success=Cập nhật đề thi HSK thành công!");
@@ -102,6 +105,45 @@ module.exports = {
     } catch (e) {
       console.error(e);
       res.status(500).render("error", { message: "Không xóa được đề" });
+    }
+  },
+
+  // Toggle trộn câu hỏi
+  async toggleRandomize(req, res) {
+    try {
+      const { id } = req.params;
+      const { value } = req.body;
+      await hskModel.updateTest(id, { randomize_questions: parseInt(value) });
+      res.redirect("/admin/hsk?success=Cập nhật trạng thái trộn đề thành công!");
+    } catch (e) {
+      console.error(e);
+      res.redirect("/admin/hsk?error=Không cập nhật được trạng thái trộn đề!");
+    }
+  },
+
+  // Toggle trạng thái đề thi
+  async toggleStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      await hskModel.updateTest(id, { status });
+      res.redirect("/admin/hsk?success=Cập nhật trạng thái đề thi thành công!");
+    } catch (e) {
+      console.error(e);
+      res.redirect("/admin/hsk?error=Không cập nhật được trạng thái đề thi!");
+    }
+  },
+
+  // Toggle trạng thái hoạt động
+  async toggleActive(req, res) {
+    try {
+      const { id } = req.params;
+      const { value } = req.body;
+      await hskModel.updateTest(id, { is_active: parseInt(value) });
+      res.redirect("/admin/hsk?success=Cập nhật trạng thái hoạt động thành công!");
+    } catch (e) {
+      console.error(e);
+      res.redirect("/admin/hsk?error=Không cập nhật được trạng thái hoạt động!");
     }
   },
 
@@ -235,6 +277,9 @@ module.exports = {
       const { testId } = req.params;
       const b = req.body;
       
+      // Debug log
+      console.log('🔍 Debug createQuestion:', { testId, body: b, files: req.files });
+      
 
       
       let options = [];
@@ -247,20 +292,20 @@ module.exports = {
         correct_answer = b.correct_answer_multiple_choice;
 
       } else if (b.question_type === "fill_blank" || b.question_type === "cloze") {
-        // Xử lý các ô trống động - hỗ trợ cả (1), (2), (3) và ____
-        let count = 1;
+        // Xử lý các ô trống động
         let blanks = [];
         let answers = [];
         
-        // Kiểm tra có bao nhiêu chỗ trống trong question_text
-        const placeholderPattern = /\((\d+)\)|____/g;
-        const placeholders = b.question_text.match(placeholderPattern) || [];
-        const blanksCount = placeholders.length;
-        
-
+        // Kiểm tra có bao nhiêu chỗ trống được tạo
+        let maxBlankIndex = 0;
+        for (let i = 1; i <= 10; i++) { // Kiểm tra tối đa 10 chỗ trống
+          if (b[`option_${i}_A`] || b[`option_${i}_B`] || b[`option_${i}_C`] || b[`option_${i}_D`]) {
+            maxBlankIndex = i;
+          }
+        }
         
         // Xử lý từng chỗ trống
-        for (let i = 1; i <= blanksCount; i++) {
+        for (let i = 1; i <= maxBlankIndex; i++) {
           const blankOptions = [
             b[`option_${i}_A`] || "",
             b[`option_${i}_B`] || "",
@@ -356,7 +401,8 @@ module.exports = {
       }
 
       const questionData = {
-        skill_type: b.skill_type,
+        test_id: testId, // Thêm test_id vào questionData
+        skill_type: b.skill_type || 'listening', // Default value nếu không có
         question_type: b.question_type,
         question_text: b.question_text,
         audio_url,
@@ -371,6 +417,9 @@ module.exports = {
         ordering_items,
         rewrite_instruction
       };
+      
+      // Debug log questionData
+      console.log('🔍 questionData:', questionData);
       
 
       
@@ -404,21 +453,32 @@ module.exports = {
       // Lấy thông tin câu hỏi cũ để xóa file
       const oldQuestion = await hskModel.getQuestionById(questionId);
       
+      // Debug log để kiểm tra
+      console.log('🔍 oldQuestion:', {
+        questionId,
+        image_url: oldQuestion?.image_url,
+        audio_url: oldQuestion?.audio_url,
+        hasImage: !!oldQuestion?.image_url,
+        hasAudio: !!oldQuestion?.audio_url
+      });
+      
       // Xử lý media upload
       let audio_url = oldQuestion.audio_url || null;
       let image_url = oldQuestion.image_url || null;
       
       if (req.files) {
+        console.log('🔍 req.files:', req.files);
         const mediaResults = await cloudinaryService.uploadMedia(req.files);
+        console.log('🔍 mediaResults:', mediaResults);
         
         if (mediaResults.image && mediaResults.image.success) {
           // Xóa ảnh cũ trên Cloudinary nếu có
-          if (oldQuestion && oldQuestion.image_url && oldQuestion.image_url.includes('cloudinary.com')) {
+          if (oldQuestion && oldQuestion.image_url) {
             try {
-              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
-              const oldPublicId = cloudinaryHelper.extractPublicId(oldQuestion.image_url);
-              await cloudinaryService.deleteFile(oldPublicId);
-      
+              console.log('🔄 Đang xóa ảnh cũ:', oldQuestion.image_url);
+              // oldQuestion.image_url đã là public_id, không cần extract
+              const deleteResult = await cloudinaryService.deleteFile(oldQuestion.image_url);
+              console.log('✅ Kết quả xóa ảnh cũ:', deleteResult);
             } catch (deleteError) {
               console.error('❌ Lỗi khi xóa ảnh cũ:', deleteError);
             }
@@ -428,12 +488,12 @@ module.exports = {
         
         if (mediaResults.audio && mediaResults.audio.success) {
           // Xóa audio cũ trên Cloudinary nếu có
-          if (oldQuestion && oldQuestion.audio_url && oldQuestion.audio_url.includes('cloudinary.com')) {
+          if (oldQuestion && oldQuestion.audio_url) {
             try {
-              const cloudinaryHelper = require('../../utils/cloudinaryHelper');
-              const oldPublicId = cloudinaryHelper.extractPublicId(oldQuestion.audio_url);
-              await cloudinaryService.deleteFile(oldPublicId, 'video');
-      
+              console.log('🔄 Đang xóa audio cũ:', oldQuestion.audio_url);
+              // oldQuestion.audio_url đã là public_id, không cần extract
+              const deleteResult = await cloudinaryService.deleteFile(oldQuestion.audio_url, 'video');
+              console.log('✅ Kết quả xóa audio cũ:', deleteResult);
             } catch (deleteError) {
               console.error('❌ Lỗi khi xóa audio cũ:', deleteError);
             }
@@ -569,10 +629,11 @@ module.exports = {
       const question = await hskModel.getQuestionById(questionId);
       if (question) {
         // Xóa ảnh trên Cloudinary nếu có
-        if (question.image_url && question.image_url.includes('cloudinary.com')) {
+        if (question.image_url) {
           try {
-            const publicId = question.image_url.split('/').pop().split('.')[0];
-            await cloudinaryService.deleteFile(publicId);
+            // question.image_url đã là public_id, không cần extract
+            await cloudinaryService.deleteFile(question.image_url);
+            console.log('✅ Đã xóa ảnh:', question.image_url);
     
           } catch (deleteError) {
             console.error('Lỗi khi xóa ảnh:', deleteError);
@@ -580,10 +641,11 @@ module.exports = {
         }
         
         // Xóa audio trên Cloudinary nếu có
-        if (question.audio_url && question.audio_url.includes('cloudinary.com')) {
+        if (question.audio_url) {
           try {
-            const publicId = question.audio_url.split('/').pop().split('.')[0];
-            await cloudinaryService.deleteFile(publicId, 'video');
+            // question.audio_url đã là public_id, không cần extract
+            await cloudinaryService.deleteFile(question.audio_url, 'video');
+            console.log('✅ Đã xóa audio:', question.audio_url);
     
           } catch (deleteError) {
             console.error('Lỗi khi xóa audio:', deleteError);
@@ -605,9 +667,16 @@ module.exports = {
       const { testId } = req.params;
       const { orders } = req.body;
       
-
+      console.log('📥 Received reorder request:', { 
+        testId, 
+        body: req.body,
+        orders: orders,
+        bodyType: typeof req.body,
+        ordersType: typeof orders
+      });
       
       if (!orders || !Array.isArray(orders)) {
+        console.error('❌ Invalid orders data:', orders);
         return res.json({
           success: false,
           message: 'Dữ liệu thứ tự không hợp lệ'
@@ -617,6 +686,7 @@ module.exports = {
       // Validate orders
       for (const order of orders) {
         if (!order.question_id || !order.order_in_test) {
+          console.error('❌ Invalid order item:', order);
           return res.json({
             success: false,
             message: 'Dữ liệu thứ tự không đầy đủ'
@@ -624,7 +694,9 @@ module.exports = {
         }
       }
       
-      await hskModel.reorderQuestions(testId, orders);
+      console.log('✅ Validation passed, calling model...');
+      const result = await hskModel.reorderQuestions(testId, orders);
+      console.log('✅ Model result:', result);
       
       res.json({
         success: true,

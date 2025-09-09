@@ -223,7 +223,7 @@ $(document).ready(function() {
     // Gửi request cập nhật
     $.ajax({
       url: `/admin/vocabulary/update/<%= vocabulary.word_id %>`,
-      type: 'PUT',
+      type: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(formData),
       success: function(response) {

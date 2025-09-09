@@ -173,8 +173,17 @@ module.exports = {
   // Cập nhật từ vựng
   async update(req, res) {
     try {
+      console.log('🔧 Update vocabulary request:', {
+        method: req.method,
+        id: req.params.id,
+        body: req.body,
+        contentType: req.get('Content-Type')
+      });
+      
       const { id } = req.params;
-      const {
+      
+      // Xử lý cả form data và JSON
+      let {
         simplified_chinese,
         traditional_chinese,
         pinyin,
@@ -183,8 +192,28 @@ module.exports = {
         hsk_level,
         example_sentence_chinese,
         example_sentence_pinyin,
-        example_sentence_english
+        example_sentence_english,
+        selected_audio
       } = req.body;
+
+      // Nếu là JSON string, parse nó
+      if (typeof simplified_chinese === 'string' && simplified_chinese.startsWith('{')) {
+        try {
+          const parsedData = JSON.parse(simplified_chinese);
+          simplified_chinese = parsedData.simplified_chinese;
+          traditional_chinese = parsedData.traditional_chinese;
+          pinyin = parsedData.pinyin;
+          english_meaning = parsedData.english_meaning;
+          part_of_speech = parsedData.part_of_speech;
+          hsk_level = parsedData.hsk_level;
+          example_sentence_chinese = parsedData.example_sentence_chinese;
+          example_sentence_pinyin = parsedData.example_sentence_pinyin;
+          example_sentence_english = parsedData.example_sentence_english;
+          selected_audio = parsedData.audio_url;
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError);
+        }
+      }
 
       // Validation
       if (!simplified_chinese || !pinyin || !english_meaning) {
@@ -211,8 +240,8 @@ module.exports = {
       if (req.file) {
         const result = await cloudinaryService.uploadAudio(req.file.path, 'vocabulary-audio');
         if (result.success) {
-                     // Xóa audio cũ trên Cloudinary nếu có
-           if (oldVocabulary && oldVocabulary.audio_url) {
+          // Xóa audio cũ trên Cloudinary nếu có
+          if (oldVocabulary && oldVocabulary.audio_url) {
             try {
               // Sử dụng helper để trích xuất public_id chính xác
               const cloudinaryHelper = require('../../utils/cloudinaryHelper');
@@ -235,8 +264,8 @@ module.exports = {
           throw new Error('Không thể upload audio lên Cloudinary: ' + result.error);
         }
       } else if (selected_audio) {
-                 // Nếu chọn audio từ Cloudinary, xóa audio cũ nếu có
-         if (oldVocabulary && oldVocabulary.audio_url && oldVocabulary.audio_url !== selected_audio && selected_audio) {
+        // Nếu chọn audio từ Cloudinary, xóa audio cũ nếu có
+        if (oldVocabulary && oldVocabulary.audio_url && oldVocabulary.audio_url !== selected_audio && selected_audio) {
           try {
             // Sử dụng helper để trích xuất public_id chính xác
             const cloudinaryHelper = require('../../utils/cloudinaryHelper');

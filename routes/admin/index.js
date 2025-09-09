@@ -15,27 +15,49 @@ const game = require("./game");
 const cloudinary = require("./cloudinary");
 const authenticateToken = require("../../middlewares/authenticateToken");
 const loadGrobalsettings = require("../../middlewares/loadGrobalsettings");
+
+// Import phân quyền admin
+const { 
+  requireSuperAdmin, 
+  requireContentManager, 
+  requireAnyAdmin,
+  requireAdminEditPermission,
+  requireAdminDeletePermission 
+} = require("../../middlewares/checkAdminRole");
 router.use(loadGrobalsettings);
-router.get("/",(req,res)=>{
-res.render("home")
-})
 router.get("/login", admins.showLogin);
 router.post("/login", admins.checkLogin);
 router.get("/logout", admins.Logout);
 router.use(authenticateToken);
+router.get("/",(req,res)=>{
+res.render("home")
+})
 
-router.use("/khoahoc", khoahoc);
-router.use("/baihoc", baihoc);
-router.use("/admins", admin);
-router.use("/baitap", baitap);
-router.use("/tailieu", tailieu);
-router.use("/user", user);
-router.use("/setting", setting);
-router.use("/chatbot", Chatbot);
-router.use("/vocabulary", vocabulary);
-router.use("/hsk", require("./hsk"));
-router.use("/hsk-results", require("./hsk-results"));
-router.use("/games", game);
-router.use("/api/cloudinary", cloudinary);
+// ==================== PHÂN QUYỀN ADMIN ====================
+
+// QUẢN LÝ ADMIN - Chỉ super_admin
+router.use("/admins", requireSuperAdmin, admin);
+
+// CÀI ĐẶT HỆ THỐNG - Chỉ super_admin  
+router.use("/setting", requireSuperAdmin, setting);
+
+// QUẢN LÝ NỘI DUNG - Content manager trở lên
+router.use("/khoahoc", requireContentManager, khoahoc);
+router.use("/baihoc", requireContentManager, baihoc);
+router.use("/baitap", requireContentManager, baitap);
+router.use("/tailieu", requireContentManager, tailieu);
+router.use("/vocabulary", requireContentManager, vocabulary);
+router.use("/hsk", requireContentManager, require("./hsk"));
+router.use("/hsk-results", requireContentManager, require("./hsk-results"));
+router.use("/games", requireContentManager, game);
+
+// QUẢN LÝ USER - Tất cả admin
+router.use("/user", requireAnyAdmin, user);
+
+// CHATBOT - Tất cả admin
+router.use("/chatbot", requireAnyAdmin, Chatbot);
+
+// CLOUDINARY API - Content manager trở lên
+router.use("/api/cloudinary", requireContentManager, cloudinary);
 
 module.exports = router;

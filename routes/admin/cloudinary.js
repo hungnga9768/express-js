@@ -6,6 +6,9 @@ const authenticateToken = require('../../middlewares/authenticateToken');
 // Tất cả routes đều yêu cầu xác thực
 router.use(authenticateToken);
 
+// Test route
+router.get('/test', cloudinaryController.test);
+
 // Lấy danh sách ảnh từ Cloudinary
 router.post('/images', cloudinaryController.getImages);
 

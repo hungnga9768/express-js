@@ -68,7 +68,7 @@ module.exports = {
           console.error('Lỗi upload lên Cloudinary:', result.error);
           throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
         }
-      } else if (selected_image) {
+      } else if (selected_image && selected_image.trim() !== '') {
         // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
         if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
           try {
@@ -80,6 +80,7 @@ module.exports = {
         }
         image_url = selected_image;
       } else {
+        // Nếu không có file upload và không có selected_image, giữ nguyên ảnh cũ
         image_url = old_thumbnail_url;
       }
 
@@ -122,6 +123,14 @@ module.exports = {
         selected_image,
         old_thumbnail_url,
       } = req.body;
+      
+      // Debug logging
+      console.log('🔧 Banner update request:', {
+        id,
+        selected_image: selected_image || 'null',
+        old_thumbnail_url: old_thumbnail_url || 'null',
+        hasFile: !!req.file
+      });
       const is_active = req.body.is_active === "1" ? 1 : 0;
       const checktitle = await Banner.checkDuplicateTitle(title, id);
       if (checktitle) {
@@ -154,7 +163,7 @@ module.exports = {
           console.error('Lỗi upload lên Cloudinary:', result.error);
           throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
         }
-      } else if (selected_image) {
+      } else if (selected_image && selected_image.trim() !== '') {
         // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
         if (oldBanner && oldBanner.image_url && oldBanner.image_url !== selected_image && selected_image) {
           try {
@@ -162,21 +171,25 @@ module.exports = {
             const cloudinaryHelper = require('../../utils/cloudinaryHelper');
             const oldPublicId = cloudinaryHelper.extractPublicId(oldBanner.image_url);
             
-                          // Kiểm tra xem có phải là public_id hợp lệ không
-              if (oldPublicId) {
-                          const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
-            if (!deleteResult.success) {
-              console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+            // Kiểm tra xem có phải là public_id hợp lệ không
+            if (oldPublicId) {
+              const deleteResult = await cloudinaryService.deleteFile(oldPublicId);
+              if (!deleteResult.success) {
+                console.error('❌ Lỗi khi xóa file cũ:', deleteResult.error);
+              }
             }
-          }
           } catch (deleteError) {
             console.error('❌ Exception khi xóa file cũ:', deleteError);
           }
         }
         image_url = selected_image;
       } else {
-        image_url = old_thumbnail_url;
+        // Nếu không có file upload và không có selected_image, giữ nguyên ảnh cũ từ database
+        image_url = oldBanner.image_url;
+        console.log('🔧 Giữ nguyên ảnh cũ:', image_url);
       }
+      
+      console.log('🔧 Final image_url:', image_url);
 
       const dataUpdate = {
         title,
@@ -243,6 +256,15 @@ module.exports = {
     try {
       const id = req.params.id;
       const { selected_image, old_thumbnail_url, key } = req.body;
+      
+      // Debug logging
+      console.log('🔧 Settings update request:', {
+        id,
+        key,
+        selected_image: selected_image || 'null',
+        old_thumbnail_url: old_thumbnail_url || 'null',
+        hasFile: !!req.file
+      });
 
       let value;
 
@@ -267,7 +289,7 @@ module.exports = {
             console.error('Lỗi upload lên Cloudinary:', result.error);
             throw new Error('Không thể upload file lên Cloudinary: ' + result.error);
           }
-        } else if (selected_image) {
+        } else if (selected_image && selected_image.trim() !== '') {
           // Nếu chọn ảnh từ Cloudinary, xóa file cũ nếu có
           if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
             try {
@@ -280,6 +302,7 @@ module.exports = {
           }
           value = selected_image;
         } else if (old_thumbnail_url) {
+          // Nếu không có file upload và không có selected_image, giữ nguyên ảnh cũ
           value = old_thumbnail_url;
         }
       } else {

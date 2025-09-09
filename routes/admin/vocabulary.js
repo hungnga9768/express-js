@@ -39,6 +39,7 @@ router.get("/add", vocabularyCtrl.createForm);
 router.post("/create", uploadAudio, vocabularyCtrl.create);
 router.get("/edit/:id", vocabularyCtrl.editForm);
 router.put("/update/:id", uploadAudio, vocabularyCtrl.update);
+router.post("/update/:id", uploadAudio, vocabularyCtrl.update); // Thêm POST để hỗ trợ
 router.delete("/delete/:id", vocabularyCtrl.delete);
 
 // Routes import/export (đặt TRƯỚC route tham số)
