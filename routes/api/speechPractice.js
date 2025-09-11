@@ -2,6 +2,12 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../../connect-mysql");
 const geminiModel = require("../../app/models/geminiModel");
+const authenticateTokenUser = require("../../middlewares/authAPI");
+const { 
+  checkSpeechPermission,
+  checkDailyLimit,
+  incrementUsage 
+} = require("../../middlewares/subscription");
 
 // ===== SPEECH PRACTICE (PHÁT ÂM + LUYỆN NGHE) =====
 
@@ -91,7 +97,12 @@ router.get("/question", async (req, res) => {
 });
 
 // 2. Chấm điểm phát âm
-router.post("/pronunciation/check", async (req, res) => {
+router.post("/pronunciation/check", 
+  authenticateTokenUser,
+  checkSpeechPermission(),
+  checkDailyLimit('speech_practice'),
+  incrementUsage('speech_practice'),
+  async (req, res) => {
   try {
     const { 
       user_speech, 
@@ -148,7 +159,12 @@ router.post("/pronunciation/check", async (req, res) => {
 });
 
 // 3. Chấm điểm luyện nghe
-router.post("/listening/check", async (req, res) => {
+router.post("/listening/check", 
+  authenticateTokenUser,
+  checkSpeechPermission(),
+  checkDailyLimit('speech_practice'),
+  incrementUsage('speech_practice'),
+  async (req, res) => {
   try {
     const { 
       user_input, 

@@ -18,6 +18,7 @@ function authenticateTokenUser(req, res, next) {
     }
 
     req.user = user;
+    console.log(req.user.subscription_type);
     next();
   });
 }

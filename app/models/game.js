@@ -115,7 +115,7 @@ module.exports = {
     try {
       // Xóa các dữ liệu liên quan trước
       await pool.query('DELETE FROM GameSessions WHERE game_id = ?', [gameId]);
-      await pool.query('DELETE FROM GameLeaderboard WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM gameleaderboard WHERE game_id = ?', [gameId]);
       await pool.query('DELETE FROM UserGameProgress WHERE game_id = ?', [gameId]);
       
       // Xóa game
@@ -323,7 +323,7 @@ module.exports = {
   async updateLeaderboard(gameId, userId, score) {
     try {
       const sqlQuery = `
-        INSERT INTO GameLeaderboard (game_id, user_id, score, date_achieved)
+        INSERT INTO gameleaderboard (game_id, user_id, score, date_achieved)
         VALUES (?, ?, ?, NOW())
         ON DUPLICATE KEY UPDATE 
         score = GREATEST(score, VALUES(score)),
@@ -342,8 +342,8 @@ module.exports = {
     try {
       const sqlQuery = `
         SELECT gl.*, u.username, u.full_name, u.profile_picture
-        FROM GameLeaderboard gl
-        JOIN Users u ON gl.user_id = u.user_id
+        FROM gameleaderboard gl
+        JOIN users u ON gl.user_id = u.user_id
         WHERE gl.game_id = ?
         ORDER BY gl.score DESC, gl.date_achieved ASC
         LIMIT ?
@@ -361,16 +361,16 @@ module.exports = {
   async getUserRank(gameId, userId) {
     try {
       const sqlQuery = `
-        SELECT COUNT(*) + 1 as rank
-        FROM GameLeaderboard
+        SELECT COUNT(*) + 1 as user_rank
+        FROM gameleaderboard
         WHERE game_id = ? AND score > (
-          SELECT score FROM GameLeaderboard 
+          SELECT score FROM gameleaderboard 
           WHERE game_id = ? AND user_id = ?
         )
       `;
       
       const [rows] = await pool.query(sqlQuery, [gameId, gameId, userId]);
-      return rows[0]?.rank || 0;
+      return rows[0]?.user_rank || 0;
     } catch (error) {
       console.error("Error getting user rank:", error);
       throw error;

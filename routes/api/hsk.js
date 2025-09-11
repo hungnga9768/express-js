@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const ctrl = require("../../app/controllers/api/hsk.controller");
+const authenticateTokenUser = require("../../middlewares/authAPI");
+const { checkHSKPermission, checkDailyLimit, incrementUsage } = require("../../middlewares/subscription");
 
 // Phase 1 - Core API
 // 1. Lấy danh sách đề thi
@@ -10,7 +12,13 @@ router.get("/tests", ctrl.getTests);
 router.get("/tests/:testId", ctrl.getTestById);
 
 // 3. Bắt đầu bài thi
-router.post("/tests/:testId/start", ctrl.startTest);
+router.post("/tests/:testId/start", 
+  authenticateTokenUser,
+  checkHSKPermission(),
+  checkDailyLimit('hsk_tests'),
+  incrementUsage('hsk_tests'),
+  ctrl.startTest
+);
 
 // 4. Lấy câu hỏi bài thi
 router.get("/tests/:testId/questions", ctrl.getTestQuestions);

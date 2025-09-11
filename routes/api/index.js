@@ -14,8 +14,17 @@ const hsk = require("../api/hsk");
 const baitap = require("../api/baitap");
 const geminiCtrl = require("../../app/controllers/api/gemini.controller");
 const speechPractice = require("../api/speechPractice");
+const usage = require("../api/usage");
 // router baor vệ check đăng nhập thông qua cái này mới chạy
 const authenticateTokenUser = require("../../middlewares/authAPI");
+// Import subscription middleware
+const { 
+  checkChatPermission, 
+  checkTranslatePermission, 
+  checkSpeechPermission,
+  checkDailyLimit,
+  incrementUsage 
+} = require("../../middlewares/subscription");
 
 router.use("/auth", auth);
 router.use("/auth", forgotPassword);
@@ -42,7 +51,13 @@ router.get("/config", SettingsCtrl.getConfig);
 
 //touter giao tiep người dùng với api
 
-router.post("/chat", authenticateTokenUser, geminiCtrl.handleChat);
+router.post("/chat", 
+  authenticateTokenUser, 
+  checkChatPermission(),
+  checkDailyLimit('chat'),
+  incrementUsage('chat'),
+  geminiCtrl.handleChat
+);
 //hàm lấy danh sách chatbot
 router.get("/chat-topics", geminiCtrl.getchattopics);
 // hàm lấy lịch sử phiên chat
@@ -76,7 +91,12 @@ router.delete(
   geminiCtrl.deleteChatMessage
 );
 // hàm dịch
-router.post("/translate",geminiCtrl.translate
+router.post("/translate",
+  authenticateTokenUser,
+  checkTranslatePermission(),
+  checkDailyLimit('translate'),
+  incrementUsage('translate'),
+  geminiCtrl.translate
 );
 // cho câu tương tự sau khi dịch
 router.post("/suggest-similar",geminiCtrl.suggestsimilar
@@ -96,5 +116,8 @@ router.post("/user-profile-change-password",authenticateTokenUser, userCtrl.user
 
 // ===== SPEECH PRACTICE (PHÁT ÂM + LUYỆN NGHE) =====
 router.use("/speech-practice", speechPractice);
+
+// ===== USAGE TRACKING =====
+router.use("/usage", usage);
 
 module.exports = router;
