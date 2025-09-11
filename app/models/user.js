@@ -289,6 +289,78 @@ module.exports = {
     }
   },
 
+  // ==================== FACEBOOK METHODS ====================
+
+  // Lấy người dùng theo facebook_id
+  async check_facebook_id(id) {
+    const [rows] = await pool.query("SELECT * FROM users WHERE facebook_id = ?", [id]);
+    return rows[0]; // Trả về user đầu tiên tìm thấy hoặc undefined
+  },
+
+  // Thêm người dùng mới từ Facebook Profile
+  async create_facebook_user(userData) {
+    const {
+      username,
+      email,
+      facebook_id,
+      full_name,
+      profile_picture,
+      account_status = "active",
+      subscription_type = "free",
+      subscription_expiry = null,
+    } = userData;
+
+    const sql = `
+      INSERT INTO users (username, email, facebook_id, full_name, profile_picture, account_status, subscription_type, subscription_expiry)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+      const [insertResult] = await pool.query(sql, [
+        username,
+        email,
+        facebook_id,
+        full_name,
+        profile_picture,
+        account_status,
+        subscription_type,
+        subscription_expiry,
+      ]);
+
+      if (insertResult.insertId) {
+        // Lấy lại thông tin user vừa tạo để trả về
+        const [newUserRows] = await pool.query(
+          "SELECT * FROM users WHERE user_id = ?",
+          [insertResult.insertId]
+        );
+        if (newUserRows.length > 0) {
+          return newUserRows[0];
+        } else {
+          console.error("Failed to retrieve newly created user after INSERT.");
+          return null;
+        }
+      } else {
+        console.error("Failed to retrieve newly created user after INSERT.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error creating Facebook user:", error);
+      throw error;
+    }
+  },
+
+  // Cập nhật facebook_id cho người dùng đã tồn tại
+  async update_facebook_id_for_user(userId, facebookId) {
+    const sql = "UPDATE users SET facebook_id = ? WHERE user_id = ?";
+    try {
+      const [updateResult] = await pool.query(sql, [facebookId, userId]);
+      return updateResult.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating facebook_id for user:", error);
+      throw error;
+    }
+  },
+
   async updateProfilePicture(userId, profilePictureUrl) {
     const sql = "UPDATE users SET profile_picture = ? WHERE user_id = ?";
     try {
@@ -318,6 +390,184 @@ module.exports = {
       return updateResult.affectedRows > 0;
     } catch (error) {
       console.error("Error updating password_hash for user:", error);
+      throw error;
+    }
+  },
+
+  // ==================== USER ACTIVITY METHODS ====================
+
+  // Cập nhật last_login khi đăng nhập
+  async updateLastLogin(userId) {
+    const sql = "UPDATE users SET last_login = NOW() WHERE user_id = ?";
+    try {
+      const [updateResult] = await pool.query(sql, [userId]);
+      return updateResult.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating last_login for user:", error);
+      throw error;
+    }
+  },
+
+  // ==================== OPTIMIZED FORGOT PASSWORD METHODS ====================
+
+  // Tạo password reset token (OPTIMIZED)
+  async createPasswordResetToken(email) {
+    try {
+      // ✅ OPTIMIZED: Kiểm tra email có tồn tại không với prepared statement
+      const user = await this.check_emaill(email);
+      if (!user) {
+        return { success: false, message: 'Email không tồn tại trong hệ thống' };
+      }
+
+      // ✅ OPTIMIZED: Tạo token ngẫu nhiên với crypto
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      
+      // ✅ OPTIMIZED: Thời gian hết hạn (1 giờ)
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      // ✅ OPTIMIZED: Transaction để đảm bảo atomicity
+      const connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      try {
+        // Xóa token cũ nếu có
+        await connection.query('DELETE FROM password_resets WHERE email = ?', [email]);
+
+        // Lưu token mới
+        const sql = `
+          INSERT INTO password_resets (email, token, expires_at) 
+          VALUES (?, ?, ?)
+        `;
+        
+        await connection.query(sql, [email, token, expiresAt]);
+        await connection.commit();
+        
+        return { 
+          success: true, 
+          token: token,
+          expiresAt: expiresAt,
+          user: user
+        };
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    } catch (error) {
+      console.error('Error creating password reset token:', error);
+      throw error;
+    }
+  },
+
+  // Xác thực password reset token (OPTIMIZED)
+  async validatePasswordResetToken(token) {
+    try {
+      // ✅ OPTIMIZED: Single query với JOIN
+      const sql = `
+        SELECT pr.*, u.user_id, u.email, u.username 
+        FROM password_resets pr
+        JOIN users u ON pr.email = u.email
+        WHERE pr.token = ? AND pr.expires_at > NOW()
+        LIMIT 1
+      `;
+      
+      const [rows] = await pool.query(sql, [token]);
+      
+      if (rows.length === 0) {
+        return { success: false, message: 'Token không hợp lệ hoặc đã hết hạn' };
+      }
+
+      return { 
+        success: true, 
+        user: rows[0],
+        email: rows[0].email
+      };
+    } catch (error) {
+      console.error('Error validating password reset token:', error);
+      throw error;
+    }
+  },
+
+  // Cập nhật mật khẩu bằng token (OPTIMIZED)
+  async updatePasswordByToken(token, newPassword) {
+    try {
+      // ✅ OPTIMIZED: Xác thực token trước
+      const validation = await this.validatePasswordResetToken(token);
+      if (!validation.success) {
+        return validation;
+      }
+
+      // ✅ OPTIMIZED: Hash mật khẩu với bcrypt
+      const bcrypt = require('bcryptjs');
+      const saltRounds = 12; // Tăng từ 10 lên 12 cho bảo mật tốt hơn
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // ✅ OPTIMIZED: Transaction để đảm bảo atomicity
+      const connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      try {
+        // Cập nhật mật khẩu
+        const updateSql = 'UPDATE users SET password_hash = ? WHERE email = ?';
+        await connection.query(updateSql, [hashedPassword, validation.email]);
+
+        // Xóa token đã sử dụng
+        await connection.query('DELETE FROM password_resets WHERE token = ?', [token]);
+        
+        await connection.commit();
+
+        return { 
+          success: true, 
+          message: 'Mật khẩu đã được cập nhật thành công' 
+        };
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    } catch (error) {
+      console.error('Error updating password by token:', error);
+      throw error;
+    }
+  },
+
+  // Xóa token hết hạn (OPTIMIZED)
+  async cleanupExpiredTokens() {
+    try {
+      // ✅ OPTIMIZED: Batch delete với LIMIT để tránh lock table
+      const sql = 'DELETE FROM password_resets WHERE expires_at < NOW() LIMIT 1000';
+      const [result] = await pool.query(sql);
+      
+      if (result.affectedRows > 0) {
+        console.log(`✅ [${new Date().toISOString()}] Cleaned up ${result.affectedRows} expired tokens`);
+      }
+      
+      return result.affectedRows;
+    } catch (error) {
+      console.error('Error cleaning up expired tokens:', error);
+      throw error;
+    }
+  },
+
+  // ✅ OPTIMIZED: Get password reset stats
+  async getPasswordResetStats() {
+    try {
+      const sql = `
+        SELECT 
+          COUNT(*) as total_tokens,
+          COUNT(CASE WHEN expires_at > NOW() THEN 1 END) as active_tokens,
+          COUNT(CASE WHEN expires_at <= NOW() THEN 1 END) as expired_tokens,
+          COUNT(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN 1 END) as tokens_last_hour
+        FROM password_resets
+      `;
+      
+      const [rows] = await pool.query(sql);
+      return rows[0];
+    } catch (error) {
+      console.error('Error getting password reset stats:', error);
       throw error;
     }
   },

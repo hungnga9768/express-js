@@ -414,7 +414,6 @@ module.exports = {
         duration,
         display_order,
         is_preview,
-        module_order
       } = req.body;
 
       const newLesson = {
@@ -426,7 +425,6 @@ module.exports = {
         duration,
         display_order,
         is_preview,
-        module_order
       };
 
       await Lesson.create(newLesson);
@@ -450,7 +448,6 @@ module.exports = {
         duration,
         display_order,
         is_preview,
-        module_order
       } = req.body;
 
       const isDuplicate = await Lesson.checkDuplicateTitle(title, id);
@@ -467,7 +464,6 @@ module.exports = {
         duration,
         display_order,
         is_preview,
-        module_order
       };
 
       await Lesson.update(id, dataUpdate);

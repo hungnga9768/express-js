@@ -8,6 +8,7 @@ const khoahoc = require("../api/khoahoc");
 const baihoc = require("../api/baihoc");
 const vocabulary = require("../api/vocabulary");
 const auth = require("../api/auth");
+const forgotPassword = require("../api/forgotPassword");
 const games = require("../api/games");
 const hsk = require("../api/hsk");
 const baitap = require("../api/baitap");
@@ -17,6 +18,7 @@ const speechPractice = require("../api/speechPractice");
 const authenticateTokenUser = require("../../middlewares/authAPI");
 
 router.use("/auth", auth);
+router.use("/auth", forgotPassword);
 router.use("/khoahoc", khoahoc);
 router.use("/baihoc",authenticateTokenUser, baihoc);
 router.use("/vocabulary", vocabulary);
@@ -55,6 +57,24 @@ router.get(
   authenticateTokenUser,
   geminiCtrl.getUserChatSessions
 );
+// hàm xóa toàn bộ lịch sử chat của một phiên cụ thể
+router.delete(
+  "/chat/sessions/:sessionId",
+  authenticateTokenUser,
+  geminiCtrl.deleteChatSession
+);
+// hàm xóa toàn bộ lịch sử chat của người dùng
+router.delete(
+  "/chat/history/all",
+  authenticateTokenUser,
+  geminiCtrl.deleteAllChatHistory
+);
+// hàm xóa một tin nhắn cụ thể
+router.delete(
+  "/chat/messages/:messageId",
+  authenticateTokenUser,
+  geminiCtrl.deleteChatMessage
+);
 // hàm dịch
 router.post("/translate",geminiCtrl.translate
 );
@@ -65,11 +85,11 @@ router.post("/suggest-similar",geminiCtrl.suggestsimilar
 router.post("/explain-context",geminiCtrl.explaincontext
 );
 //những router  trong trang profile người dùng
-router.post("/user-profile",userCtrl.getprofile
+router.post("/user-profile",authenticateTokenUser,userCtrl.getprofile
 );
 router.post("/user-profile-avatar",authenticateTokenUser, uploadProfilePicture, userCtrl.userprofileavatar
 );
-router.patch("/user-profile-fullname",authenticateTokenUser, userCtrl.userprofilefullname
+router.post("/user-profile-fullname",authenticateTokenUser, userCtrl.userprofilefullname
 );
 router.post("/user-profile-change-password",authenticateTokenUser, userCtrl.userprofilechangepassword
 );

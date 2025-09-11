@@ -4,6 +4,32 @@ const path = require('path');
 
 class CloudinaryService {
   /**
+   * Upload ảnh từ URL lên Cloudinary
+   * @param {string} imageUrl - URL của ảnh cần upload
+   * @param {Object} options - Tùy chọn upload
+   * @returns {Promise<Object>} - Kết quả upload
+   */
+  async uploadFromUrl(imageUrl, options = {}) {
+    try {
+      const uploadOptions = {
+        folder: options.folder || 'user-avatars',
+        resource_type: 'image',
+        transformation: options.transformation || [
+          { quality: 'auto:good' },
+          { fetch_format: 'auto' }
+        ],
+        ...options
+      };
+
+      const result = await cloudinary.uploader.upload(imageUrl, uploadOptions);
+      return result;
+    } catch (error) {
+      console.error('Error uploading from URL:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Upload ảnh lên Cloudinary
    * @param {string} filePath - Đường dẫn file ảnh
    * @param {string} folder - Thư mục lưu trữ trên Cloudinary

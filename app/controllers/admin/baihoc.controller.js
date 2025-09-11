@@ -37,7 +37,6 @@ module.exports = {
         content_url,
         duration,
         display_order,
-        module_order,
       } = req.body;
       const is_preview = req.body.is_preview === "1" ? true : false;
 
@@ -50,7 +49,6 @@ module.exports = {
         duration,
         display_order,
         is_preview,
-        module_order,
       };
 
       await Course.create(newCourse);
@@ -86,7 +84,6 @@ module.exports = {
         content_url,
         duration,
         display_order,
-        module_order,
       } = req.body;
       const is_preview = req.body.is_preview === "1" ? true : false;
       //data update
@@ -105,7 +102,6 @@ module.exports = {
         duration,
         display_order,
         is_preview,
-        module_order,
       };
       //goivà truyền để update
       await Course.update(id, dataUpdate);
@@ -167,7 +163,6 @@ module.exports = {
           content_type: lesson.content_type,
           content_url: lesson.content_url,
           duration: parseInt(lesson.duration),
-          module_order: parseInt(lesson.module_order),
           display_order: parseInt(lesson.display_order),
           is_preview: lesson.is_preview === "1",
         });

@@ -88,7 +88,7 @@ module.exports = {
 
     const groupedLessons = {};
     rawLessons.forEach((lesson) => {
-      const module = lesson.module_order || 1;
+      const module = lesson.display_order || 1;
       if (!groupedLessons[module]) {
         groupedLessons[module] = [];
       }

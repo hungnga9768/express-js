@@ -96,7 +96,77 @@ class ChatHistoryModel {
       throw error;
     }
   }
-  // Các hàm khác như deleteHistoryBySessionId, deleteHistoryByUserId...
+
+  /**
+   * Xóa toàn bộ lịch sử chat của một phiên cụ thể
+   * @param {string} sessionId - ID của phiên chat
+   * @param {number} userId - ID của người dùng (để đảm bảo bảo mật)
+   * @returns {Promise<Object>} - Kết quả xóa
+   */
+  static async deleteHistoryBySessionId(sessionId, userId) {
+    try {
+      const [result] = await pool.query(
+        "DELETE FROM chat_history WHERE session_id = ? AND user_id = ?",
+        [sessionId, userId]
+      );
+      
+      return {
+        success: true,
+        deletedRows: result.affectedRows,
+        sessionId: sessionId
+      };
+    } catch (error) {
+      console.error("Lỗi khi xóa lịch sử chat theo Session ID:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa toàn bộ lịch sử chat của một người dùng
+   * @param {number} userId - ID của người dùng
+   * @returns {Promise<Object>} - Kết quả xóa
+   */
+  static async deleteAllHistoryByUserId(userId) {
+    try {
+      const [result] = await pool.query(
+        "DELETE FROM chat_history WHERE user_id = ?",
+        [userId]
+      );
+      
+      return {
+        success: true,
+        deletedRows: result.affectedRows,
+        userId: userId
+      };
+    } catch (error) {
+      console.error("Lỗi khi xóa toàn bộ lịch sử chat của người dùng:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa một tin nhắn cụ thể trong lịch sử chat
+   * @param {number} messageId - ID của tin nhắn
+   * @param {number} userId - ID của người dùng (để đảm bảo bảo mật)
+   * @returns {Promise<Object>} - Kết quả xóa
+   */
+  static async deleteMessageById(messageId, userId) {
+    try {
+      const [result] = await pool.query(
+        "DELETE FROM chat_history WHERE id = ? AND user_id = ?",
+        [messageId, userId]
+      );
+      
+      return {
+        success: true,
+        deletedRows: result.affectedRows,
+        messageId: messageId
+      };
+    } catch (error) {
+      console.error("Lỗi khi xóa tin nhắn theo ID:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = ChatHistoryModel;

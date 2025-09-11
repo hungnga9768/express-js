@@ -59,7 +59,11 @@ if (process.env.NODE_ENV === 'production') {
           "'self'", 
           "https://api.cloudinary.com",
           "https://fonts.googleapis.com",
-          "https://fonts.gstatic.com"
+          "https://fonts.gstatic.com",
+          "https://hoctiengtrung.click",
+          "http://hoctiengtrung.click",
+          "https://www.hoctiengtrung.click",
+          "http://www.hoctiengtrung.click"
         ],
         frameSrc: ["'self'"],
         objectSrc: ["'none'"],
@@ -213,7 +217,7 @@ app.use((req, res, next) => {
       req.path === '/favicon.ico' ||
       req.path === '/health' ||
       req.path === '/health/detailed') {
-    console.log(`🔐 [RateLimit] Bypassing rate limit for: ${req.path}`);
+    // console.log(`🔐 [RateLimit] Bypassing rate limit for: ${req.path}`);
     return next();
   }
   return publicLimiter(req, res, next);
@@ -236,22 +240,68 @@ app.use(cookieParser());
 // CORS configuration
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173",
-      "http://172.16.0.121",
-      "http://192.168.1.100", // Add your LAN IP
-      "http://192.168.1.*",   // Allow any LAN IP
-      "http://10.*",          // Allow 10.x.x.x networks
-      "http://172.16.*"       // Allow 172.16.x.x networks
-    ],
+    origin: function (origin, callback) {
+      // Cho phép requests không có origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        // Development
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        
+        // Local network
+        "http://172.16.0.121",
+        "http://192.168.1.100",
+        "http://192.168.222.2:3000",
+        "http://192.168.222.2:5173",
+        
+        // Production domains
+        "https://hoctiengtrung.click",
+        "http://hoctiengtrung.click",
+        "https://www.hoctiengtrung.click",
+        "http://www.hoctiengtrung.click",
+        
+        // Local network patterns
+        /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,
+        /^http:\/\/172\.16\.\d+\.\d+(:\d+)?$/,
+        /^http:\/\/172\.20\.\d+\.\d+(:\d+)?$/,
+        /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/
+      ];
+      
+      // Kiểm tra origin có trong danh sách cho phép không
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        if (typeof allowedOrigin === 'string') {
+          return origin === allowedOrigin;
+        } else if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        }
+        return false;
+      });
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.log(`🚫 CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers'
+    ],
     exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
-    maxAge: 86400 // 24 hours
+    maxAge: 86400, // 24 hours
+    preflightContinue: false,
+    optionsSuccessStatus: 200
   })
 );
 
@@ -263,8 +313,14 @@ app.use((req, res, next) => {
   // Log tất cả requests
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${ip} - UA: ${userAgent.substring(0, 100)}`);
   
-  // Log các request đáng ngờ
-  if (req.path.includes('..') || req.path.includes('admin') || req.path.includes('wp-admin')) {
+  // Log các request đáng ngờ (chỉ các path thực sự nguy hiểm)
+  if (req.path.includes('..') || 
+      req.path.includes('/wp-admin') || 
+      req.path.includes('/wp-login') ||
+      req.path.includes('/phpmyadmin') ||
+      req.path.includes('/.env') ||
+      req.path.includes('/config') ||
+      req.path.includes('/backup')) {
     console.warn(`⚠️ [SECURITY] Suspicious request detected: ${req.method} ${req.path} from ${ip}`);
   }
   
@@ -300,6 +356,27 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname, 'dist'))); // Cho frontend
 
+// Handle missing images from Vue.js src paths
+app.get('/src/assets/images/:imageName', (req, res) => {
+  const imageName = req.params.imageName; // courses-01.jpg
+  const distPath = path.join(__dirname, 'dist', 'assets');
+  
+  // Tìm file trong dist/assets với pattern matching
+  const fs = require('fs');
+  try {
+    const files = fs.readdirSync(distPath);
+    const matchingFile = files.find(file => file.includes(imageName.split('.')[0]));
+    
+    if (matchingFile) {
+      res.sendFile(path.join(distPath, matchingFile));
+    } else {
+      res.status(404).send('Image not found');
+    }
+  } catch (error) {
+    res.status(404).send('Image not found');
+  }
+});
+
 app.get("/favicon.ico", (req, res) => res.status(204).end()); // Thêm .end()
 
 app.use(passport.initialize());
@@ -308,7 +385,10 @@ require("./config/passport")(passport);
 // API routes
 const routes = require("./routes"); 
 app.use("/", routes);
-
+// Catch-all route cho SPA (đặt cuối cùng)
+app.get('/*splat', (req, res) => { 
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 // Global Error Handler (phải đặt sau routes)
 const errorHandler = require('./middlewares/errorHandler');
 app.use(errorHandler);
@@ -322,12 +402,13 @@ app.use((req, res) => {
   });
 });
 
-// Catch-all route cho SPA (đặt cuối cùng)
-app.get('/*splat', (req, res) => { 
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
 
-app.listen(port, () => {
+
+app.listen(port, '0.0.0.0', () => {
   startCronJobs();
-  console.log(`Ứng dụng đang chạy tại http://localhost:${port}`);
+  console.log(`🚀 Server đang chạy trên tất cả interfaces:`);
+  console.log(`   - http://localhost:${port}`);
+  console.log(`   - http://127.0.0.1:${port}`);
+  console.log(`   - http://192.168.222.2:${port}`);
+  console.log(`   - Và tất cả IP khác trên máy này`);
 });

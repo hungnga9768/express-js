@@ -268,6 +268,132 @@ Hãy cung cấp 2-3 cách diễn đạt khác cho ý nghĩa của câu "${transl
         .json({ error: "Lỗi máy chủ khi lấy danh sách phiên chat." });
     }
   }
+
+  // Xóa toàn bộ lịch sử chat của một phiên cụ thể
+  async deleteChatSession(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user?.user_id || req.user?.id;
+
+      if (!sessionId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Session ID không được để trống." 
+        });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "User ID không tồn tại." 
+        });
+      }
+
+      const result = await ChatHistoryModel.deleteHistoryBySessionId(sessionId, userId);
+      
+      if (result.deletedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy phiên chat hoặc bạn không có quyền xóa phiên này."
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Đã xóa thành công ${result.deletedRows} tin nhắn trong phiên chat.`,
+        data: {
+          sessionId: sessionId,
+          deletedRows: result.deletedRows
+        }
+      });
+
+    } catch (error) {
+      console.error("Lỗi trong ChatController (deleteChatSession):", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Lỗi máy chủ khi xóa phiên chat." 
+      });
+    }
+  }
+
+  // Xóa toàn bộ lịch sử chat của người dùng
+  async deleteAllChatHistory(req, res) {
+    try {
+      const userId = req.user?.user_id || req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "User ID không tồn tại." 
+        });
+      }
+
+      const result = await ChatHistoryModel.deleteAllHistoryByUserId(userId);
+      
+      res.status(200).json({
+        success: true,
+        message: `Đã xóa thành công toàn bộ lịch sử chat (${result.deletedRows} tin nhắn).`,
+        data: {
+          userId: userId,
+          deletedRows: result.deletedRows
+        }
+      });
+
+    } catch (error) {
+      console.error("Lỗi trong ChatController (deleteAllChatHistory):", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Lỗi máy chủ khi xóa toàn bộ lịch sử chat." 
+      });
+    }
+  }
+
+  // Xóa một tin nhắn cụ thể
+  async deleteChatMessage(req, res) {
+    try {
+      const { messageId } = req.params;
+      const userId = req.user?.user_id || req.user?.id;
+
+      if (!messageId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Message ID không được để trống." 
+        });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "User ID không tồn tại." 
+        });
+      }
+
+      const result = await ChatHistoryModel.deleteMessageById(messageId, userId);
+      
+      if (result.deletedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy tin nhắn hoặc bạn không có quyền xóa tin nhắn này."
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Đã xóa tin nhắn thành công.",
+        data: {
+          messageId: messageId,
+          deletedRows: result.deletedRows
+        }
+      });
+
+    } catch (error) {
+      console.error("Lỗi trong ChatController (deleteChatMessage):", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Lỗi máy chủ khi xóa tin nhắn." 
+      });
+    }
+  }
 }
 
 module.exports = new ChatController();

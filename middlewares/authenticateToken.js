@@ -1,3 +1,16 @@
+/**
+ * Middleware xác thực token BẮT BUỘC (bắt buộc)
+ * 
+ * CHỨC NĂNG:
+ * - BẮT BUỘC user phải đăng nhập để truy cập admin routes
+ * - Nếu có token hợp lệ: set req.user với đầy đủ thông tin
+ * - Nếu không có token hoặc token hết hạn: REDIRECT /admin/login
+ * - Redirect khi thất bại, không cho phép tiếp tục
+ * 
+ * SỬ DỤNG: Admin routes để bảo vệ admin pages
+ * KHÁC VỚI: authenticateTokenOptional.js (tùy chọn, không redirect)
+ */
+
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -19,7 +32,15 @@ function authenticateToken(req, res, next) {
       return tryRefreshToken(refreshToken_admin, req, res, next);
     }
 
-    req.user = user;
+    // ✅ ĐẢM BẢO USER CÓ ĐẦY ĐỦ THÔNG TIN
+    req.user = {
+      admin_id: user.admin_id,
+      username: user.username,
+      email: user.email,
+      full_name: user.full_name,
+      avatar: user.avatar,
+      role: user.role || 'support' // ✅ FALLBACK ROLE nếu không có
+    };
     next();
   });
 }
@@ -37,6 +58,7 @@ function tryRefreshToken(refreshToken_admin, req, res, next) {
       email: user.email,
       full_name: user.full_name,
       avatar: user.avatar,
+      role: user.role || 'support', // ✅ FALLBACK ROLE nếu không có
     };
 
     const newAccessToken = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {

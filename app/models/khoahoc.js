@@ -239,7 +239,7 @@ module.exports = {
          FROM learningprogress lp
          JOIN lessons l ON lp.lesson_id = l.lesson_id
          WHERE lp.user_id = ? AND lp.course_id = ?
-         ORDER BY l.module_order, l.display_order`,
+         ORDER BY l.display_order`,
         [userId, courseId]
       );
 
@@ -288,7 +288,7 @@ module.exports = {
         FROM learningprogress lp
         JOIN lessons l ON lp.lesson_id = l.lesson_id
         WHERE lp.user_id = ? AND lp.course_id = ?
-        ORDER BY l.module_order, l.display_order
+        ORDER BY l.display_order
       `;
       const [rows] = await pool.query(sql, [userId, courseId]);
       return rows;

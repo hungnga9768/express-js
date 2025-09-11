@@ -114,7 +114,7 @@ module.exports = {
         simplified_chinese,
         traditional_chinese: traditional_chinese || null,
         pinyin,
-        english_meaning,
+        english_meaning: english_meaning.substring(0, 255), // Giới hạn 255 ký tự
         part_of_speech: part_of_speech || null,
         hsk_level: parseInt(hsk_level) || 1,
         example_sentence_chinese: example_sentence_chinese || null,
@@ -291,7 +291,7 @@ module.exports = {
         simplified_chinese,
         traditional_chinese: traditional_chinese || null,
         pinyin,
-        english_meaning,
+        english_meaning: english_meaning.substring(0, 255), // Giới hạn 255 ký tự
         part_of_speech: part_of_speech || null,
         hsk_level: parseInt(hsk_level) || 1,
         example_sentence_chinese: example_sentence_chinese || null,
@@ -367,7 +367,7 @@ module.exports = {
       const results = [];
       const errors = [];
       let importedCount = 0;
-      let duplicateCount = 0;
+      let updatedCount = 0;
 
       // Đọc file CSV
       fs.createReadStream(req.file.path)
@@ -387,19 +387,12 @@ module.exports = {
                   continue;
                 }
 
-                // Kiểm tra trùng lặp
-                const isDuplicate = await vocabularyModel.checkDuplicate(row.simplified_chinese);
-                if (isDuplicate) {
-                  duplicateCount++;
-                  continue;
-                }
-
                 // Chuẩn bị dữ liệu
                 const vocabData = {
                   simplified_chinese: row.simplified_chinese.trim(),
                   traditional_chinese: row.traditional_chinese ? row.traditional_chinese.trim() : null,
                   pinyin: row.pinyin.trim(),
-                  english_meaning: row.english_meaning.trim(),
+                  english_meaning: row.english_meaning.trim().substring(0, 255), // Giới hạn 255 ký tự
                   part_of_speech: row.part_of_speech ? row.part_of_speech.trim() : null,
                   hsk_level: row.hsk_level ? parseInt(row.hsk_level) : 1,
                   example_sentence_chinese: row.example_sentence_chinese ? row.example_sentence_chinese.trim() : null,
@@ -407,9 +400,14 @@ module.exports = {
                   example_sentence_english: row.example_sentence_english ? row.example_sentence_english.trim() : null
                 };
 
-                // Tạo từ vựng
-                await vocabularyModel.create(vocabData);
-                importedCount++;
+                // Sử dụng upsert để insert hoặc update (tự động liên kết game)
+                const result = await vocabularyModel.upsert(vocabData);
+                
+                if (result.action === 'created') {
+                  importedCount++;
+                } else if (result.action === 'updated') {
+                  updatedCount++;
+                }
 
               } catch (rowError) {
                 errors.push(`Dòng ${rowNumber}: ${rowError.message}`);
@@ -419,11 +417,8 @@ module.exports = {
             // Xóa file tạm
             fs.unlinkSync(req.file.path);
 
-            // Redirect với thông báo
-            let  message = `Import thành công ${importedCount} từ vựng`;
-            if (duplicateCount > 0) {
-              message += `, ${duplicateCount} từ bị trùng lặp`;
-            }
+            // Redirect với thông báo chi tiết
+            let message = `Import hoàn tất: ${importedCount} từ mới, ${updatedCount} từ được cập nhật (tự động liên kết với game)`;
             if (errors.length > 0) {
               message += `, ${errors.length} lỗi`;
             }
@@ -518,6 +513,119 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: "Lỗi khi lấy thông tin từ vựng"
+      });
+    }
+  },
+
+  // Liên kết từ vựng với tất cả game (API)
+  async linkToAllGames(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Kiểm tra từ vựng có tồn tại không
+      const vocabulary = await vocabularyModel.getById(id);
+      if (!vocabulary) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy từ vựng"
+        });
+      }
+
+      const result = await vocabularyModel.linkToAllGames(id);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message,
+          linkedGames: result.linkedGames
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error
+        });
+      }
+    } catch (error) {
+      console.error("Error linking vocabulary to games:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi khi liên kết từ vựng với game"
+      });
+    }
+  },
+
+  // Hủy liên kết từ vựng với tất cả game (API)
+  async unlinkFromAllGames(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Kiểm tra từ vựng có tồn tại không
+      const vocabulary = await vocabularyModel.getById(id);
+      if (!vocabulary) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy từ vựng"
+        });
+      }
+
+      const result = await vocabularyModel.unlinkFromAllGames(id);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error
+        });
+      }
+    } catch (error) {
+      console.error("Error unlinking vocabulary from games:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi khi hủy liên kết từ vựng với game"
+      });
+    }
+  },
+
+  // Liên kết tất cả từ vựng với game (API)
+  async linkAllVocabularyToGames(req, res) {
+    try {
+      // Lấy tất cả từ vựng
+      const allVocabulary = await vocabularyModel.getAll("", 0, 10000);
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+
+      for (const vocab of allVocabulary) {
+        try {
+          const result = await vocabularyModel.linkToAllGames(vocab.word_id);
+          if (result.success) {
+            successCount++;
+          } else {
+            errorCount++;
+            errors.push(`Từ "${vocab.simplified_chinese}": ${result.error}`);
+          }
+        } catch (error) {
+          errorCount++;
+          errors.push(`Từ "${vocab.simplified_chinese}": ${error.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Đã xử lý ${allVocabulary.length} từ vựng`,
+        successCount,
+        errorCount,
+        errors: errors.slice(0, 10) // Chỉ hiển thị 10 lỗi đầu tiên
+      });
+    } catch (error) {
+      console.error("Error linking all vocabulary to games:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi khi liên kết tất cả từ vựng với game"
       });
     }
   }

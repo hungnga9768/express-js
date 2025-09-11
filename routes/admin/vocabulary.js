@@ -47,5 +47,9 @@ router.get("/import", vocabularyCtrl.importForm);
 router.post("/import", upload.single('csvFile'), vocabularyCtrl.importFromCSV);
 router.get("/export", vocabularyCtrl.exportToCSV);
 
+// Routes quản lý liên kết game
+router.post("/:id/link-games", vocabularyCtrl.linkToAllGames);
+router.delete("/:id/unlink-games", vocabularyCtrl.unlinkFromAllGames);
+router.post("/link-all-games", vocabularyCtrl.linkAllVocabularyToGames);
 
 module.exports = router;

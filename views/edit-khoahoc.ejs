@@ -185,8 +185,7 @@
   <thead>
     <tr>
       <th>STT</th>
-      <th style="width: 5%;">Module</th>
-      <th style="width: 5%;">Thứ tự trong Module</th>
+      <th style="width: 5%;">Thứ tự hiển thị</th>
       <th style="width: 40%;">Tiêu đề</th>
       <th>Loại</th>
       <th>URL Nội dung</th>
@@ -200,9 +199,6 @@
          groupedLessons[moduleNum].forEach((lesson, index) => { %>
       <tr>
         <td><%= lesson.lesson_id %></td>
-        <td>
-          <input type="number" class="form-control form-control-sm" name="module_order" value="<%= lesson.module_order %>" data-id="<%= lesson.lesson_id %>">
-        </td>
         <td>
           <input type="number" class="form-control form-control-sm" name="display_order" value="<%= lesson.display_order %>" data-id="<%= lesson.lesson_id %>">
         </td>
@@ -273,7 +269,6 @@
         content_type: row.querySelector('select[name="content_type"]').value,
         content_url: row.querySelector('input[name="content_url"]').value,
         duration: row.querySelector('input[name="duration"]').value,
-        module_order: row.querySelector('input[name="module_order"]').value,
         display_order: row.querySelector('input[name="display_order"]').value,
         is_preview: row.querySelector('select[name="is_preview"]').value
       };

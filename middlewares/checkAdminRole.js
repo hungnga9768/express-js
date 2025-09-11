@@ -9,7 +9,7 @@ function checkAdminRole(requiredRoles) {
     if (!req.user || !req.user.admin_id) {
       return res.status(401).render('error', {
         title: 'Chưa đăng nhập',
-        message: 'Chưa đăng nhập hoặc phiên đăng nhập đã hết hạn',
+        message: 'Chưa đăng nhập hoặc phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
         error: { status: 401 }
       });
     }
