@@ -342,14 +342,34 @@ module.exports = {
       const { id } = req.params;
       const { page = 1, limit = 10 } = req.query;
       
-      const reviews = await Course.getReviews(id, {
+      const result = await Course.getReviews(id, {
         page: parseInt(page),
         limit: parseInt(limit)
       });
       
+      // Format reviews để bao gồm avatar
+      const formattedReviews = result.reviews.map(review => ({
+        review_id: review.review_id,
+        user_id: review.user_id,
+        rating: review.rating,
+        review_text: review.review_text,
+        review_date: review.review_date,
+        is_approved: review.is_approved,
+        helpful_count: review.helpful_count,
+        user: {
+          username: review.username,
+          full_name: review.full_name,
+          avatar: review.profile_picture || null
+        }
+      }));
+      
       res.json({
         success: true,
-        data: reviews
+        data: {
+          reviews: formattedReviews,
+          pagination: result.pagination,
+          summary: result.summary
+        }
       });
     } catch (error) {
       console.error('Error getting reviews:', error);

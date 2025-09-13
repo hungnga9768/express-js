@@ -13,6 +13,8 @@ const vocabulary = require("./vocabulary");
 const hsk = require("./hsk");
 const game = require("./game");
 const cloudinary = require("./cloudinary");
+const payments = require("./payments");
+const subscriptionPlans = require("./subscriptionPlans");
 const authenticateToken = require("../../middlewares/authenticateToken");
 const loadGrobalsettings = require("../../middlewares/loadGrobalsettings");
 
@@ -59,5 +61,11 @@ router.use("/chatbot", requireAnyAdmin, Chatbot);
 
 // CLOUDINARY API - Content manager trở lên
 router.use("/api/cloudinary", requireContentManager, cloudinary);
+
+// QUẢN LÝ THANH TOÁN - Super admin
+router.use("/payments", requireSuperAdmin, payments);
+
+// QUẢN LÝ SUBSCRIPTION PLANS - Super admin
+router.use("/subscription-plans", requireSuperAdmin, subscriptionPlans);
 
 module.exports = router;

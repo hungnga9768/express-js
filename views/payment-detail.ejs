@@ -1,0 +1,424 @@
+<%- include('header')%> <%- include('aside')%>
+
+<div class="content-wrapper" style="min-height: 1604.44px">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Chi tiết đơn hàng #<%= order.order_id %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/admin/payments">Quản lý thanh toán</a></li>
+            <li class="breadcrumb-item active">Chi tiết đơn hàng</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <div class="row">
+      <!-- Order Information -->
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-shopping-cart"></i> Thông tin đơn hàng
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <table class="table table-borderless">
+                  <tr>
+                    <td><strong>Order ID:</strong></td>
+                    <td><%= order.order_id %></td>
+                  </tr>
+                  <tr>
+                    <td><strong>MoMo Order ID:</strong></td>
+                    <td><%= order.momo_order_id || '-' %></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Request ID:</strong></td>
+                    <td><%= order.request_id || '-' %></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Gói Premium:</strong></td>
+                    <td>
+                      <span class="badge badge-info badge-lg">
+                        <%= order.plan_name %>
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Thời hạn:</strong></td>
+                    <td><%= order.duration_months %> tháng</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <table class="table table-borderless">
+                  <tr>
+                    <td><strong>Số tiền:</strong></td>
+                    <td>
+                      <span class="text-lg text-success">
+                        <strong><%= order.amount.toLocaleString('vi-VN') %>đ</strong>
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Trạng thái:</strong></td>
+                    <td>
+                      <% 
+                        let statusBadge = 'badge-secondary';
+                        let statusText = order.status;
+                        
+                        if (order.status === 'completed') {
+                          statusBadge = 'badge-success';
+                          statusText = 'Thành công';
+                        } else if (order.status === 'pending') {
+                          statusBadge = 'badge-warning';
+                          statusText = 'Đang xử lý';
+                        } else if (order.status === 'processing') {
+                          statusBadge = 'badge-info';
+                          statusText = 'Đang xử lý';
+                        } else if (order.status === 'failed') {
+                          statusBadge = 'badge-danger';
+                          statusText = 'Thất bại';
+                        } else if (order.status === 'cancelled') {
+                          statusBadge = 'badge-secondary';
+                          statusText = 'Đã hủy';
+                        } else if (order.status === 'expired') {
+                          statusBadge = 'badge-warning';
+                          statusText = 'Hết hạn';
+                        }
+                      %>
+                      <span class="badge <%= statusBadge %> badge-lg"><%= statusText %></span>
+                      
+                      <% if (order.result_code && order.result_code !== 0) { %>
+                        <% const resultInfo = getMoMoResultCodeInfo(order.result_code); %>
+                        <br><small class="text-muted mt-1">
+                          MoMo Code <%= order.result_code %>: <%= resultInfo.message %>
+                        </small>
+                      <% } %>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Thời gian tạo:</strong></td>
+                    <td><%= order.created_at.toLocaleString('vi-VN') %></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Thời gian hoàn thành:</strong></td>
+                    <td><%= order.completed_at ? order.completed_at.toLocaleString('vi-VN') : '-' %></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Message:</strong></td>
+                    <td><%= order.message || '-' %></td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MoMo Response Data -->
+        <% if (order.momo_response) { %>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-mobile-alt"></i> MoMo Response Data
+            </h3>
+          </div>
+          <div class="card-body">
+            <pre class="language-json"><code><%= JSON.stringify(JSON.parse(order.momo_response), null, 2) %></code></pre>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Webhook Data -->
+        <% if (webhooks && webhooks.length > 0) { %>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-webhook"></i> Webhook History
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th style="width: 15%">Thời gian</th>
+                    <th style="width: 20%">Result Code</th>
+                    <th style="width: 35%">Message & Status</th>
+                    <th style="width: 15%">Amount</th>
+                    <th style="width: 15%">Trans ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (webhooks && webhooks.length > 0) { %>
+                    <% webhooks.forEach(webhook => { %>
+                    <tr>
+                      <td>
+                        <%= webhook.created_at ? webhook.created_at.toLocaleString('vi-VN') : 
+                            (webhook.received_at ? webhook.received_at.toLocaleString('vi-VN') : 'N/A') %>
+                      </td>
+                      <td>
+                        <% 
+                          const resultInfo = getMoMoResultCodeInfo(webhook.result_code || 0);
+                          let badgeClass = 'badge-secondary';
+                          let icon = 'fas fa-question';
+                          
+                          if (resultInfo.type === 'success') {
+                            badgeClass = 'badge-success';
+                            icon = 'fas fa-check';
+                          } else if (resultInfo.type === 'pending') {
+                            badgeClass = 'badge-warning';
+                            icon = 'fas fa-clock';
+                          } else if (resultInfo.type === 'processing') {
+                            badgeClass = 'badge-info';
+                            icon = 'fas fa-spinner';
+                          } else if (resultInfo.type === 'confirmed') {
+                            badgeClass = 'badge-primary';
+                            icon = 'fas fa-check-double';
+                          } else if (resultInfo.type === 'failed' || resultInfo.type === 'error') {
+                            badgeClass = 'badge-danger';
+                            icon = 'fas fa-times';
+                          } else if (resultInfo.type === 'cancelled') {
+                            badgeClass = 'badge-secondary';
+                            icon = 'fas fa-ban';
+                          } else if (resultInfo.type === 'expired') {
+                            badgeClass = 'badge-warning';
+                            icon = 'fas fa-clock';
+                          }
+                        %>
+                        <span class="badge <%= badgeClass %>" title="<%= resultInfo.description %>">
+                          <i class="<%= icon %>"></i> <%= webhook.result_code || 0 %>
+                        </span>
+                        <br><small class="text-muted"><strong><%= resultInfo.message %></strong></small>
+                        <br><small class="badge badge-secondary badge-sm"><%= resultInfo.category %></small>
+                        <% if (resultInfo.final) { %>
+                          <small class="badge badge-dark badge-sm ml-1">Final</small>
+                        <% } else { %>
+                          <small class="badge badge-info badge-sm ml-1">Pending</small>
+                        <% } %>
+                      </td>
+                      <td>
+                        <strong><%= webhook.message || resultInfo.message %></strong>
+                        <br><small class="text-info"><%= resultInfo.description %></small>
+                        <% if (webhook.error_message) { %>
+                          <br><small class="text-danger">System Error: <%= webhook.error_message %></small>
+                        <% } %>
+                        <% if (webhook.is_processed) { %>
+                          <br><small class="badge badge-success badge-sm">
+                            <i class="fas fa-check"></i> Processed
+                          </small>
+                        <% } else { %>
+                          <br><small class="badge badge-warning badge-sm">
+                            <i class="fas fa-clock"></i> Pending
+                          </small>
+                        <% } %>
+                      </td>
+                      <td><%= (webhook.amount || 0).toLocaleString('vi-VN') %>đ</td>
+                      <td><%= webhook.momo_trans_id || webhook.trans_id || 'N/A' %></td>
+                    </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="5" class="text-center text-muted py-3">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <br>Chưa có webhook nào từ MoMo
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- User Information -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-user"></i> Thông tin người dùng
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="text-center mb-3">
+              <% if (orderUser.profile_picture) { %>
+              <img
+                alt="Avatar"
+                class="profile-user-img img-fluid img-circle"
+                <% 
+                  let profileUrl = orderUser.profile_picture;
+                  if (orderUser.profile_picture && !orderUser.profile_picture.includes('cloudinary.com') && !orderUser.profile_picture.startsWith('/')) {
+                    profileUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${orderUser.profile_picture}`;
+                  }
+                %>
+                src="<%= profileUrl %>"
+                style="width: 80px; height: 80px; object-fit: cover;"
+              />
+              <% } else { %>
+              <img
+                alt="Avatar"
+                class="profile-user-img img-fluid img-circle"
+                src="/dist/img/avatar4.png"
+                style="width: 80px; height: 80px; object-fit: cover;"
+              />
+              <% } %>
+            </div>
+
+            <table class="table table-borderless table-sm">
+              <tr>
+                <td><strong>User ID:</strong></td>
+                <td><%= orderUser.user_id %></td>
+              </tr>
+              <tr>
+                <td><strong>Username:</strong></td>
+                <td><%= orderUser.username %></td>
+              </tr>
+              <tr>
+                <td><strong>Email:</strong></td>
+                <td><%= orderUser.email %></td>
+              </tr>
+              <tr>
+                <td><strong>Họ tên:</strong></td>
+                <td><%= orderUser.full_name || '-' %></td>
+              </tr>
+              <tr>
+                <td><strong>Loại tài khoản:</strong></td>
+                <td>
+                  <% if (orderUser.subscription_type === 'premium') { %>
+                    <span class="badge badge-primary">Premium</span>
+                  <% } else { %>
+                    <span class="badge badge-secondary">Free</span>
+                  <% } %>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Hết hạn:</strong></td>
+                <td>
+                  <%= orderUser.subscription_expiry ? orderUser.subscription_expiry.toLocaleString('vi-VN') : '-' %>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Đăng ký:</strong></td>
+                <td><%= orderUser.registration_date.toLocaleString('vi-VN') %></td>
+              </tr>
+            </table>
+
+            <div class="text-center mt-3">
+              <a href="/admin/user/edit/<%= orderUser.user_id %>" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit"></i> Chỉnh sửa User
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-tools"></i> Thao tác
+            </h3>
+          </div>
+          <div class="card-body">
+            <% if (order.status === 'pending') { %>
+            <button 
+              class="btn btn-warning btn-block mb-2"
+              onclick="checkPaymentStatus('<%= order.id %>')"
+            >
+              <i class="fas fa-sync"></i> Kiểm tra trạng thái từ MoMo
+            </button>
+            <% } %>
+
+            <% if (order.status === 'completed' && orderUser.subscription_type !== 'premium') { %>
+            <button 
+              class="btn btn-success btn-block mb-2"
+              onclick="upgradeUserManual('<%= orderUser.user_id %>', '<%= order.id %>')"
+            >
+              <i class="fas fa-crown"></i> Nâng cấp thủ công
+            </button>
+            <% } %>
+
+            <button 
+              class="btn btn-info btn-block mb-2"
+              onclick="exportOrderDetail('<%= order.id %>')"
+            >
+              <i class="fas fa-download"></i> Xuất thông tin
+            </button>
+
+            <a href="/admin/payments" class="btn btn-secondary btn-block">
+              <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- /.content -->
+</div>
+
+<script>
+// Kiểm tra trạng thái thanh toán
+function checkPaymentStatus(orderId) {
+  if (confirm('Kiểm tra lại trạng thái thanh toán từ MoMo?')) {
+    fetch(`/admin/payments/check-status/${orderId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Đã cập nhật trạng thái thành công!');
+        location.reload();
+      } else {
+        alert('Lỗi: ' + data.message);
+      }
+    })
+    .catch(error => {
+      alert('Có lỗi xảy ra: ' + error.message);
+    });
+  }
+}
+
+// Nâng cấp user thủ công
+function upgradeUserManual(userId, orderId) {
+  if (confirm('Nâng cấp user lên Premium thủ công?')) {
+    fetch(`/admin/payments/upgrade-manual/${orderId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Đã nâng cấp user thành công!');
+        location.reload();
+      } else {
+        alert('Lỗi: ' + data.message);
+      }
+    })
+    .catch(error => {
+      alert('Có lỗi xảy ra: ' + error.message);
+    });
+  }
+}
+
+// Xuất thông tin đơn hàng
+function exportOrderDetail(orderId) {
+  window.open(`/admin/payments/export/${orderId}`, '_blank');
+}
+</script>
+
+<%- include('footer')%>

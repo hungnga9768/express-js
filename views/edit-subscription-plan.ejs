@@ -1,0 +1,477 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>
+      <i class="fa fa-edit"></i>
+    Cập nhật gói đăng ký: <%= plan.name %>
+    </h1>
+  
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="box box-primary">
+        
+          
+          <form id="editPlanForm" data-plan-id="<%= plan.id %>">
+            <div class="box-body">
+              
+              <!-- Basic Info -->
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="plan_code">Plan Code <span class="text-red">*</span></label>
+                    <input type="text" class="form-control" id="plan_code" name="plan_code" 
+                           value="<%= plan.plan_code %>" placeholder="Ví dụ: 1month, 6months, 1year" required>
+                    <small class="help-block">Mã plan duy nhất (chỉ chữ, số, dấu gạch)</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="name">Tên Plan <span class="text-red">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="<%= plan.name %>" placeholder="Ví dụ: Premium 1 Tháng" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Duration & Pricing -->
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="duration_months">Thời hạn <span class="text-red">*</span></label>
+                    <select class="form-control" id="duration_months" name="duration_months" required>
+                      <option value="">Chọn thời hạn</option>
+                      <% durationOptions.forEach(option => { %>
+                        <option value="<%= option.value %>" <%= (plan.duration_months == option.value) ? 'selected' : '' %>>
+                          <%= option.text %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="price">Giá bán <span class="text-red">*</span></label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="price" name="price" 
+                             value="<%= plan.price %>" placeholder="299000" min="0" step="1000" required>
+                      <div class="input-group-addon">VND</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="original_price">Giá gốc (tùy chọn)</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="original_price" name="original_price" 
+                             value="<%= plan.original_price || '' %>" placeholder="350000" min="0" step="1000">
+                      <div class="input-group-addon">VND</div>
+                    </div>
+                    <small class="help-block">Để hiển thị giảm giá</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Discount & Settings -->
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="discount_percent">% Giảm giá</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="discount_percent" name="discount_percent" 
+                             value="<%= plan.discount_percent %>" min="0" max="100" step="0.1">
+                      <div class="input-group-addon">%</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="sort_order">Thứ tự hiển thị</label>
+                    <input type="number" class="form-control" id="sort_order" name="sort_order" 
+                           value="<%= plan.sort_order %>" min="0">
+                    <small class="help-block">Số nhỏ hiển thị trước</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>&nbsp;</label>
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" name="is_active" value="1" <%= plan.is_active ? 'checked' : '' %>>
+                        Kích hoạt plan này
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="form-group">
+                <label for="description">Mô tả Plan</label>
+                <textarea class="form-control" id="description" name="description" rows="3" 
+                          placeholder="Mô tả ngắn về gói subscription này..."><%= plan.description || '' %></textarea>
+              </div>
+
+              <!-- Features -->
+              <div class="form-group">
+                <label for="features">Tính năng Plan <span class="text-red">*</span></label>
+                <textarea class="form-control" id="features" name="features" rows="8" 
+                          placeholder="Nhập mỗi tính năng trên một dòng..." required><%= plan.features && plan.features.length > 0 ? plan.features.join('\n') : '' %></textarea>
+                <small class="help-block">Mỗi dòng là một tính năng. Ví dụ: "100 tin nhắn chat/ngày"</small>
+              </div>
+
+            </div>
+
+            <div class="box-footer">
+              <button type="submit" class="btn btn-primary">
+                <i class="fa fa-save"></i> Cập nhật Gói đăng ký
+              </button>
+              <a href="/admin/subscription-plans" class="btn btn-default">
+                <i class="fa fa-arrow-left"></i> Quay lại
+              </a>
+              <button type="button" class="btn btn-danger pull-right" onclick="deletePlan(<%= plan.id %>)">
+                <i class="fa fa-trash"></i> Xóa Gói
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Preview Card -->
+      <div class="col-md-4">
+        <div class="box box-info">
+          <div class="box-header with-border">
+            <h3 class="box-title"><i class="fa fa-eye"></i> Preview Plan</h3>
+          </div>
+          <div class="box-body">
+            <div id="planPreview" class="subscription-plan-preview">
+              <div class="plan-header">
+                <h3 id="preview-name"><%= plan.name %></h3>
+                <div class="plan-code">
+                  <span id="preview-code" class="label label-info"><%= plan.plan_code %></span>
+                </div>
+              </div>
+              
+              <div class="plan-pricing">
+                <div class="current-price">
+                  <h2 id="preview-price" class="text-success"><%= plan.price.toLocaleString('vi-VN') %>đ</h2>
+                  <small id="preview-duration" class="text-muted"><%= plan.duration_months %> tháng</small>
+                </div>
+                <div id="preview-original" class="original-price" style="<%= plan.original_price && plan.original_price > plan.price ? '' : 'display: none;' %>">
+                  <del id="preview-original-price" class="text-muted"><%= plan.original_price ? plan.original_price.toLocaleString('vi-VN') : '0' %>đ</del>
+                  <span id="preview-discount" class="label label-warning">-<%= plan.discount_percent %>%</span>
+                </div>
+                <div id="preview-per-month" class="price-per-month">
+                  <small id="preview-price-monthly" class="text-muted"><%= Math.round(plan.price / plan.duration_months).toLocaleString('vi-VN') %>đ/tháng</small>
+                </div>
+              </div>
+
+              <div class="plan-description">
+                <p id="preview-description" class="text-muted"><%= plan.description || 'Mô tả plan...' %></p>
+              </div>
+
+              <div class="plan-features">
+                <h5>Tính năng:</h5>
+                <ul id="preview-features" class="list-unstyled">
+                  <% if (plan.features && plan.features.length > 0) { %>
+                    <% plan.features.forEach(feature => { %>
+                      <li><i class="fa fa-check text-success"></i> <%= feature %></li>
+                    <% }) %>
+                  <% } else { %>
+                    <li class="text-muted">Chưa có tính năng</li>
+                  <% } %>
+                </ul>
+              </div>
+
+              <div class="plan-status">
+                <span id="preview-status" class="label <%= plan.is_active ? 'label-success' : 'label-default' %>">
+                  <%= plan.is_active ? 'Active' : 'Inactive' %>
+                </span>
+                <small class="text-muted">Sort: <span id="preview-sort"><%= plan.sort_order %></span></small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plan Statistics -->
+        <div class="box box-success">
+          <div class="box-header with-border">
+            <h3 class="box-title"><i class="fa fa-bar-chart"></i> Thống kê Plan</h3>
+          </div>
+          <div class="box-body">
+            <div class="plan-stats">
+              <div class="stat-item">
+                <span class="stat-label">Plan ID:</span>
+                <span class="stat-value">#<%= plan.id %></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Tạo lúc:</span>
+                <span class="stat-value"><%= new Date(plan.created_at).toLocaleDateString('vi-VN') %></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Cập nhật:</span>
+                <span class="stat-value"><%= new Date(plan.updated_at).toLocaleDateString('vi-VN') %></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Giá/tháng:</span>
+                <span class="stat-value text-success"><%= Math.round(plan.price / plan.duration_months).toLocaleString('vi-VN') %>đ</span>
+              </div>
+              <% if (plan.original_price && plan.original_price > plan.price) { %>
+                <div class="stat-item">
+                  <span class="stat-label">Tiết kiệm:</span>
+                  <span class="stat-value text-warning"><%= (plan.original_price - plan.price).toLocaleString('vi-VN') %>đ</span>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer')%>
+
+<script>
+$(document).ready(function() {
+  // Update preview khi user typing
+  updatePreview();
+  
+  // Bind events
+  $('#editPlanForm input, #editPlanForm textarea, #editPlanForm select').on('input change', updatePreview);
+  
+  // Auto calculate discount percent
+  $('#price, #original_price').on('input', function() {
+    calculateDiscountPercent();
+  });
+});
+
+function updatePreview() {
+  // Basic info
+  const name = $('#name').val() || 'Plan Name';
+  const planCode = $('#plan_code').val() || 'plan_code';
+  const duration = $('#duration_months').val() || 0;
+  const price = parseFloat($('#price').val()) || 0;
+  const originalPrice = parseFloat($('#original_price').val()) || 0;
+  const discountPercent = parseFloat($('#discount_percent').val()) || 0;
+  const description = $('#description').val() || 'Mô tả plan...';
+  const isActive = $('#editPlanForm input[name="is_active"]').is(':checked');
+  const sortOrder = $('#sort_order').val() || 0;
+  
+  // Update preview
+  $('#preview-name').text(name);
+  $('#preview-code').text(planCode);
+  $('#preview-price').text(price.toLocaleString('vi-VN') + 'đ');
+  $('#preview-duration').text(duration + ' tháng');
+  $('#preview-description').text(description);
+  $('#preview-sort').text(sortOrder);
+  
+  // Price per month
+  const pricePerMonth = duration > 0 ? Math.round(price / duration) : 0;
+  $('#preview-price-monthly').text(pricePerMonth.toLocaleString('vi-VN') + 'đ/tháng');
+  
+  // Original price & discount
+  if (originalPrice > price && price > 0) {
+    $('#preview-original').show();
+    $('#preview-original-price').text(originalPrice.toLocaleString('vi-VN') + 'đ');
+    $('#preview-discount').text('-' + discountPercent + '%');
+  } else {
+    $('#preview-original').hide();
+  }
+  
+  // Status
+  if (isActive) {
+    $('#preview-status').removeClass('label-default').addClass('label-success').text('Active');
+  } else {
+    $('#preview-status').removeClass('label-success').addClass('label-default').text('Inactive');
+  }
+  
+  // Features
+  const features = $('#features').val().split('\n').filter(f => f.trim().length > 0);
+  const featureHtml = features.map(feature => 
+    `<li><i class="fa fa-check text-success"></i> ${feature.trim()}</li>`
+  ).join('');
+  $('#preview-features').html(featureHtml || '<li class="text-muted">Chưa có tính năng</li>');
+}
+
+function calculateDiscountPercent() {
+  const price = parseFloat($('#price').val()) || 0;
+  const originalPrice = parseFloat($('#original_price').val()) || 0;
+  
+  if (originalPrice > price && price > 0) {
+    const discount = ((originalPrice - price) / originalPrice * 100).toFixed(1);
+    $('#discount_percent').val(discount);
+  }
+}
+
+// Form submit with AJAX
+$('#editPlanForm').on('submit', function(e) {
+  e.preventDefault();
+  
+  const planId = $(this).data('plan-id');
+  const planCode = $('#plan_code').val().trim();
+  const name = $('#name').val().trim();
+  const duration = $('#duration_months').val();
+  const price = $('#price').val();
+  const features = $('#features').val().trim();
+  
+  if (!planCode || !name || !duration || !price || !features) {
+    alert('Vui lòng điền đầy đủ các trường bắt buộc');
+    return false;
+  }
+  
+  // Validate plan_code format
+  if (!/^[a-zA-Z0-9_-]+$/.test(planCode)) {
+    alert('Plan code chỉ được chứa chữ, số, dấu gạch dưới và gạch ngang');
+    return false;
+  }
+  
+  // Show loading
+  const submitBtn = $(this).find('button[type="submit"]');
+  const originalText = submitBtn.html();
+  submitBtn.html('<i class="fa fa-spinner fa-spin"></i> Đang cập nhật...').prop('disabled', true);
+  
+  // Prepare data
+  const formData = {
+    plan_code: planCode,
+    name: name,
+    duration_months: duration,
+    price: price,
+    original_price: $('#original_price').val() || null,
+    discount_percent: $('#discount_percent').val() || 0,
+    description: $('#description').val() || null,
+    features: features,
+    is_active: $('#editPlanForm input[name="is_active"]').is(':checked') ? 1 : 0,
+    sort_order: $('#sort_order').val() || 0
+  };
+  
+  // Submit via AJAX
+  $.ajax({
+    url: `/admin/subscription-plans/update/${planId}`,
+    type: 'PUT',
+    data: formData,
+    success: function(response) {
+      if (response.success) {
+        // Show success message
+        $('<div class="alert alert-success alert-dismissible">' +
+          '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
+          '<h4><i class="icon fa fa-check"></i> Thành công!</h4>' + 
+          response.message + '</div>').insertAfter('.content-header');
+        
+        // Scroll to top
+        $('html, body').animate({ scrollTop: 0 }, 500);
+      } else {
+        alert('Lỗi: ' + response.message);
+      }
+    },
+    error: function(xhr) {
+      const response = xhr.responseJSON;
+      alert('Lỗi: ' + (response ? response.message : 'Không thể cập nhật plan'));
+    },
+    complete: function() {
+      // Restore button
+      submitBtn.html(originalText).prop('disabled', false);
+    }
+  });
+});
+
+// Delete plan
+function deletePlan(id) {
+  if (confirm('Bạn có chắc chắn muốn xóa plan này? Hành động này không thể hoàn tác.\n\nLưu ý: Plan sẽ bị vô hiệu hóa thay vì xóa hoàn toàn.')) {
+    $.ajax({
+      url: `/admin/subscription-plans/delete/${id}`,
+      type: 'DELETE',
+      success: function(response) {
+        if (response.success) {
+          alert('Đã xóa plan thành công');
+          window.location.href = '/admin/subscription-plans';
+        } else {
+          alert('Lỗi: ' + response.message);
+        }
+      },
+      error: function(xhr) {
+        const response = xhr.responseJSON;
+        alert('Lỗi: ' + (response ? response.message : 'Không thể xóa plan'));
+      }
+    });
+  }
+}
+</script>
+
+<style>
+.subscription-plan-preview {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+.plan-header h3 {
+  margin: 0 0 10px 0;
+}
+
+.plan-pricing {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.plan-pricing h2 {
+  margin: 0;
+  font-size: 2em;
+}
+
+.plan-features ul {
+  margin: 0;
+}
+
+.plan-features li {
+  margin: 5px 0;
+}
+
+.plan-status {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.plan-stats .stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.stat-label {
+  font-weight: 600;
+  color: #666;
+}
+
+.stat-value {
+  font-weight: 600;
+}
+
+.help-block {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.text-red {
+  color: #dd4b39;
+}
+
+.form-group label {
+  font-weight: 600;
+}
+
+.original-price {
+  margin-top: 5px;
+}
+
+.price-per-month {
+  margin-top: 5px;
+}
+</style>

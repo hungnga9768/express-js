@@ -100,7 +100,7 @@ const rateLimit = require('express-rate-limit');
 // API rate limiting (cho API endpoints - chỉ áp dụng cho /api/*)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 1000, // 100 requests per 15 minutes
+  max: 2000, // 2000 requests per 15 minutes
   message: {
     error: 'API rate limit exceeded',
     message: 'Quá nhiều requests API, vui lòng thử lại sau 15 phút.'
@@ -160,68 +160,8 @@ const userLoginLimiter = rateLimit({
 
 app.use('/api/login', userLoginLimiter);
 
-// Public routes rate limiting (không phải admin và API)
-const publicLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 phút
-  max: 200, // 200 requests per 15 minutes
-  message: {
-    error: 'Too many requests',
-    message: 'Quá nhiều requests từ IP này, vui lòng thử lại sau 15 phút.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Bỏ qua rate limiting cho admin, API, static files
-    const shouldSkip = req.path.startsWith('/admin') || 
-                      req.path.startsWith('/api') || 
-                      req.path.startsWith('/dist/') ||
-                      req.path.startsWith('/plugins/') ||
-                      req.path.startsWith('/images/') ||
-                      req.path.startsWith('/public/') ||
-                      req.path.includes('.css') ||
-                      req.path.includes('.js') ||
-                      req.path.includes('.png') ||
-                      req.path.includes('.jpg') ||
-                      req.path.includes('.jpeg') ||
-                      req.path.includes('.gif') ||
-                      req.path.includes('.ico') ||
-                      req.path.includes('.svg') ||
-                      req.path === '/favicon.ico' ||
-                      req.path === '/health' ||
-                      req.path === '/health/detailed';
-    
-    if (shouldSkip) {
-      console.log(`✅ [PublicRateLimit] Skipping rate limit for: ${req.path}`);
-    }
-    return shouldSkip;
-  }
-});
-
-// Apply public rate limiting (sau khi đã setup các middleware khác)
-app.use((req, res, next) => {
-  // Bỏ qua rate limiting cho admin, API routes và static files
-  if (req.path.startsWith('/admin') || 
-      req.path.startsWith('/api') || 
-      req.path.startsWith('/dist/') ||
-      req.path.startsWith('/plugins/') ||
-      req.path.startsWith('/images/') ||
-      req.path.startsWith('/public/') ||
-      req.path.includes('.css') ||
-      req.path.includes('.js') ||
-      req.path.includes('.png') ||
-      req.path.includes('.jpg') ||
-      req.path.includes('.jpeg') ||
-      req.path.includes('.gif') ||
-      req.path.includes('.ico') ||
-      req.path.includes('.svg') ||
-      req.path === '/favicon.ico' ||
-      req.path === '/health' ||
-      req.path === '/health/detailed') {
-    // console.log(`🔐 [RateLimit] Bypassing rate limit for: ${req.path}`);
-    return next();
-  }
-  return publicLimiter(req, res, next);
-});
+// Public routes - KHÔNG giới hạn rate limit để người dùng truy cập tự do
+// Chỉ giới hạn admin và API để bảo vệ server
 
 // 📦 Compression middleware
 app.use(compression());

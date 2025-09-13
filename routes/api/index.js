@@ -15,6 +15,7 @@ const baitap = require("../api/baitap");
 const geminiCtrl = require("../../app/controllers/api/gemini.controller");
 const speechPractice = require("../api/speechPractice");
 const usage = require("../api/usage");
+const momo = require("../api/momo");
 // router baor vệ check đăng nhập thông qua cái này mới chạy
 const authenticateTokenUser = require("../../middlewares/authAPI");
 // Import subscription middleware
@@ -119,5 +120,8 @@ router.use("/speech-practice", speechPractice);
 
 // ===== USAGE TRACKING =====
 router.use("/usage", usage);
+
+// ===== MOMO PAYMENT =====
+router.use("/momo", momo);
 
 module.exports = router;

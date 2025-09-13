@@ -3,6 +3,13 @@
 -- Host: 127.0.0.1    Database: web_hoctiengtrung
 -- ------------------------------------------------------
 -- Server version	8.0.41
+--
+-- =====================================================
+-- HỆ THỐNG HỌC TIẾNG TRUNG - DATABASE SCHEMA
+-- =====================================================
+-- Database này chứa toàn bộ dữ liệu cho ứng dụng học tiếng Trung
+-- Bao gồm: Người dùng, Khóa học, Bài học, Từ vựng, Ngữ pháp, HSK Tests, Games, Thanh toán
+-- =====================================================
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -32,8 +39,12 @@ CREATE TABLE `achievements` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Bảng các thành tích trong hệ thống';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `admins`
+-- =====================================================
+-- BẢNG ADMIN - QUẢN TRỊ VIÊN
+-- =====================================================
+-- Lưu trữ thông tin admin của hệ thống
+-- Phân quyền: super_admin, content_manager, support
+-- Liên kết với: settings (updated_by), feedbacks (handled_by)
 --
 
 DROP TABLE IF EXISTS `admins`;
@@ -201,8 +212,12 @@ CREATE TABLE `coursereviews` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Bảng đánh giá và nhận xét khóa học';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `courses`
+-- =====================================================
+-- BẢNG KHÓA HỌC - NỘI DUNG CHÍNH
+-- =====================================================
+-- Lưu trữ thông tin các khóa học tiếng Trung
+-- Bao gồm: HSK levels (1-6), độ khó, giá cả, thời lượng
+-- Liên kết với: lessons, courseenrollments, coursereviews
 --
 
 DROP TABLE IF EXISTS `courses`;
@@ -920,8 +935,12 @@ CREATE TABLE `usergameprogress` (
 ) ENGINE=InnoDB AUTO_INCREMENT=646 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Tiến trình game của từng người dùng';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `users`
+-- =====================================================
+-- BẢNG NGƯỜI DÙNG - QUAN TRỌNG NHẤT
+-- =====================================================
+-- Lưu trữ thông tin tất cả người dùng trong hệ thống
+-- Bao gồm: Thông tin cá nhân, Subscription (free/premium/vip), Social login
+-- Liên kết với: subscription_history, momo_orders, chat_history, hskresults
 --
 
 DROP TABLE IF EXISTS `users`;
@@ -949,8 +968,12 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Bảng lưu thông tin người dùng';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `vocabulary`
+-- =====================================================
+-- BẢNG TỪ VỰNG - CORE DATA
+-- =====================================================
+-- Lưu trữ từ vựng tiếng Trung với 11,459 từ
+-- Bao gồm: Chữ giản thể, phồn thể, pinyin, nghĩa tiếng Anh, HSK level
+-- Liên kết với: gamevocabulary, coursevocabulary, flashcards
 --
 
 DROP TABLE IF EXISTS `vocabulary`;
@@ -981,4 +1004,18 @@ CREATE TABLE `vocabulary` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+-- =====================================================
+-- TỔNG KẾT DATABASE SCHEMA
+-- =====================================================
+-- Database hoàn chỉnh với 50+ bảng
+-- Chức năng chính:
+-- 1. Quản lý người dùng & admin
+-- 2. Khóa học & bài học (HSK 1-6)
+-- 3. Từ vựng & ngữ pháp (11,459 từ)
+-- 4. Games & flashcards
+-- 5. HSK Tests & kết quả
+-- 6. Chat AI & pronunciation practice
+-- 7. Thanh toán MoMo & subscription
+-- 8. Forum & feedback
+-- =====================================================
 -- Dump completed on 2025-09-11 18:17:43

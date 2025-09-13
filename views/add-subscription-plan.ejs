@@ -1,0 +1,490 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper">
+  <section class="content-header">
+    <h1>
+      <i class="fa fa-plus"></i> Thêm Gói đăng ký mới
+      <small>Tạo gói Premium cho người dùng</small>
+    </h1>
+    <ol class="breadcrumb">
+      <li><a href="/admin"><i class="fa fa-dashboard"></i> Trang chủ</a></li>
+      <li><a href="/admin/subscription-plans">Gói đăng ký</a></li>
+      <li class="active">Thêm mới</li>
+    </ol>
+  </section>
+
+  <section class="content">
+    <!-- Thông báo lỗi -->
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <h4><i class="icon fa fa-ban"></i> Lỗi!</h4>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="box box-primary">
+          <div class="box-header with-border">
+            <h3 class="box-title"><i class="fa fa-edit"></i> Thông tin Gói đăng ký</h3>
+          </div>
+          
+          <form id="planForm" action="/admin/subscription-plans/create" method="POST">
+            <div class="box-body">
+              
+              <!-- Basic Info -->
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="plan_code">Plan Code <span class="text-red">*</span></label>
+                    <input type="text" class="form-control" id="plan_code" name="plan_code" 
+                           value="<%= typeof data !== 'undefined' ? data.plan_code || '' : '' %>"
+                           placeholder="Ví dụ: 1month, 6months, 1year" required>
+                    <small class="help-block">Mã plan duy nhất (chỉ chữ, số, dấu gạch)</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="name">Tên Gói <span class="text-red">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="<%= typeof data !== 'undefined' ? data.name || '' : '' %>"
+                           placeholder="Ví dụ: Premium 1 Tháng" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Duration & Pricing -->
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="duration_months">Thời hạn <span class="text-red">*</span></label>
+                    <select class="form-control" id="duration_months" name="duration_months" required>
+                      <option value="">Chọn thời hạn</option>
+                      <% durationOptions.forEach(option => { %>
+                        <option value="<%= option.value %>" 
+                                <%= (typeof data !== 'undefined' && data.duration_months == option.value) ? 'selected' : '' %>>
+                          <%= option.text %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="price">Giá bán <span class="text-red">*</span></label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="price" name="price" 
+                             value="<%= typeof data !== 'undefined' ? data.price || '' : '' %>"
+                             placeholder="299000" min="0" step="1000" required>
+                      <div class="input-group-addon">VND</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="original_price">Giá gốc (tùy chọn)</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="original_price" name="original_price" 
+                             value="<%= typeof data !== 'undefined' ? data.original_price || '' : '' %>"
+                             placeholder="350000" min="0" step="1000">
+                      <div class="input-group-addon">VND</div>
+                    </div>
+                    <small class="help-block">Để hiển thị giảm giá</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Discount & Settings -->
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="discount_percent">% Giảm giá</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="discount_percent" name="discount_percent" 
+                             value="<%= typeof data !== 'undefined' ? data.discount_percent || '0' : '0' %>"
+                             min="0" max="100" step="0.1">
+                      <div class="input-group-addon">%</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="sort_order">Thứ tự hiển thị</label>
+                    <input type="number" class="form-control" id="sort_order" name="sort_order" 
+                           value="<%= typeof data !== 'undefined' ? data.sort_order || '0' : '0' %>"
+                           min="0">
+                    <small class="help-block">Số nhỏ hiển thị trước</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>&nbsp;</label>
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" name="is_active" value="1" 
+                               <%= (typeof data === 'undefined' || data.is_active !== '0') ? 'checked' : '' %>>
+                        Kích hoạt plan này
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="form-group">
+                <label for="description">Mô tả Gói</label>
+                <textarea class="form-control" id="description" name="description" rows="3" 
+                          placeholder="Mô tả ngắn về gói subscription này..."><%= typeof data !== 'undefined' ? data.description || '' : '' %></textarea>
+              </div>
+
+              <!-- Features -->
+              <div class="form-group">
+                <label for="features">Tính năng Gói <span class="text-red">*</span></label>
+                <textarea class="form-control" id="features" name="features" rows="8" 
+                          placeholder="Nhập mỗi tính năng trên một dòng..." required><% if (typeof data !== 'undefined' && data.features) { %><%= Array.isArray(data.features) ? data.features.join('\n') : data.features %><% } else { %><%= defaultFeatures.join('\n') %><% } %></textarea>
+                <small class="help-block">Mỗi dòng là một tính năng. Ví dụ: "100 tin nhắn chat/ngày"</small>
+              </div>
+
+            </div>
+
+            <div class="box-footer">
+              <button type="submit" class="btn btn-primary">
+                <i class="fa fa-save"></i> Lưu Gói đăng ký
+              </button>
+              <a href="/admin/subscription-plans" class="btn btn-default">
+                <i class="fa fa-arrow-left"></i> Quay lại
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Preview Card -->
+      <div class="col-md-4">
+        <div class="box box-info">
+          <div class="box-header with-border">
+            <h3 class="box-title"><i class="fa fa-eye"></i> Xem trước Gói</h3>
+          </div>
+          <div class="box-body">
+            <div id="planPreview" class="subscription-plan-preview">
+              <div class="plan-header">
+                <h3 id="preview-name">Plan Name</h3>
+                <div class="plan-code">
+                  <span id="preview-code" class="label label-info">plan_code</span>
+                </div>
+              </div>
+              
+              <div class="plan-pricing">
+                <div class="current-price">
+                  <h2 id="preview-price" class="text-success">0đ</h2>
+                  <small id="preview-duration" class="text-muted">0 tháng</small>
+                </div>
+                <div id="preview-original" class="original-price" style="display: none;">
+                  <del id="preview-original-price" class="text-muted">0đ</del>
+                  <span id="preview-discount" class="label label-warning">-0%</span>
+                </div>
+                <div id="preview-per-month" class="price-per-month">
+                  <small id="preview-price-monthly" class="text-muted">0đ/tháng</small>
+                </div>
+              </div>
+
+              <div class="plan-description">
+                <p id="preview-description" class="text-muted">Mô tả plan...</p>
+              </div>
+
+              <div class="plan-features">
+                <h5>Tính năng:</h5>
+                <ul id="preview-features" class="list-unstyled">
+                  <li><i class="fa fa-check text-success"></i> Tính năng 1</li>
+                </ul>
+              </div>
+
+              <div class="plan-status">
+                <span id="preview-status" class="label label-success">Active</span>
+                <small class="text-muted">Sort: <span id="preview-sort">0</span></small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Templates -->
+        <div class="box box-success">
+          <div class="box-header with-border">
+            <h3 class="box-title"><i class="fa fa-magic"></i> Mẫu có sẵn</h3>
+          </div>
+          <div class="box-body">
+            <button type="button" class="btn btn-sm btn-default btn-block" onclick="loadTemplate('1month')">
+              <i class="fa fa-calendar"></i> Mẫu 1 tháng
+            </button>
+            <button type="button" class="btn btn-sm btn-default btn-block" onclick="loadTemplate('6months')">
+              <i class="fa fa-calendar"></i> Mẫu 6 tháng
+            </button>
+            <button type="button" class="btn btn-sm btn-default btn-block" onclick="loadTemplate('1year')">
+              <i class="fa fa-calendar"></i> Mẫu 1 năm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('footer')%>
+
+<script>
+$(document).ready(function() {
+  // Update preview khi user typing
+  updatePreview();
+  
+  // Bind events
+  $('#planForm input, #planForm textarea, #planForm select').on('input change', updatePreview);
+  
+  // Auto calculate discount percent
+  $('#price, #original_price').on('input', function() {
+    calculateDiscountPercent();
+  });
+  
+  // Auto generate plan_code from name
+  $('#name').on('input', function() {
+    if (!$('#plan_code').val()) {
+      autoGeneratePlanCode();
+    }
+  });
+});
+
+function updatePreview() {
+  // Basic info
+  const name = $('#name').val() || 'Plan Name';
+  const planCode = $('#plan_code').val() || 'plan_code';
+  const duration = $('#duration_months').val() || 0;
+  const price = parseFloat($('#price').val()) || 0;
+  const originalPrice = parseFloat($('#original_price').val()) || 0;
+  const discountPercent = parseFloat($('#discount_percent').val()) || 0;
+  const description = $('#description').val() || 'Mô tả plan...';
+  const isActive = $('#planForm input[name="is_active"]').is(':checked');
+  const sortOrder = $('#sort_order').val() || 0;
+  
+  // Update preview
+  $('#preview-name').text(name);
+  $('#preview-code').text(planCode);
+  $('#preview-price').text(price.toLocaleString('vi-VN') + 'đ');
+  $('#preview-duration').text(duration + ' tháng');
+  $('#preview-description').text(description);
+  $('#preview-sort').text(sortOrder);
+  
+  // Price per month
+  const pricePerMonth = duration > 0 ? Math.round(price / duration) : 0;
+  $('#preview-price-monthly').text(pricePerMonth.toLocaleString('vi-VN') + 'đ/tháng');
+  
+  // Original price & discount
+  if (originalPrice > price && price > 0) {
+    $('#preview-original').show();
+    $('#preview-original-price').text(originalPrice.toLocaleString('vi-VN') + 'đ');
+    $('#preview-discount').text('-' + discountPercent + '%');
+  } else {
+    $('#preview-original').hide();
+  }
+  
+  // Status
+  if (isActive) {
+    $('#preview-status').removeClass('label-default').addClass('label-success').text('Active');
+  } else {
+    $('#preview-status').removeClass('label-success').addClass('label-default').text('Inactive');
+  }
+  
+  // Features
+  const features = $('#features').val().split('\n').filter(f => f.trim().length > 0);
+  const featureHtml = features.map(feature => 
+    `<li><i class="fa fa-check text-success"></i> ${feature.trim()}</li>`
+  ).join('');
+  $('#preview-features').html(featureHtml || '<li class="text-muted">Chưa có tính năng</li>');
+}
+
+function calculateDiscountPercent() {
+  const price = parseFloat($('#price').val()) || 0;
+  const originalPrice = parseFloat($('#original_price').val()) || 0;
+  
+  if (originalPrice > price && price > 0) {
+    const discount = ((originalPrice - price) / originalPrice * 100).toFixed(1);
+    $('#discount_percent').val(discount);
+  }
+}
+
+function autoGeneratePlanCode() {
+  const name = $('#name').val().toLowerCase();
+  const duration = $('#duration_months').val();
+  
+  let code = '';
+  if (duration == 1) code = '1month';
+  else if (duration == 3) code = '3months';
+  else if (duration == 6) code = '6months';
+  else if (duration == 12) code = '1year';
+  else if (duration == 24) code = '2years';
+  else code = duration + 'months';
+  
+  $('#plan_code').val(code);
+}
+
+function loadTemplate(type) {
+  const templates = {
+    '1month': {
+      plan_code: '1month',
+      name: 'Premium 1 Tháng',
+      duration_months: 1,
+      price: 299000,
+      original_price: 299000,
+      discount_percent: 0,
+      description: 'Gói Premium cơ bản 1 tháng - phù hợp để trải nghiệm',
+      features: [
+        '100 tin nhắn chat/ngày',
+        '100 lần dịch/ngày',
+        'Luyện nghe không giới hạn',
+        'Tạo flashcard riêng',
+        'HSK không giới hạn'
+      ].join('\n'),
+      sort_order: 1
+    },
+    '6months': {
+      plan_code: '6months',
+      name: 'Premium 6 Tháng',
+      duration_months: 6,
+      price: 1499000,
+      original_price: 1794000,
+      discount_percent: 15,
+      description: 'Gói Premium 6 tháng - Tiết kiệm 15% cho học tập dài hạn',
+      features: [
+        '100 tin nhắn chat/ngày',
+        '100 lần dịch/ngày',
+        'Luyện nghe không giới hạn',
+        'Tạo flashcard riêng',
+        'HSK không giới hạn',
+        'Ưu đãi 15%',
+        'Hỗ trợ học tập'
+      ].join('\n'),
+      sort_order: 2
+    },
+    '1year': {
+      plan_code: '1year',
+      name: 'Premium 1 Năm',
+      duration_months: 12,
+      price: 2699000,
+      original_price: 3588000,
+      discount_percent: 25,
+      description: 'Gói Premium 1 năm - Tiết kiệm tối đa 25% cho cam kết học tập',
+      features: [
+        '100 tin nhắn chat/ngày',
+        '100 lần dịch/ngày',
+        'Luyện nghe không giới hạn',
+        'Tạo flashcard riêng',
+        'HSK không giới hạn',
+        'Ưu đãi 25%',
+        'Hỗ trợ ưu tiên',
+        'Tài liệu độc quyền'
+      ].join('\n'),
+      sort_order: 3
+    }
+  };
+  
+  const template = templates[type];
+  if (template) {
+    $('#plan_code').val(template.plan_code);
+    $('#name').val(template.name);
+    $('#duration_months').val(template.duration_months);
+    $('#price').val(template.price);
+    $('#original_price').val(template.original_price);
+    $('#discount_percent').val(template.discount_percent);
+    $('#description').val(template.description);
+    $('#features').val(template.features);
+    $('#sort_order').val(template.sort_order);
+    
+    updatePreview();
+  }
+}
+
+// Form validation
+$('#planForm').on('submit', function(e) {
+  const planCode = $('#plan_code').val().trim();
+  const name = $('#name').val().trim();
+  const duration = $('#duration_months').val();
+  const price = $('#price').val();
+  const features = $('#features').val().trim();
+  
+  if (!planCode || !name || !duration || !price || !features) {
+    e.preventDefault();
+    alert('Vui lòng điền đầy đủ các trường bắt buộc');
+    return false;
+  }
+  
+  // Validate plan_code format
+  if (!/^[a-zA-Z0-9_-]+$/.test(planCode)) {
+    e.preventDefault();
+    alert('Plan code chỉ được chứa chữ, số, dấu gạch dưới và gạch ngang');
+    return false;
+  }
+  
+  return true;
+});
+</script>
+
+<style>
+.subscription-plan-preview {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+.plan-header h3 {
+  margin: 0 0 10px 0;
+}
+
+.plan-pricing {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.plan-pricing h2 {
+  margin: 0;
+  font-size: 2em;
+}
+
+.plan-features ul {
+  margin: 0;
+}
+
+.plan-features li {
+  margin: 5px 0;
+}
+
+.plan-status {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.help-block {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.text-red {
+  color: #dd4b39;
+}
+
+.form-group label {
+  font-weight: 600;
+}
+
+#planForm .box-body {
+  padding: 20px;
+}
+
+.original-price {
+  margin-top: 5px;
+}
+
+.price-per-month {
+  margin-top: 5px;
+}
+</style>

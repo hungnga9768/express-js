@@ -390,6 +390,14 @@ module.exports = {
   // Lấy đánh giá khóa học
   async getReviews(courseId, { page, limit }) {
     try {
+      // Lấy tổng số reviews
+      const [totalResult] = await pool.query(
+        "SELECT COUNT(*) as total FROM coursereviews WHERE course_id = ?",
+        [courseId]
+      );
+      const totalReviews = totalResult[0].total;
+
+      // Lấy reviews với thông tin user
       const sql = `
         SELECT cr.*, u.username, u.full_name, u.profile_picture
         FROM coursereviews cr
@@ -400,7 +408,42 @@ module.exports = {
       `;
       const offset = (page - 1) * limit;
       const [rows] = await pool.query(sql, [courseId, limit, offset]);
-      return rows;
+
+      // Lấy thống kê rating
+      const [ratingStats] = await pool.query(
+        `SELECT 
+          AVG(rating) as average_rating,
+          COUNT(*) as total_reviews,
+          SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) as rating_5,
+          SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as rating_4,
+          SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as rating_3,
+          SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as rating_2,
+          SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as rating_1
+        FROM coursereviews 
+        WHERE course_id = ?`,
+        [courseId]
+      );
+
+      return {
+        reviews: rows,
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total_reviews: totalReviews,
+          total_pages: Math.ceil(totalReviews / limit)
+        },
+        summary: {
+          average_rating: parseFloat(ratingStats[0].average_rating || 0).toFixed(1),
+          total_reviews: ratingStats[0].total_reviews,
+          rating_distribution: {
+            "5": ratingStats[0].rating_5,
+            "4": ratingStats[0].rating_4,
+            "3": ratingStats[0].rating_3,
+            "2": ratingStats[0].rating_2,
+            "1": ratingStats[0].rating_1
+          }
+        }
+      };
     } catch (error) {
       console.error('Error getting reviews:', error);
       throw error;

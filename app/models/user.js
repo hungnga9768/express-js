@@ -571,4 +571,126 @@ module.exports = {
       throw error;
     }
   },
+
+  // ==================== SUBSCRIPTION FUNCTIONS ====================
+
+  /**
+   * Lấy thông tin subscription hiện tại của user (sử dụng connection cho transaction)
+   */
+  async getUserSubscription(connection, userId) {
+    const [users] = await connection.query(
+      'SELECT subscription_type, subscription_expiry FROM users WHERE user_id = ?',
+      [userId]
+    );
+
+    return users.length > 0 ? users[0] : null;
+  },
+
+  /**
+   * Tính toán ngày hết hạn mới cho subscription
+   */
+  calculateNewExpiryDate(currentSubscription, durationMonths) {
+    let newExpiryDate;
+    
+    if (currentSubscription.subscription_type === 'premium' && currentSubscription.subscription_expiry) {
+      // Nếu đã có Premium, gia hạn từ ngày hết hạn hiện tại
+      const currentExpiry = new Date(currentSubscription.subscription_expiry);
+      const now = new Date();
+      
+      if (currentExpiry > now) {
+        // Còn hạn, gia hạn từ ngày hết hạn
+        newExpiryDate = new Date(currentExpiry);
+      } else {
+        // Hết hạn, gia hạn từ hôm nay
+        newExpiryDate = new Date();
+      }
+    } else {
+      // Lần đầu nâng cấp, tính từ hôm nay
+      newExpiryDate = new Date();
+    }
+
+    // Thêm tháng theo gói
+    newExpiryDate.setMonth(newExpiryDate.getMonth() + durationMonths);
+    
+    return newExpiryDate;
+  },
+
+  /**
+   * Cập nhật subscription cho user (sử dụng connection cho transaction)
+   */
+  async updateUserSubscription(connection, userId, newExpiryDate) {
+    await connection.query(`
+      UPDATE users 
+      SET subscription_type = 'premium', subscription_expiry = ?
+      WHERE user_id = ?
+    `, [newExpiryDate, userId]);
+  },
+
+  /**
+   * Lưu lịch sử subscription (sử dụng connection cho transaction)
+   */
+  async saveSubscriptionHistory(connection, historyData) {
+    const {
+      userId, orderId, planId, oldSubscriptionType, oldExpiryDate, 
+      newExpiryDate, durationMonths, amountPaid
+    } = historyData;
+
+    await connection.query(`
+      INSERT INTO subscription_history 
+      (user_id, order_id, plan_id, action, old_subscription_type, new_subscription_type, 
+       old_expiry_date, new_expiry_date, duration_months, amount_paid)
+      VALUES (?, ?, ?, 'activate', ?, 'premium', ?, ?, ?, ?)
+    `, [
+      userId, orderId, planId,
+      oldSubscriptionType || 'free',
+      oldExpiryDate,
+      newExpiryDate,
+      durationMonths,
+      amountPaid
+    ]);
+  },
+
+  /**
+   * Nâng cấp subscription cho user (process hoàn chỉnh)
+   */
+  async upgradeSubscription(connection, userId, planId, orderId) {
+    // Lấy thông tin gói
+    const [plans] = await connection.query(
+      'SELECT * FROM subscription_plans WHERE id = ?',
+      [planId]
+    );
+
+    if (plans.length === 0) {
+      throw new Error('Plan not found');
+    }
+
+    const plan = plans[0];
+
+    // Lấy thông tin user hiện tại
+    const currentSubscription = await this.getUserSubscription(connection, userId);
+    
+    if (!currentSubscription) {
+      throw new Error('User not found');
+    }
+
+    // Tính toán ngày hết hạn mới
+    const newExpiryDate = this.calculateNewExpiryDate(currentSubscription, plan.duration_months);
+
+    // Cập nhật user subscription
+    await this.updateUserSubscription(connection, userId, newExpiryDate);
+
+    // Lưu lịch sử subscription
+    await this.saveSubscriptionHistory(connection, {
+      userId,
+      orderId,
+      planId,
+      oldSubscriptionType: currentSubscription.subscription_type,
+      oldExpiryDate: currentSubscription.subscription_expiry,
+      newExpiryDate,
+      durationMonths: plan.duration_months,
+      amountPaid: plan.price
+    });
+
+    return newExpiryDate;
+  },
 };

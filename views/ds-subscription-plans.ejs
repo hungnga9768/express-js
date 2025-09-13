@@ -1,0 +1,471 @@
+<%- include('header')%>
+<%- include('aside')%>
+
+<div class="content-wrapper" style="min-height: 1604.44px">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Quản lý Gói đăng ký</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Gói đăng ký</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <!-- Search & Filter box -->
+    <div class="box mb-4">
+      <form method="GET" class="form-inline" role="form">
+        <div class="form-group mr-2">
+          <input class="form-control" name="search" placeholder="Tìm kiếm tên gói, mã gói..." value="<%= search || '' %>" />
+        </div>
+        <div class="form-group mr-2">
+          <select name="isActive" class="form-control">
+            <option value="" <%= (isActive === '' || isActive === undefined || isActive === null) ? 'selected' : '' %>>-- Tất cả trạng thái --</option>
+            <option value="1" <%= isActive === '1' ? 'selected' : '' %>>✅ Đang hoạt động</option>
+            <option value="0" <%= isActive === '0' ? 'selected' : '' %>>❌ Tạm dừng</option>
+          </select>
+        </div>
+        <div class="form-group mr-2">
+          <select name="limit" class="form-control">
+            <option value="20" <%= (typeof limit !== 'undefined' && limit == '20') ? 'selected' : '' %>>20 mục</option>
+            <option value="50" <%= (typeof limit !== 'undefined' && limit == '50') ? 'selected' : '' %>>50 mục</option>
+            <option value="100" <%= (typeof limit !== 'undefined' && limit == '100') ? 'selected' : '' %>>100 mục</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary mr-2">
+          <i class="fa fa-search"></i> Tìm kiếm
+        </button>
+        <a href="/admin/subscription-plans/add" class="btn btn-success mr-2">
+          <i class="fa fa-plus"></i> Thêm mới
+        </a>
+        <a href="/admin/subscription-plans/export" class="btn btn-info">
+          <i class="fa fa-download"></i> Xuất CSV
+        </a>
+      </form>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+          <div class="inner">
+            <h3><%= statistics.summary.total_plans %></h3>
+            <p>Tổng Gói đăng ký</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-credit-card"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3><%= statistics.summary.active_plans %></h3>
+            <p>Đang Hoạt động</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3><%= new Intl.NumberFormat('vi-VN').format(Math.round(statistics.summary.avg_price / 1000)) %>K</h3>
+            <p>Giá Trung bình</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+          <div class="inner">
+            <h3><%= Math.round(statistics.summary.avg_duration) %> tháng</h3>
+            <p>Thời hạn TB</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscription Plans Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-credit-card text-primary"></i>
+          Danh sách Gói đăng ký
+        </h3>
+        <div class="card-tools">
+          <span class="badge badge-primary">Real-time</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <table class="table table-bordered projects table-hover">
+          <thead class="thead-light">
+            <tr>
+              <th style="width: 1%">#</th>
+              <th style="width: 20%">Thông tin Gói</th>
+              <th style="width: 12%">Giá</th>
+              <th style="width: 25%">Tính năng</th>
+              <th style="width: 10%" class="text-center">Trạng thái</th>
+              <th style="width: 8%">Đơn hàng</th>
+              <th style="width: 12%">Ngày tạo</th>
+              <th style="width: 12%" class="text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (data && data.length > 0) { %>
+              <% data.forEach((plan, index) => { %>
+              <tr>
+                <td><%= (pagination.currentPage - 1) * pagination.itemsPerPage + index + 1 %></td>
+                <td>
+                  <div class="plan-info">
+                    <strong><%= plan.name %></strong>
+                    <br><span class="badge badge-info badge-sm"><%= plan.plan_code %></span>
+                    <br><small class="text-muted"><%= plan.duration_months %> tháng</small>
+                    <% if (plan.description) { %>
+                      <br><small class="text-muted"><%= plan.description %></small>
+                    <% } %>
+                  </div>
+                </td>
+                <td class="text-right">
+                  <strong class="text-success"><%= plan.price.toLocaleString('vi-VN') %>đ</strong>
+                  <br><small class="text-muted"><%= plan.price_per_month.toLocaleString('vi-VN') %>đ/tháng</small>
+                  <% if (plan.original_price && plan.original_price > plan.price) { %>
+                    <br><del class="text-muted"><%= plan.original_price.toLocaleString('vi-VN') %>đ</del>
+                    <span class="badge badge-warning badge-sm">-<%= plan.discount_percent %>%</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (plan.features && plan.features.length > 0) { %>
+                    <% plan.features.slice(0, 3).forEach(feature => { %>
+                      <span class="badge badge-light badge-sm d-block mb-1">✓ <%= feature %></span>
+                    <% }) %>
+                    <% if (plan.features.length > 3) { %>
+                      <small class="text-muted">+<%= plan.features.length - 3 %> tính năng khác</small>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-muted">-</span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <% if (plan.is_active) { %>
+                    <span class="badge badge-success">✅ Hoạt động</span>
+                  <% } else { %>
+                    <span class="badge badge-warning">❌ Tạm dừng</span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <span class="badge badge-primary"><%= plan.order_count || 0 %></span>
+                  <% if (plan.total_revenue && plan.total_revenue > 0) { %>
+                    <br><small class="text-success">+<%= (plan.total_revenue / 1000).toFixed(0) %>K đ</small>
+                  <% } %>
+                </td>
+                <td>
+                  <small><%= plan.created_at ? plan.created_at.toLocaleString('vi-VN') : '-' %></small>
+                  <% if (plan.updated_at && plan.updated_at !== plan.created_at) { %>
+                    <br><small class="text-info">Cập nhật: <%= plan.updated_at.toLocaleString('vi-VN') %></small>
+                  <% } %>
+                </td>
+                <td class="project-actions text-center">
+                  <a class="btn btn-info btn-sm" href="/admin/subscription-plans/edit/<%= plan.id %>" title="Chỉnh sửa">
+                    <i class="fas fa-pencil-alt"></i>
+                  </a>
+                  <% if (plan.is_active) { %>
+                    <button class="btn btn-warning btn-sm" onclick="togglePlanStatus(<%= plan.id %>, false)" title="Tạm dừng">
+                      <i class="fas fa-pause"></i>
+                    </button>
+                  <% } else { %>
+                    <button class="btn btn-success btn-sm" onclick="togglePlanStatus(<%= plan.id %>, true)" title="Kích hoạt">
+                      <i class="fas fa-play"></i>
+                    </button>
+                  <% } %>
+                  <button class="btn btn-danger btn-sm" onclick="deletePlan(<%= plan.id %>)" title="Xóa">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="8" class="text-center py-5">
+                  <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                  <br><p class="text-muted">Chưa có gói đăng ký nào</p>
+                  <a href="/admin/subscription-plans/add" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> Thêm gói đầu tiên
+                  </a>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <!-- /.card-body -->
+
+      <!-- Pagination -->
+      <% if (pagination && pagination.totalPages > 1) { %>
+      <div class="card-footer">
+        <ul class="pagination d-flex justify-content-center">
+          <!-- Previous -->
+          <li class="paginate_button page-item previous <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
+            <a href="?page=<%= pagination.currentPage > 1 ? pagination.currentPage - 1 : 1 %><%= search ? '&search=' + search : '' %><%= isActive ? '&isActive=' + isActive : '' %><%= limit ? '&limit=' + limit : '' %>" class="page-link">Previous</a>
+          </li>
+
+          <!-- Page numbers -->
+          <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+          <li class="paginate_button page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+            <a href="?page=<%= i %><%= search ? '&search=' + search : '' %><%= isActive ? '&isActive=' + isActive : '' %><%= limit ? '&limit=' + limit : '' %>" class="page-link"><%= i %></a>
+          </li>
+          <% } %>
+
+          <!-- Next -->
+          <li class="paginate_button page-item next <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
+            <a href="?page=<%= pagination.currentPage < pagination.totalPages ? pagination.currentPage + 1 : pagination.totalPages %><%= search ? '&search=' + search : '' %><%= isActive ? '&isActive=' + isActive : '' %><%= limit ? '&limit=' + limit : '' %>" class="page-link">Next</a>
+          </li>
+        </ul>
+      </div>
+      <% } %>
+    </div>
+  </section>
+  <!-- /.content -->
+</div>
+
+<script>
+// Toggle plan status
+function togglePlanStatus(planId, newStatus) {
+  const action = newStatus ? 'kích hoạt' : 'tạm dừng';
+  if (confirm(`Bạn có chắc muốn ${action} gói này?`)) {
+    fetch(`/admin/subscription-plans/toggle-active/${planId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_active: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(`Đã ${action} gói thành công!`);
+        location.reload();
+      } else {
+        alert('Lỗi: ' + data.message);
+      }
+    })
+    .catch(error => {
+      alert('Có lỗi xảy ra: ' + error.message);
+    });
+  }
+}
+
+// Delete plan - chỉ cho phép xóa nếu không có đơn hàng
+function deletePlan(planId) {
+  console.log('deletePlan function called with ID:', planId);
+  
+  if (confirm('Bạn có chắc muốn xóa gói này?\n\n⚠️ Lưu ý: Chỉ có thể xóa gói không có đơn hàng liên quan.')) {
+    console.log(`User confirmed deletion for plan ID: ${planId}`);
+    
+    // Hiển thị loading
+    const loadingHtml = `
+      <div class="modal fade" id="deleteLoadingModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-sm" role="document">
+          <div class="modal-content">
+            <div class="modal-body text-center">
+              <div class="spinner-border text-primary mb-3" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+              <h6>Đang xử lý...</h6>
+              <p class="text-muted small">Vui lòng chờ trong giây lát</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', loadingHtml);
+    $('#deleteLoadingModal').modal('show');
+    
+    fetch(`/admin/subscription-plans/delete/${planId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => {
+      console.log('Delete response status:', response.status);
+      
+      if (!response.ok) {
+        // Nếu DELETE không work, thử POST
+        console.log('DELETE failed, trying POST method...');
+        return fetch(`/admin/subscription-plans/delete/${planId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      }
+      
+      return response;
+    })
+    .then(response => {
+      console.log('Final response status:', response.status);
+      
+      // Đóng loading modal ngay khi có response (dù success hay error)
+      $('#deleteLoadingModal').modal('hide');
+      
+      return response.json();
+    })
+    .then(data => {
+      console.log('Delete response data:', data);
+      
+      if (data.success) {
+        // Hiển thị thông báo thành công
+        const successHtml = `
+          <div class="modal fade" id="deleteSuccessModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-sm" role="document">
+              <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                  <h5 class="modal-title">
+                    <i class="fas fa-check-circle"></i> Thành công
+                  </h5>
+                </div>
+                <div class="modal-body text-center">
+                  <h6 class="text-success">${data.message}</h6>
+                  <p class="text-muted small">Trang sẽ tự động reload...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', successHtml);
+        $('#deleteSuccessModal').modal('show');
+        
+        // Reload trang sau 2 giây
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+        
+      } else {
+        // Hiển thị lỗi chi tiết bằng modal
+        const errorMsg = data.message || 'Không xác định';
+        
+        if (errorMsg.includes('dữ liệu liên quan')) {
+          // Modal với gợi ý giải pháp
+          const errorModalHtml = `
+            <div class="modal fade" id="deleteErrorModal" tabindex="-1" role="dialog">
+              <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                  <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                      <i class="fas fa-exclamation-triangle"></i> Không thể xóa gói
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="alert alert-warning">
+                      <i class="fas fa-info-circle"></i>
+                      <strong>Lý do:</strong> ${errorMsg}
+                    </div>
+                    <div class="text-center">
+                      <p class="mb-3">Bạn có muốn <strong>TẠM DỪNG</strong> gói này thay vì xóa không?</p>
+                      <div class="btn-group">
+                        <button type="button" class="btn btn-warning" onclick="togglePlanStatus(${planId}, false); $('#deleteErrorModal').modal('hide');">
+                          <i class="fas fa-pause"></i> Tạm dừng gói
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                          <i class="fas fa-times"></i> Hủy bỏ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          document.body.insertAdjacentHTML('beforeend', errorModalHtml);
+          $('#deleteErrorModal').modal('show');
+        } else {
+          // Modal lỗi thông thường
+          const errorModalHtml = `
+            <div class="modal fade" id="deleteErrorModal" tabindex="-1" role="dialog">
+              <div class="modal-dialog modal-sm" role="document">
+                <div class="modal-content">
+                  <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                      <i class="fas fa-exclamation-circle"></i> Lỗi
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <h6 class="text-danger">${errorMsg}</h6>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      <i class="fas fa-check"></i> Đã hiểu
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          document.body.insertAdjacentHTML('beforeend', errorModalHtml);
+          $('#deleteErrorModal').modal('show');
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Delete error:', error);
+      
+      // Modal lỗi network
+      const networkErrorModalHtml = `
+        <div class="modal fade" id="deleteErrorModal" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+              <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                  <i class="fas fa-wifi"></i> Lỗi kết nối
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body text-center">
+                <h6 class="text-danger">Có lỗi xảy ra: ${error.message}</h6>
+                <p class="text-muted small">Vui lòng kiểm tra kết nối và thử lại</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                  <i class="fas fa-check"></i> Đã hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', networkErrorModalHtml);
+      $('#deleteErrorModal').modal('show');
+    });
+  }
+}
+</script>
+
+<%- include('footer')%>

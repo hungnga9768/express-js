@@ -1,0 +1,376 @@
+<%- include('header')%> <%- include('aside')%>
+
+<div class="content-wrapper" style="min-height: 1604.44px">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1><%= title %></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/admin">Trang chủ</a></li>
+            <li class="breadcrumb-item active">Quản lý thanh toán</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <section class="content">
+    <!-- Search & Filter box -->
+    <div class="box mb-4">
+      <form action="" method="GET" class="form-inline" role="form">
+        <div class="form-group mr-2">
+          <label class="sr-only" for="">label</label>
+          <input class="form-control" name="search" placeholder="Tìm kiếm theo order ID, user..." value="<%= search || '' %>" />
+        </div>
+        <div class="form-group mr-2">
+          <select name="status" class="form-control">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="pending" <%= status === 'pending' ? 'selected' : '' %>>⏳ Chờ thanh toán</option>
+            <option value="processing" <%= status === 'processing' ? 'selected' : '' %>>🔄 Đang xử lý</option>
+            <option value="completed" <%= status === 'completed' ? 'selected' : '' %>>✅ Thành công</option>
+            <option value="failed" <%= status === 'failed' ? 'selected' : '' %>>❌ Thất bại</option>
+            <option value="cancelled" <%= status === 'cancelled' ? 'selected' : '' %>>🚫 Đã hủy</option>
+            <option value="expired" <%= status === 'expired' ? 'selected' : '' %>>⏰ Hết hạn</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary mr-2">
+          <i class="fa fa-search"></i> Tìm kiếm
+        </button>
+        <a href="?export=csv" class="btn btn-success">
+          <i class="fa fa-download"></i> Xuất CSV
+        </a>
+      </form>
+    </div>
+
+    <!-- Business Analytics Cards -->
+    <div class="row mb-4">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+          <div class="inner">
+            <h3><%= new Intl.NumberFormat('vi-VN').format(Math.round((stats.total_revenue || 0) / 1000)) %>K</h3>
+            <p>Tổng Doanh Thu</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3><%= Math.round(stats.success_rate || 0) %>%</h3>
+            <p>Tỷ Lệ Thành Công</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3><%= new Intl.NumberFormat('vi-VN').format(Math.round((stats.today_revenue || 0) / 1000)) %>K</h3>
+            <p>Doanh Thu Hôm Nay</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+          <div class="inner">
+            <h3><%= stats.pending_transactions || 0 %></h3>
+            <p>Đang Chờ Thanh Toán</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Analytics Panel -->
+    <% if (errorSummary && errorSummary.totalErrors > 0) { %>
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-exclamation-triangle text-warning"></i>
+              Error Analytics - <%= errorSummary.totalErrors %> Issues Found
+            </h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <% Object.keys(errorSummary.categories).forEach(category => { %>
+                <% const categoryData = errorSummary.categories[category]; %>
+                <div class="col-md-4 mb-3">
+                  <div class="info-box">
+                    <span class="info-box-icon bg-warning">
+                      <% if (category === 'User Error') { %>
+                        <i class="fas fa-user-times"></i>
+                      <% } else if (category === 'System Error') { %>
+                        <i class="fas fa-server"></i>
+                      <% } else if (category === 'Merchant Error') { %>
+                        <i class="fas fa-store"></i>
+                      <% } else if (category === 'Pending') { %>
+                        <i class="fas fa-clock"></i>
+                      <% } else { %>
+                        <i class="fas fa-question"></i>
+                      <% } %>
+                    </span>
+                    <div class="info-box-content">
+                      <span class="info-box-text"><%= category %></span>
+                      <span class="info-box-number"><%= categoryData.count %></span>
+                      <div class="progress">
+                        <div class="progress-bar" style="width: <%= (categoryData.count / errorSummary.totalErrors * 100).toFixed(1) %>%"></div>
+                      </div>
+                      <span class="progress-description">
+                        <%= (categoryData.count / errorSummary.totalErrors * 100).toFixed(1) %>% of total errors
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- Top error codes in this category -->
+                  <div class="small">
+                    <strong>Top Codes:</strong>
+                    <% Object.keys(categoryData.codes).slice(0, 3).forEach(code => { %>
+                      <br><span class="badge badge-secondary">
+                        <%= code %>: <%= categoryData.codes[code].message %> 
+                        (<%= categoryData.codes[code].count %>)
+                      </span>
+                    <% }) %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Payment Orders Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-line text-primary"></i>
+          Business Analytics - Giao dịch MoMo
+        </h3>
+        <div class="card-tools">
+          <span class="badge badge-primary">Real-time</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <table class="table table-bordered projects table-hover">
+          <thead class="thead-light">
+            <tr>
+              <th style="width: 1%">#</th>
+              <th style="width: 12%">Transaction ID</th>
+              <th style="width: 15%">Khách hàng</th>
+              <th style="width: 10%">Gói</th>
+              <th style="width: 8%">Số tiền</th>
+              <th style="width: 8%">Doanh thu</th>
+              <th style="width: 10%" class="text-center">Trạng thái</th>
+              <th style="width: 8%">Phương thức</th>
+              <th style="width: 12%">Thời gian</th>
+              <th style="width: 16%" class="text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (data && data.length > 0) { %>
+              <% data.forEach((transaction, index) => { %>
+              <tr>
+                <td><%= (currentPage - 1) * 20 + index + 1 %></td>
+                <td>
+                  <strong><%= transaction.order_id %></strong>
+                  <% if (transaction.trans_id) { %>
+                    <br><small class="text-success">MoMo: <%= transaction.trans_id %></small>
+                  <% } %>
+                </td>
+                <td>
+                  <a href="/admin/user/edit/<%= transaction.user_id %>" class="text-decoration-none">
+                    <strong><%= transaction.full_name || transaction.username %></strong>
+                    <% if (transaction.subscription_type === 'premium') { %>
+                      <span class="badge badge-warning badge-sm">VIP</span>
+                    <% } %>
+                  </a>
+                  <br><small class="text-muted"><%= transaction.email %></small>
+                </td>
+                <td>
+                  <span class="badge badge-info"><%= transaction.plan_name %></span>
+                  <br><small class="text-muted"><%= transaction.duration_months %> tháng</small>
+                </td>
+                <td class="text-right">
+                  <strong><%= transaction.amount.toLocaleString('vi-VN') %>đ</strong>
+                </td>
+                <td class="text-right">
+                  <% if (transaction.revenue_amount > 0) { %>
+                    <strong class="text-success">+<%= transaction.revenue_amount.toLocaleString('vi-VN') %>đ</strong>
+                  <% } else { %>
+                    <span class="text-muted">-</span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <%- transaction.status_display %>
+                  <% if (transaction.momo_result_code !== null && transaction.momo_result_code !== undefined) { %>
+                    <% 
+                      const resultInfo = getMoMoResultCodeInfo(transaction.momo_result_code);
+                      let badgeClass = 'badge-secondary';
+                      
+                      if (resultInfo.type === 'success') badgeClass = 'badge-success';
+                      else if (resultInfo.type === 'pending') badgeClass = 'badge-warning';  
+                      else if (resultInfo.type === 'processing') badgeClass = 'badge-info';
+                      else if (resultInfo.type === 'failed' || resultInfo.type === 'error') badgeClass = 'badge-danger';
+                      else if (resultInfo.type === 'cancelled') badgeClass = 'badge-secondary';
+                      else if (resultInfo.type === 'expired') badgeClass = 'badge-warning';
+                    %>
+                    <br><span class="badge <%= badgeClass %> badge-sm" title="<%= resultInfo.description %>">
+                      <%= transaction.momo_result_code %>: <%= resultInfo.message %>
+                    </span>
+                    <% if (resultInfo.category !== 'Success') { %>
+                      <br><small class="text-muted"><%= resultInfo.category %></small>
+                      <% if (!resultInfo.final) { %>
+                        <span class="badge badge-warning badge-sm">⏳</span>
+                      <% } else { %>
+                        <span class="badge badge-dark badge-sm">✓</span>
+                      <% } %>
+                    <% } %>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <% if (transaction.pay_type) { %>
+                    <% if (transaction.pay_type === 'qr') { %>
+                      <span class="badge badge-primary">🔳 QR</span>
+                    <% } else if (transaction.pay_type === 'webApp') { %>
+                      <span class="badge badge-info">📱 App</span>
+                    <% } else { %>
+                      <span class="badge badge-secondary">💳 <%= transaction.pay_type %></span>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-muted">-</span>
+                  <% } %>
+                </td>
+                <td>
+                  <small><%= transaction.created_at.toLocaleString('vi-VN') %></small>
+                  <% if (transaction.completed_at) { %>
+                    <br><small class="text-success">✅ <%= transaction.completed_at.toLocaleString('vi-VN') %></small>
+                  <% } %>
+                </td>
+                <td class="project-actions text-center">
+                  <a
+                    class="btn btn-primary btn-sm"
+                    href="/admin/payments/<%= transaction.order_id %>"
+                    title="Chi tiết giao dịch"
+                  >
+                    <i class="fas fa-chart-bar"></i>
+                  </a>
+                  <% if (transaction.status === 'pending') { %>
+                  <button 
+                    class="btn btn-warning btn-sm"
+                    onclick="checkPaymentStatus('<%= transaction.order_id %>')"
+                    title="Kiểm tra từ MoMo"
+                  >
+                    <i class="fas fa-sync"></i>
+                  </button>
+                  <% } %>
+                  <% if (transaction.status === 'completed') { %>
+                  <a 
+                    class="btn btn-success btn-sm"
+                    href="/admin/user/edit/<%= transaction.user_id %>"
+                    title="Xem profile khách hàng"
+                  >
+                    <i class="fas fa-user"></i>
+                  </a>
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="10" class="text-center py-5">
+                  <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                  <br><p class="text-muted">Chưa có giao dịch nào</p>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <!-- /.card-body -->
+
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+      <div class="card-footer">
+        <ul class="pagination d-flex justify-content-center">
+          <!-- Previous -->
+          <li class="paginate_button page-item previous <%= currentPage === 1 ? 'disabled' : '' %>">
+            <a
+              href="?page=<%= currentPage > 1 ? currentPage - 1 : 1 %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %>"
+              class="page-link"
+            >Previous</a>
+          </li>
+
+          <!-- Page numbers -->
+          <% for (let i = 1; i <= totalPages; i++) { %>
+          <li class="paginate_button page-item <%= i === currentPage ? 'active' : '' %>">
+            <a
+              href="?page=<%= i %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %>"
+              class="page-link"
+            ><%= i %></a>
+          </li>
+          <% } %>
+
+          <!-- Next -->
+          <li class="paginate_button page-item next <%= currentPage === totalPages ? 'disabled' : '' %>">
+            <a
+              href="?page=<%= currentPage < totalPages ? currentPage + 1 : totalPages %><%= search ? '&search=' + search : '' %><%= status ? '&status=' + status : '' %>"
+              class="page-link"
+            >Next</a>
+          </li>
+        </ul>
+      </div>
+      <% } %>
+    </div>
+  </section>
+  <!-- /.content -->
+</div>
+
+<script>
+// Kiểm tra trạng thái thanh toán
+function checkPaymentStatus(orderId) {
+  if (confirm('Kiểm tra lại trạng thái thanh toán từ MoMo?')) {
+    // Call API to check payment status
+    fetch(`/admin/payments/check-status/${orderId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Đã cập nhật trạng thái thành công!');
+        location.reload();
+      } else {
+        alert('Lỗi: ' + data.message);
+      }
+    })
+    .catch(error => {
+      alert('Có lỗi xảy ra: ' + error.message);
+    });
+  }
+}
+</script>
+
+<%- include('footer')%>
