@@ -39,7 +39,8 @@ if (process.env.NODE_ENV === 'production') {
           "'unsafe-inline'", 
           "https://cdn.jsdelivr.net",
           "https://cdnjs.cloudflare.com",
-          "https://code.jquery.com"
+          "https://code.jquery.com",
+          "https://www.youtube.com"
         ],
         scriptSrcAttr: ["'unsafe-inline'"], // Cho phép inline event handlers
         fontSrc: [
@@ -63,9 +64,13 @@ if (process.env.NODE_ENV === 'production') {
           "https://hoctiengtrung.click",
           "http://hoctiengtrung.click",
           "https://www.hoctiengtrung.click",
-          "http://www.hoctiengtrung.click"
+          "http://www.hoctiengtrung.click",
+          "http://localhost:3000",
+          "https://localhost:3000",
+          "http://127.0.0.1:3000",
+          "https://127.0.0.1:3000"
         ],
-        frameSrc: ["'self'"],
+        frameSrc: ["'self'", "https://www.youtube.com", "https://youtube.com"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"]
       }

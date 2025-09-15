@@ -155,6 +155,17 @@ module.exports = {
         await Course.updateLessonScore(user_id, lesson.course_id, id, score);
       }
       
+      // 📊 TRACKING: Update daily stats for lesson completion (async)
+      setImmediate(async () => {
+        try {
+          const { updateDailyStats } = require('../../../utils/learningStats');
+          const studyMinutes = Math.max(1, Math.floor((time_spent || 900) / 60)); // Convert seconds to minutes, default 15 min
+          await updateDailyStats(user_id, 'lesson', studyMinutes);
+        } catch (trackingError) {
+          console.error('Error tracking lesson completion:', trackingError.message);
+        }
+      });
+      
       res.json({
         success: true,
         message: 'Hoàn thành bài học thành công',

@@ -4,6 +4,7 @@ const {
   getDailyUsage, 
   incrementDailyUsage, 
   isSubscriptionExpired,
+  autoHandleExpiredSubscription,
   getCurrentDate,
   resetUserUsage,
   resetUserUsageOnSubscriptionChange,
@@ -17,11 +18,12 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
 /**
  * Lấy thông tin user từ database với cache
  */
-async function getUserFromDatabase(userId) {
+async function getUserFromDatabase(userId, forceRefresh = false) {
   const cacheKey = `user_${userId}`;
   const cached = userCache.get(cacheKey);
   
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+  // 🔧 Nếu forceRefresh = true, skip cache
+  if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.data;
   }
   
@@ -112,12 +114,27 @@ function checkSubscription(requiredFeature) {
 
       // 🔒 SECURITY: Kiểm tra subscription expiry từ database
       if (isSubscriptionExpired(dbUser)) {
-        return res.status(403).json({
-          error: 'Subscription expired',
-          message: 'Gói đăng ký đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.',
-          subscription_type: dbUser.subscription_type,
-          subscription_expiry: dbUser.subscription_expiry
-        });
+        // 🔄 TỰ ĐỘNG: Xử lý Premium hết hạn → chuyển về Free
+        const expiredResult = await autoHandleExpiredSubscription(dbUser.user_id);
+        
+        if (expiredResult) {
+          console.log(`✅ Auto-expired user ${dbUser.user_id}: premium → free`);
+          
+          // Cập nhật lại dbUser sau khi chuyển về free (dùng cache bình thường)
+          const updatedUser = await getUserFromDatabase(dbUser.user_id);
+          if (updatedUser) {
+            req.dbUser = updatedUser; // Cập nhật cho request tiếp theo
+            dbUser = updatedUser;     // Sử dụng data mới
+          }
+        } else {
+          // Nếu không auto-expire được (vd: đã là free), trả lỗi
+          return res.status(403).json({
+            error: 'Subscription expired',
+            message: 'Gói đăng ký đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.',
+            subscription_type: dbUser.subscription_type,
+            subscription_expiry: dbUser.subscription_expiry
+          });
+        }
       }
 
       // 🔒 SECURITY: Sử dụng subscription_type từ database
@@ -232,11 +249,22 @@ function checkDailyLimit() {
 
 /**
  * Middleware tăng usage count sau khi xử lý thành công
+ * ALSO UPDATE daily stats tracking
  */
 async function incrementUsage(req, res, next) {
   try {
     if (req.currentUsage !== undefined && req.featureName && req.today) {
       await incrementDailyUsage(req.user.user_id, req.featureName, req.today);
+      
+      // 📊 TRACKING: Update daily stats (async, don't block request)
+      setImmediate(async () => {
+        try {
+          const { updateDailyStats } = require('../utils/learningStats');
+          await updateDailyStats(req.user.user_id, req.featureName);
+        } catch (error) {
+          console.error('Error tracking daily stats:', error.message);
+        }
+      });
     }
     next();
   } catch (error) {

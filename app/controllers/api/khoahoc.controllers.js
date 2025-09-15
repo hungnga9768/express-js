@@ -280,6 +280,16 @@ module.exports = {
       
       await Course.completeLesson(user_id, course_id, lesson_id);
       
+      // 📊 TRACKING: Update daily stats for lesson completion (async)
+      setImmediate(async () => {
+        try {
+          const { updateDailyStats } = require('../../../utils/learningStats');
+          await updateDailyStats(user_id, 'lesson');
+        } catch (trackingError) {
+          console.error('Error tracking lesson completion:', trackingError.message);
+        }
+      });
+      
       res.json({
         success: true,
         message: 'Đánh dấu hoàn thành bài học thành công'

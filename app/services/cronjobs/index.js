@@ -11,6 +11,7 @@ const {
   getPasswordResetTokenStats,
   checkAndCleanupTokens
 } = require("../passwordResetCleanupService");
+const { autoHandleExpiredSubscription } = require("../../../utils/subscription");
 
 function startCronJobs() {
   console.log("🚀 [CronJobs] Khởi động các tác vụ định kỳ...");
@@ -88,6 +89,46 @@ function startCronJobs() {
   });
   
   console.log("✅ [CronJobs] Đã lên lịch dọn dẹp token reset password hàng ngày lúc 03:00");
+  
+  // 🔄 Lên lịch kiểm tra và xử lý subscription hết hạn mỗi 6 giờ
+  cron.schedule("0 */6 * * *", async () => {
+    try {
+      console.log("⏰ [CronJobs] Bắt đầu tác vụ kiểm tra subscription hết hạn...");
+      
+      const db = require("../../../connect-mysql");
+      
+      // Lấy tất cả user premium có thể đã hết hạn
+      const [expiredUsers] = await db.execute(`
+        SELECT user_id, subscription_type, subscription_expiry 
+        FROM users 
+        WHERE subscription_type = 'premium' 
+        AND subscription_expiry IS NOT NULL 
+        AND subscription_expiry < NOW()
+      `);
+      
+      console.log(`📊 [CronJobs] Tìm thấy ${expiredUsers.length} user premium hết hạn`);
+      
+      let processedCount = 0;
+      for (const user of expiredUsers) {
+        try {
+          const result = await autoHandleExpiredSubscription(user.user_id);
+          if (result) {
+            processedCount++;
+            console.log(`✅ Auto-expired user ${user.user_id}: ${user.subscription_expiry}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error processing user ${user.user_id}:`, error.message);
+        }
+      }
+      
+      console.log(`✅ [CronJobs] Hoàn thành xử lý subscription: ${processedCount}/${expiredUsers.length} user được chuyển về free`);
+      
+    } catch (error) {
+      console.error("❌ [CronJobs] Lỗi trong tác vụ kiểm tra subscription:", error);
+    }
+  });
+  
+  console.log("✅ [CronJobs] Đã lên lịch kiểm tra subscription hết hạn mỗi 6 giờ");
 }
 module.exports = {
   startCronJobs,

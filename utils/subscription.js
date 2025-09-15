@@ -56,6 +56,61 @@ function isSubscriptionExpired(user) {
 }
 
 /**
+ * 🔄 TỰ ĐỘNG xử lý Premium hết hạn → chuyển về Free
+ */
+async function autoHandleExpiredSubscription(userId) {
+  try {
+    const db = require('../connect-mysql');
+    
+    // Lấy thông tin user từ database
+    const [users] = await db.execute(
+      'SELECT user_id, subscription_type, subscription_expiry FROM users WHERE user_id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      console.log(`❌ User ${userId} not found for expiry check`);
+      return null;
+    }
+    
+    const user = users[0];
+    
+    // Kiểm tra nếu premium và đã hết hạn
+    if (user.subscription_type === 'premium' && isSubscriptionExpired(user)) {
+      console.log(`🔄 Auto-expiring premium user ${userId}: ${user.subscription_expiry}`);
+      
+      // Cập nhật về Free
+      await db.execute(
+        'UPDATE users SET subscription_type = ?, subscription_expiry = NULL WHERE user_id = ?',
+        ['free', userId]
+      );
+      
+      // Reset usage về 0 để user dùng quota Free
+      await resetUserUsageOnSubscriptionChange(userId, 'premium', 'free');
+      
+      // Clear cache để áp dụng ngay
+      const { clearUserCache } = require('../middlewares/subscription');
+      clearUserCache(userId);
+      
+      console.log(`✅ User ${userId} auto-expired: premium → free`);
+      
+      return {
+        userId,
+        oldSubscription: 'premium',
+        newSubscription: 'free',
+        expiredDate: user.subscription_expiry,
+        processedAt: new Date()
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`❌ Error auto-handling expired subscription for user ${userId}:`, error.message);
+    throw error;
+  }
+}
+
+/**
  * Lấy ngày hiện tại dạng YYYY-MM-DD
  */
 function getCurrentDate() {
@@ -208,6 +263,7 @@ module.exports = {
   getDailyUsage,
   incrementDailyUsage,
   isSubscriptionExpired,
+  autoHandleExpiredSubscription,
   getCurrentDate,
   getUserDailyUsage,
   resetUserUsage,

@@ -3,6 +3,7 @@ const router = express.Router();
 const tailieuCtrl = require("../../app/controllers/api/tailieu.controller");
 const userCtrl = require("../../app/controllers/api/user.controllers");
 const SettingsCtrl = require("../../app/controllers/api/setting.controller");
+const learningStatsCtrl = require("../../app/controllers/api/learningStats.controller");
 const { uploadProfilePicture } = require("../../middlewares/upload");
 const khoahoc = require("../api/khoahoc");
 const baihoc = require("../api/baihoc");
@@ -118,6 +119,12 @@ router.post("/user-profile-fullname",authenticateTokenUser, userCtrl.userprofile
 );
 router.post("/user-profile-change-password",authenticateTokenUser, userCtrl.userprofilechangepassword
 );
+
+// ===== LEARNING STATS =====
+router.get("/user/learning-stats", authenticateTokenUser, learningStatsCtrl.getUserLearningStats);
+router.get("/user/streak-leaderboard", learningStatsCtrl.getStreakLeaderboardAPI);
+router.get("/user/detailed-stats", authenticateTokenUser, learningStatsCtrl.getUserDetailedStats);
+router.get("/user/learning-stats/health", learningStatsCtrl.getStatsHealthCheck);
 
 // ===== SPEECH PRACTICE (PHÁT ÂM + LUYỆN NGHE) =====
 router.use("/speech-practice", speechPractice);

@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /user-profile/
+Disallow: /my-flashcards/
+Disallow: /subscription/
+Disallow: /payment-success/
+Disallow: /enrolled-courses/
+Disallow: /hsk/history/
+Disallow: /hsk/stats/
+
+# Allow important pages
+Allow: /
+Allow: /vocabulary
+Allow: /courses
+Allow: /hsk/tests
+Allow: /games
+Allow: /tailieu
+Allow: /about
+Allow: /login
+Allow: /register
+
+# Sitemap (dynamic from API)
+Sitemap: https://yourdomain.com/api/sitemap
