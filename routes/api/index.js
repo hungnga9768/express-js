@@ -49,6 +49,10 @@ router.get("/logout", userCtrl.logout);
 //router quan li giao dien
 router.get("/banner", SettingsCtrl.index);
 router.get("/config", SettingsCtrl.getConfig);
+// SEO routes
+router.get("/sitemap", SettingsCtrl.getSitemap);
+router.get("/seo/:pageType", SettingsCtrl.getPageSEO);
+router.get("/:contentType/:id/seo", SettingsCtrl.getContentSEO);
 
 //touter giao tiep người dùng với api
 

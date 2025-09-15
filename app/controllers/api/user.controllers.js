@@ -40,9 +40,7 @@ module.exports = {
           username: user.username,
           email: user.email,
           full_name: user.full_name,
-          profile_picture: user.profile_picture,
-          subscription_type: user.subscription_type || 'free',
-          subscription_expiry: user.subscription_expiry || null,
+          profile_picture: user.profile_picture
         };
         const accessToken = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {
           expiresIn: "15m",
@@ -92,9 +90,7 @@ module.exports = {
         user_id: user.user_id,
         username: user.username,
         email: user.email,
-        full_name: user.full_name,
-        subscription_type: user.subscription_type || 'free',
-        subscription_expiry: user.subscription_expiry || null,
+        full_name: user.full_name
       };
 
       const accessToken = jwt.sign(userInfo, ACCESS_TOKEN_SECRET, {
