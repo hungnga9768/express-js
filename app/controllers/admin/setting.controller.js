@@ -263,17 +263,35 @@ module.exports = {
         key,
         selected_image: selected_image || 'null',
         old_thumbnail_url: old_thumbnail_url || 'null',
-        hasFile: !!req.file
+        hasFile: !!req.file,
+        bodyKeys: Object.keys(req.body),
+        bodyValues: req.body
       });
+      
+      // Debug: Kiểm tra key có trong imageKeys không
+      const imageKeys = [
+        "logo", 
+        "favicon", 
+        "seo_image",
+        "vocabulary_image", 
+        "courses_image", 
+        "hsk-tests_image", 
+        "games_image"
+      ];
+      console.log('🔧 Is image key?', imageKeys.includes(key), 'for key:', key);
 
       let value;
 
-      // Trường hợp là ảnh (logo hoặc favicon)
-      if (key === "logo" || key === "favicon") {
+      // Trường hợp là ảnh (logo, favicon, hoặc các SEO images)
+      if (imageKeys.includes(key)) {
+        console.log('🔧 Processing image upload for key:', key);
         if (req.file) {
+          console.log('🔧 Uploading file:', req.file.path);
           const result = await cloudinaryService.uploadImage(req.file.path, 'settings-images');
+          console.log('🔧 Upload result:', result);
           if (result.success) {
             value = result.public_id;
+            console.log('🔧 Setting value to public_id:', value);
             
             // Xóa file cũ trên Cloudinary nếu có
             if (old_thumbnail_url && old_thumbnail_url.includes('cloudinary.com')) {
@@ -305,14 +323,48 @@ module.exports = {
           // Nếu không có file upload và không có selected_image, giữ nguyên ảnh cũ
           value = old_thumbnail_url;
         }
+      } else if (key.includes('_url')) {
+        // Trường hợp là JSON URL fields (hsk_tests_url, courses_url, etc.)
+        console.log('🔧 Processing JSON URL field:', key);
+        console.log('🔧 req.body.value:', req.body.value);
+        
+        // Form JavaScript đã tạo JSON và gán vào req.body.value
+        if (req.body.value && req.body.value.trim() !== '') {
+          value = req.body.value;
+          console.log('🔧 Using JSON value from form:', value);
+        } else {
+          // Fallback: tạo JSON từ các field riêng lẻ
+          console.log('🔧 req.body.url:', req.body.url);
+          console.log('🔧 req.body.priority:', req.body.priority);
+          console.log('🔧 req.body.changefreq:', req.body.changefreq);
+          console.log('🔧 req.body.lastmod:', req.body.lastmod);
+          
+          if (req.body.url) {
+            const urlData = {
+              url: req.body.url,
+              priority: parseFloat(req.body.priority) || 0.5,
+              changefreq: req.body.changefreq || 'weekly',
+              lastmod: req.body.lastmod || new Date().toISOString().split('T')[0]
+            };
+            value = JSON.stringify(urlData);
+            console.log('🔧 Setting JSON value from fields:', value);
+          } else {
+            value = req.body.value || '';
+            console.log('🔧 Using empty fallback value:', value);
+          }
+        }
       } else {
         // Trường hợp là input hoặc textarea khác
+        console.log('🔧 Processing non-image field:', key);
         value = req.body.value;
+        console.log('🔧 Setting value to:', value);
       }
 
       const dataUpdate = { key, value };
+      console.log('🔧 Final dataUpdate:', dataUpdate);
 
       await Settings.update(id, dataUpdate);
+      console.log('🔧 Settings updated successfully');
 
       res.redirect("/admin/setting");
     } catch (err) {

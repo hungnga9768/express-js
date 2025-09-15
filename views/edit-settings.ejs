@@ -99,14 +99,22 @@
                 </div>
 
                 <% } else if (setting.key === 'about_us' || setting.key ===
-                'seo_description') { %>
+                'seo_description' || setting.key.includes('_description')) { %>
                   <input  type="hidden" name="key" value="<%= setting.key %>" >
                 <textarea
                   class="form-control"
                   name="value"
                   rows="3"
+                  placeholder="Nhập mô tả SEO..."
                 >
                 <%= setting.value %></textarea>
+                <small class="form-text text-muted">
+                  <% if (setting.key.includes('_description')) { %>
+                    Mô tả SEO cho trang <%= setting.key.replace('_description', '') %> (khuyến nghị 120-160 ký tự)
+                  <% } else { %>
+                    Mô tả chi tiết
+                  <% } %>
+                </small>
                 
                 <% } else if (setting.key === 'primary_color' || setting.key ==='secondary_color'|| setting.key ==='gradient-end'|| setting.key ==='gradient-start'|| setting.key ==='text_color' ) { %>
                 <input  type="hidden" name="key" value="<%= setting.key %>" >
@@ -115,7 +123,180 @@
                   id="value"
                   name="value"
                   value="<%= setting.value %>" 
+                  class="form-control"
+                  style="width: 100px; height: 40px;"
                 />
+                <small class="form-text text-muted">
+                  <% if (setting.key === 'primary_color') { %>Màu chính của website<% } %>
+                  <% if (setting.key === 'secondary_color') { %>Màu phụ của website<% } %>
+                  <% if (setting.key === 'gradient-start') { %>Màu bắt đầu của gradient<% } %>
+                  <% if (setting.key === 'gradient-end') { %>Màu kết thúc của gradient<% } %>
+                  <% if (setting.key === 'text_color') { %>Màu chữ chính<% } %>
+                </small>
+                <% } else if (setting.key.includes('_image') || setting.key === 'seo_image') { %>
+                  <!-- Upload hình ảnh SEO -->
+                  <input type="hidden" name="key" value="<%= setting.key %>">
+                  
+                  <label>Ảnh SEO hiện tại</label><br />
+                  <img
+                    data-group="uploadImage"
+                    data-role="preview"
+                    <% 
+                      let seoImageUrl = '/dist/img/avatar4.png';
+                      if (setting.value) {
+                        if (setting.value.includes('cloudinary.com')) {
+                          seoImageUrl = setting.value;
+                        } else if (!setting.value.startsWith('/')) {
+                          seoImageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${setting.value}`;
+                        } else {
+                          seoImageUrl = setting.value;
+                        }
+                      }
+                    %>
+                    src="<%= seoImageUrl %>"
+                    width="150"
+                    class="thumbnail_url"
+                  />
+
+                  <div class="form-group">
+                    <p data-group="uploadImage" data-role="filename">
+                      <%= setting.value ? setting.value.split('/').pop() : 'avatar4.png' %>
+                    </p>
+
+                    <label for="image">Cập nhật ảnh SEO</label>
+                    <input
+                      type="file"
+                      class="form-control"
+                      id="image"
+                      name="image"
+                      accept="image/*"
+                      data-group="uploadImage"
+                      onchange="showImage(event, this)"
+                    />
+
+                    <button
+                      type="button"
+                      class="btn btn-secondary mt-2"
+                      data-group="uploadImage"
+                      onclick="openCloudinaryImageModal()"
+                    >
+                      <i class="fa fa-cloud"></i> Chọn từ thư viện Cloudinary
+                    </button>
+                    <input
+                      type="hidden"
+                      name="selected_image"
+                      data-group="uploadImage"
+                      data-role="selectedInput"
+                    />
+                    <input
+                      type="hidden"
+                      name="old_thumbnail_url"
+                      value="<%= setting.value || '/dist/img/avatar4.png' %>"
+                    />
+                  </div>
+                  
+                <% } else if (setting.key.includes('_url') && setting.value && setting.value.startsWith('{')) { %>
+                  <!-- Chỉnh sửa JSON URL data -->
+                  <input type="hidden" name="key" value="<%= setting.key %>">
+                  <% 
+                    try {
+                      const urlData = JSON.parse(setting.value);
+                  %>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <label>URL</label>
+                      <input type="text" class="form-control" name="url" value="<%= urlData.url || '' %>" placeholder="https://yourdomain.com/page">
+                    </div>
+                    <div class="col-md-6">
+                      <label>Độ ưu tiên (0.0 - 1.0)</label>
+                      <input type="number" class="form-control" name="priority" value="<%= urlData.priority || 0.5 %>" min="0" max="1" step="0.1">
+                    </div>
+                  </div>
+                  <div class="row mt-2">
+                    <div class="col-md-6">
+                      <label>Tần suất thay đổi</label>
+                      <select class="form-control" name="changefreq">
+                        <option value="always" <%= urlData.changefreq === 'always' ? 'selected' : '' %>>Luôn luôn</option>
+                        <option value="hourly" <%= urlData.changefreq === 'hourly' ? 'selected' : '' %>>Hàng giờ</option>
+                        <option value="daily" <%= urlData.changefreq === 'daily' ? 'selected' : '' %>>Hàng ngày</option>
+                        <option value="weekly" <%= urlData.changefreq === 'weekly' ? 'selected' : '' %>>Hàng tuần</option>
+                        <option value="monthly" <%= urlData.changefreq === 'monthly' ? 'selected' : '' %>>Hàng tháng</option>
+                        <option value="yearly" <%= urlData.changefreq === 'yearly' ? 'selected' : '' %>>Hàng năm</option>
+                        <option value="never" <%= urlData.changefreq === 'never' ? 'selected' : '' %>>Không bao giờ</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label>Lần cập nhật cuối</label>
+                      <input type="date" class="form-control" name="lastmod" value="<%= urlData.lastmod || '' %>">
+                    </div>
+                  </div>
+                  <input type="hidden" name="value" id="jsonValue">
+                  <small class="form-text text-muted">Dữ liệu sẽ được lưu dưới dạng JSON</small>
+                  
+                  <script>
+                    // Tự động tạo JSON khi submit form
+                    document.querySelector('form').addEventListener('submit', function(e) {
+                      const url = document.querySelector('input[name="url"]').value;
+                      const priority = parseFloat(document.querySelector('input[name="priority"]').value);
+                      const changefreq = document.querySelector('select[name="changefreq"]').value;
+                      const lastmod = document.querySelector('input[name="lastmod"]').value;
+                      
+                      const jsonData = {
+                        url: url,
+                        priority: priority,
+                        changefreq: changefreq,
+                        lastmod: lastmod
+                      };
+                      
+                      document.querySelector('input[name="value"]').value = JSON.stringify(jsonData);
+                    });
+                  </script>
+                  <% 
+                    } catch (e) {
+                  %>
+                  <input type="hidden" name="key" value="<%= setting.key %>">
+                  <textarea class="form-control" name="value" rows="3" placeholder="Nhập dữ liệu JSON..."><%= setting.value %></textarea>
+                  <small class="form-text text-muted text-danger">Định dạng JSON không hợp lệ - chỉnh sửa thủ công</small>
+                  <% 
+                    }
+                  %>
+                  
+                <% } else if (setting.key.includes('_keywords') || setting.key === 'seo_keywords') { %>
+                  <!-- Keywords input -->
+                  <input type="hidden" name="key" value="<%= setting.key %>">
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="value"
+                    value="<%= setting.value %>"
+                    placeholder="Nhập keywords, phân cách bằng dấu phẩy..."
+                  />
+                  <small class="form-text text-muted">
+                    Keywords SEO (khuyến nghị 5-10 từ khóa, phân cách bằng dấu phẩy)
+                  </small>
+                  
+                <% } else if (setting.key.includes('_title') || setting.key === 'seo_title') { %>
+                  <!-- Title input -->
+                  <input type="hidden" name="key" value="<%= setting.key %>">
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="value"
+                    value="<%= setting.value %>"
+                    placeholder="Nhập title SEO..."
+                    maxlength="60"
+                  />
+                  <small class="form-text text-muted">
+                    Title SEO (khuyến nghị 50-60 ký tự) - Hiện tại: <span id="titleLength"><%= setting.value ? setting.value.length : 0 %></span> ký tự
+                  </small>
+                  
+                  <script>
+                    // Đếm ký tự title
+                    document.querySelector('input[name="value"]').addEventListener('input', function() {
+                      document.getElementById('titleLength').textContent = this.value.length;
+                    });
+                  </script>
+                  
                 <% } else { %>
                    <input  type="hidden" name="key" value="<%= setting.key %>" >
                 <input

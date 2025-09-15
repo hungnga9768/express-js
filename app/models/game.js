@@ -364,7 +364,7 @@ module.exports = {
         SELECT COUNT(*) + 1 as user_rank
         FROM gameleaderboard
         WHERE game_id = ? AND score > (
-          SELECT score FROM gameleaderboard 
+          SELECT MAX(score) FROM gameleaderboard 
           WHERE game_id = ? AND user_id = ?
         )
       `;

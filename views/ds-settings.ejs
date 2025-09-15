@@ -71,7 +71,7 @@
                 </div>
               <% } else if ( item.key === 'primary_color' || item.key ===
               'header_color' || item.key === 'gradient-end' || item.key ===
-              'gradient-start' || item.key === 'text_color' ) { %>
+              'gradient-start' || item.key === 'text_color' || item.key === 'secondary_color' ) { %>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <div
                   class="color-web"
@@ -88,6 +88,7 @@
                   <small style="color: #666; display: block;"><%= item.value %></small>
                   <small style="color: #999; display: block;">
                     <% if (item.key === 'primary_color') { %>Màu chính<% } %>
+                    <% if (item.key === 'secondary_color') { %>Màu phụ<% } %>
                     <% if (item.key === 'header_color') { %>Màu header<% } %>
                     <% if (item.key === 'gradient-start') { %>Màu gradient bắt đầu<% } %>
                     <% if (item.key === 'gradient-end') { %>Màu gradient kết thúc<% } %>
@@ -95,6 +96,88 @@
                   </small>
                 </div>
               </div>
+              <% } else if (item.key.includes('_image') || item.key === 'seo_image') { %>
+                <!-- Hiển thị hình ảnh SEO -->
+                <% 
+                  let seoImageUrl = '/dist/img/avatar4.png';
+                  let seoImageName = 'Chưa có ảnh';
+                  if (item.value) {
+                    if (item.value.includes('cloudinary.com')) {
+                      seoImageUrl = item.value;
+                      seoImageName = item.value.split('/').pop() || 'Cloudinary Image';
+                    } else if (!item.value.startsWith('/')) {
+                      seoImageUrl = `https://res.cloudinary.com/dviufwqfi/image/upload/${item.value}`;
+                      seoImageName = item.value || 'Cloudinary Image';
+                    } else {
+                      seoImageUrl = item.value;
+                      seoImageName = item.value.split('/').pop() || 'Local Image';
+                    }
+                  }
+                %>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <img src="<%= seoImageUrl %>" style="max-height: 50px; max-width: 150px; object-fit: contain; border: 1px solid #ddd; border-radius: 5px;" alt="<%= item.key %>" />
+                  <div>
+                    <small style="color: #666; display: block;"><%= seoImageName %></small>
+                    <small style="color: #999; display: block;">Hình ảnh SEO</small>
+                  </div>
+                </div>
+              <% } else if (item.key.includes('_url') && item.value && item.value.startsWith('{')) { %>
+                <!-- Hiển thị JSON URL data -->
+                <% 
+                  try {
+                    const urlData = JSON.parse(item.value);
+                %>
+                <div style="max-width: 300px;">
+                  <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; border-left: 3px solid #007bff;">
+                    <small style="color: #666; display: block;"><strong>URL:</strong> <%= urlData.url || 'Chưa có' %></small>
+                    <small style="color: #666; display: block;"><strong>Độ ưu tiên:</strong> <%= urlData.priority || 'Chưa có' %></small>
+                    <small style="color: #666; display: block;"><strong>Tần suất:</strong> <%= urlData.changefreq || 'Chưa có' %></small>
+                    <small style="color: #666; display: block;"><strong>Cập nhật:</strong> <%= urlData.lastmod || 'Chưa có' %></small>
+                  </div>
+                  <small style="color: #999;">(Dữ liệu JSON - chỉnh sửa để thay đổi)</small>
+                </div>
+                <% 
+                  } catch (e) {
+                %>
+                <div style="max-width: 300px;">
+                  <span style="word-break: break-word; display: block; color: #dc3545;">
+                    <%= item.value || 'Chưa có giá trị' %>
+                  </span>
+                  <small style="color: #dc3545;">(Định dạng JSON không hợp lệ)</small>
+                </div>
+                <% 
+                  }
+                %>
+              <% } else if (item.key.includes('_description') || item.key === 'seo_description') { %>
+                <!-- Hiển thị description với preview -->
+                <div style="max-width: 300px;">
+                  <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; border-left: 3px solid #28a745;">
+                    <span style="word-break: break-word; display: block; font-style: italic;">
+                      "<%= item.value ? item.value.substring(0, 80) + (item.value.length > 80 ? '...' : '') : 'Chưa có mô tả' %>"
+                    </span>
+                  </div>
+                  <small style="color: #999;">Mô tả SEO (<%= item.value ? item.value.length : 0 %> ký tự)</small>
+                </div>
+              <% } else if (item.key.includes('_keywords') || item.key === 'seo_keywords') { %>
+                <!-- Hiển thị keywords -->
+                <div style="max-width: 300px;">
+                  <div style="background: #fff3cd; padding: 8px; border-radius: 4px; border-left: 3px solid #ffc107;">
+                    <span style="word-break: break-word; display: block;">
+                      <%= item.value || 'Chưa có keywords' %>
+                    </span>
+                  </div>
+                  <small style="color: #999;">Keywords SEO</small>
+                </div>
+              <% } else if (item.key.includes('_title') || item.key === 'seo_title') { %>
+                <!-- Hiển thị title -->
+                <div style="max-width: 300px;">
+                  <div style="background: #d1ecf1; padding: 8px; border-radius: 4px; border-left: 3px solid #17a2b8;">
+                    <span style="word-break: break-word; display: block; font-weight: bold;">
+                      <%= item.value || 'Chưa có title' %>
+                    </span>
+                  </div>
+                  <small style="color: #999;">Title SEO (<%= item.value ? item.value.length : 0 %> ký tự)</small>
+                </div>
               <% } else { %> 
                 <div style="max-width: 300px;">
                   <% if (item.value && item.value.length > 100) { %>
