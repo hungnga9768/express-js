@@ -14,9 +14,9 @@ router.get("/tests/:testId", ctrl.getTestById);
 // 3. Bắt đầu bài thi
 router.post("/tests/:testId/start", 
   authenticateTokenUser,
-  checkHSKPermission(),
-  checkDailyLimit('hsk_tests'),
-  incrementUsage('hsk_tests'),
+  checkHSKPermission,
+  checkDailyLimit(),
+  incrementUsage,
   ctrl.startTest
 );
 

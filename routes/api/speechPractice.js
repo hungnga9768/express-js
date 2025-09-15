@@ -99,9 +99,9 @@ router.get("/question", async (req, res) => {
 // 2. Chấm điểm phát âm
 router.post("/pronunciation/check", 
   authenticateTokenUser,
-  checkSpeechPermission(),
-  checkDailyLimit('speech_practice'),
-  incrementUsage('speech_practice'),
+  checkSpeechPermission,
+  checkDailyLimit(),
+  incrementUsage,
   async (req, res) => {
   try {
     const { 
@@ -161,9 +161,9 @@ router.post("/pronunciation/check",
 // 3. Chấm điểm luyện nghe
 router.post("/listening/check", 
   authenticateTokenUser,
-  checkSpeechPermission(),
-  checkDailyLimit('speech_practice'),
-  incrementUsage('speech_practice'),
+  checkSpeechPermission,
+  checkDailyLimit(),
+  incrementUsage,
   async (req, res) => {
   try {
     const { 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authenticateTokenUser = require('../../middlewares/authAPI');
 const PaymentService = require('../../app/services/paymentService');
+const { clearUserCache } = require('../../middlewares/subscription');
 
 const paymentService = new PaymentService();
 
@@ -118,7 +119,14 @@ router.post('/webhook', async (req, res) => {
   try {
     console.log('🔔 Received MoMo webhook:', req.body);
     
-    await paymentService.processWebhook(req.body);
+    const result = await paymentService.processWebhook(req.body);
+    
+    // 🔄 Clear cache nếu payment thành công
+    if (result && result.user_id) {
+      clearUserCache(result.user_id);
+      console.log(`🔄 Cache cleared for user ${result.user_id} after successful payment`);
+    }
+    
     console.log('✅ Webhook processed successfully');
 
   } catch (error) {

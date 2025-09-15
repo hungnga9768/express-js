@@ -109,6 +109,100 @@ async function resetUserUsage(userId, feature = null, date = null) {
   }
 }
 
+/**
+ * Reset usage cho user khi thay đổi subscription
+ */
+async function resetUserUsageOnSubscriptionChange(userId, oldSubscriptionType, newSubscriptionType, date = null) {
+  try {
+    const today = date || getCurrentDate();
+    
+    // Lấy limits của cả old và new subscription
+    const oldLimits = await getSubscriptionLimitsByType(oldSubscriptionType);
+    const newLimits = await getSubscriptionLimitsByType(newSubscriptionType);
+    
+    // Tìm các features cần reset
+    const featuresToReset = [];
+    
+    for (const feature of ['chat', 'translate', 'speech_practice', 'hsk_tests', 'flashcard']) {
+      const oldLimit = oldLimits[feature] || 0;
+      const newLimit = newLimits[feature] || 0;
+      const currentUsage = await getDailyUsage(userId, feature, today);
+      
+      // 🔒 LOGIC MỚI: Reset trong các trường hợp sau:
+      
+      // 1. Premium → Free: Reset về 0 (để user dùng quota Free)
+      if (oldSubscriptionType === 'premium' && newSubscriptionType === 'free') {
+        if (currentUsage > 0) {
+          featuresToReset.push(feature);
+          console.log(`🔄 Premium→Free: Reset ${feature} (${currentUsage} → 0) - Để user dùng quota Free`);
+        }
+      }
+      
+      // 2. Free → Premium: Không reset (giữ nguyên usage)
+      else if (oldSubscriptionType === 'free' && newSubscriptionType === 'premium') {
+        console.log(`✅ Free→Premium: Keep ${feature} usage (${currentUsage})`);
+      }
+      
+      // 3. Free → Free: Không reset (giữ nguyên usage)
+      else if (oldSubscriptionType === 'free' && newSubscriptionType === 'free') {
+        console.log(`✅ Free→Free: Keep ${feature} usage (${currentUsage})`);
+      }
+      
+      // 4. Các trường hợp khác: Reset nếu usage > limit mới
+      else if (newLimit > 0 && currentUsage > newLimit) {
+        featuresToReset.push(feature);
+        console.log(`🔄 Other: Reset ${feature} (${currentUsage} > ${newLimit})`);
+      }
+    }
+    
+    // Reset usage cho các features cần thiết
+    for (const feature of featuresToReset) {
+      await resetUserUsage(userId, feature, today);
+      console.log(`🔄 Reset usage for user ${userId}, feature: ${feature}, date: ${today}`);
+    }
+    
+    return {
+      resetFeatures: featuresToReset,
+      message: `Reset usage for ${featuresToReset.length} features`
+    };
+    
+  } catch (error) {
+    console.error('Error resetting user usage on subscription change:', error);
+    throw error;
+  }
+}
+
+/**
+ * Lấy tất cả limits của một subscription type
+ */
+async function getSubscriptionLimitsByType(subscriptionType) {
+  try {
+    const [rows] = await db.execute(
+      'SELECT feature, daily_limit FROM subscription_limits WHERE subscription_type = ?',
+      [subscriptionType]
+    );
+    
+    const limits = {};
+    rows.forEach(row => {
+      limits[row.feature] = row.daily_limit;
+    });
+    
+    // Fallback limits nếu DB chưa có
+    if (Object.keys(limits).length === 0) {
+      const defaultLimits = {
+        free: { chat: 10, translate: 20, speech_practice: 20, hsk_tests: 5, flashcard: 0 },
+        premium: { chat: 100, translate: 100, speech_practice: -1, hsk_tests: -1, flashcard: -1 }
+      };
+      return defaultLimits[subscriptionType] || {};
+    }
+    
+    return limits;
+  } catch (error) {
+    console.error('Error getting subscription limits by type:', error);
+    return {};
+  }
+}
+
 module.exports = {
   getSubscriptionLimit,
   getDailyUsage,
@@ -116,5 +210,7 @@ module.exports = {
   isSubscriptionExpired,
   getCurrentDate,
   getUserDailyUsage,
-  resetUserUsage
+  resetUserUsage,
+  resetUserUsageOnSubscriptionChange,
+  getSubscriptionLimitsByType
 };

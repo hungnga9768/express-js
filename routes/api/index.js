@@ -54,9 +54,9 @@ router.get("/config", SettingsCtrl.getConfig);
 
 router.post("/chat", 
   authenticateTokenUser, 
-  checkChatPermission(),
-  checkDailyLimit('chat'),
-  incrementUsage('chat'),
+  checkChatPermission,
+  checkDailyLimit(),
+  incrementUsage,
   geminiCtrl.handleChat
 );
 //hàm lấy danh sách chatbot
@@ -94,9 +94,9 @@ router.delete(
 // hàm dịch
 router.post("/translate",
   authenticateTokenUser,
-  checkTranslatePermission(),
-  checkDailyLimit('translate'),
-  incrementUsage('translate'),
+  checkTranslatePermission,
+  checkDailyLimit(),
+  incrementUsage,
   geminiCtrl.translate
 );
 // cho câu tương tự sau khi dịch

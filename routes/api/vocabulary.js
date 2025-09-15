@@ -6,11 +6,11 @@ const authenticateTokenUser = require("../../middlewares/authAPI");
 const { 
   checkFlashcardPermission
 } = require("../../middlewares/subscription");
-router.get("/flashcards",authenticateTokenUser, checkFlashcardPermission(), flashcardCtrl.getUserFlashcards);
-router.get("/flashcards/due",authenticateTokenUser, checkFlashcardPermission(), flashcardCtrl.getDueFlashcards);
-router.post("/flashcards",authenticateTokenUser, checkFlashcardPermission(), flashcardCtrl.createFlashcard);
-router.delete("/flashcards/:id",authenticateTokenUser, checkFlashcardPermission(), flashcardCtrl.deleteFlashcard);
-router.put("/flashcards/:id/review",authenticateTokenUser, checkFlashcardPermission(), flashcardCtrl.updateReviewStatus);
+router.get("/flashcards",authenticateTokenUser, checkFlashcardPermission, flashcardCtrl.getUserFlashcards);
+router.get("/flashcards/due",authenticateTokenUser, checkFlashcardPermission, flashcardCtrl.getDueFlashcards);
+router.post("/flashcards",authenticateTokenUser, checkFlashcardPermission, flashcardCtrl.createFlashcard);
+router.delete("/flashcards/:id",authenticateTokenUser, checkFlashcardPermission, flashcardCtrl.deleteFlashcard);
+router.put("/flashcards/:id/review",authenticateTokenUser, checkFlashcardPermission, flashcardCtrl.updateReviewStatus);
 // Routes công khai (không cần đăng nhập)
 router.get("/", vocabularyCtrl.getVocabulary);
 router.get("/search", vocabularyCtrl.searchVocabulary);

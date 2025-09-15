@@ -192,6 +192,32 @@ module.exports = {
         dataUpdate.profile_picture = oldUser.profile_picture;
       }
       await userModel.update(id, dataUpdate);
+      
+      // 🔄 Clear cache nếu subscription thay đổi
+      if (oldUser.subscription_type !== subscription_type) {
+        const { clearUserCache } = require('../../../middlewares/subscription');
+        const { resetUserUsageOnSubscriptionChange } = require('../../../utils/subscription');
+        
+        // Clear cache của user
+        clearUserCache(id);
+        console.log(`🔄 Cache cleared for user ${id} after subscription change`);
+        
+        // Reset usage nếu cần thiết
+        if (oldUser.subscription_type && oldUser.subscription_type !== subscription_type) {
+          try {
+            const resetResult = await resetUserUsageOnSubscriptionChange(
+              id, 
+              oldUser.subscription_type, 
+              subscription_type
+            );
+            console.log(`🔄 Subscription changed for user ${id}: ${oldUser.subscription_type} → ${subscription_type}`);
+            console.log(`🔄 Reset result:`, resetResult);
+          } catch (resetError) {
+            console.error('Error resetting usage:', resetError);
+          }
+        }
+      }
+      
       res.redirect("/admin/user/danhsach");
     } catch (err) {
       console.error("Lỗi cập nhật:", err);

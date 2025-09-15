@@ -1,10 +1,81 @@
+const db = require('../connect-mysql');
 const { 
   getSubscriptionLimit, 
   getDailyUsage, 
   incrementDailyUsage, 
   isSubscriptionExpired,
-  getCurrentDate 
+  getCurrentDate,
+  resetUserUsage,
+  resetUserUsageOnSubscriptionChange,
+  getSubscriptionLimitsByType
 } = require('../utils/subscription');
+
+// Cache cho user data
+const userCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
+
+/**
+ * Lấy thông tin user từ database với cache
+ */
+async function getUserFromDatabase(userId) {
+  const cacheKey = `user_${userId}`;
+  const cached = userCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  try {
+    const [rows] = await db.execute(
+      'SELECT user_id, username, email, subscription_type, subscription_expiry, account_status FROM users WHERE user_id = ?',
+      [userId]
+    );
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    const userData = rows[0];
+    
+    userCache.set(cacheKey, {
+      data: userData,
+      timestamp: Date.now()
+    });
+    
+    return userData;
+  } catch (error) {
+    console.error('Database error in getUserFromDatabase:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear cache của một user cụ thể
+ */
+function clearUserCache(userId) {
+  const cacheKey = `user_${userId}`;
+  userCache.delete(cacheKey);
+  console.log(`Cache cleared for user ${userId}`);
+}
+
+/**
+ * Clear tất cả cache
+ */
+function clearAllCache() {
+  userCache.clear();
+  console.log('All user cache cleared');
+}
+
+/**
+ * Lấy thống kê cache
+ */
+function getCacheStats() {
+  return {
+    totalCached: userCache.size,
+    cacheKeys: Array.from(userCache.keys()),
+    timestamp: new Date().toISOString()
+  };
+}
 
 /**
  * Middleware kiểm tra subscription có quyền truy cập feature không
@@ -21,18 +92,36 @@ function checkSubscription(requiredFeature) {
         });
       }
 
-      // Kiểm tra subscription có hết hạn không
-      if (isSubscriptionExpired(user)) {
-        return res.status(403).json({
-          error: 'Subscription expired',
-          message: 'Gói đăng ký đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.',
-          subscription_type: user.subscription_type,
-          subscription_expiry: user.subscription_expiry
+      // 🔒 SECURITY: Validate user từ database (KHÔNG tin tưởng JWT)
+      const dbUser = await getUserFromDatabase(user.user_id);
+      
+      if (!dbUser) {
+        return res.status(401).json({
+          error: 'User not found',
+          message: 'Người dùng không tồn tại trong hệ thống'
         });
       }
 
-      // Lấy giới hạn subscription (fallback 'free' nếu thiếu)
-      const subscriptionType = user?.subscription_type || 'free';
+      // Kiểm tra account status
+      if (dbUser.account_status !== 'active') {
+        return res.status(403).json({
+          error: 'Account suspended',
+          message: 'Tài khoản đã bị khóa'
+        });
+      }
+
+      // 🔒 SECURITY: Kiểm tra subscription expiry từ database
+      if (isSubscriptionExpired(dbUser)) {
+        return res.status(403).json({
+          error: 'Subscription expired',
+          message: 'Gói đăng ký đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.',
+          subscription_type: dbUser.subscription_type,
+          subscription_expiry: dbUser.subscription_expiry
+        });
+      }
+
+      // 🔒 SECURITY: Sử dụng subscription_type từ database
+      const subscriptionType = dbUser.subscription_type || 'free';
       let limit = await getSubscriptionLimit(subscriptionType, requiredFeature);
 
       // Kiểm tra nếu có limit từ DB và daily_limit = 0 (không được truy cập)
@@ -69,7 +158,7 @@ function checkSubscription(requiredFeature) {
 
       // Lưu thông tin limit vào request để middleware tiếp theo sử dụng
       req.subscriptionLimit = limit;
-      req.requiredFeature = requiredFeature;
+      req.dbUser = dbUser;
       
       next();
     } catch (error) {
@@ -85,12 +174,21 @@ function checkSubscription(requiredFeature) {
 /**
  * Middleware kiểm tra daily limit
  */
-function checkDailyLimit(feature = null) {
+function checkDailyLimit() {
   return async (req, res, next) => {
     try {
       const user = req.user;
-      const featureName = feature || req.requiredFeature;
       const today = getCurrentDate();
+      
+      if (!req.subscriptionLimit) {
+        return res.status(500).json({
+          error: 'Subscription limit not set',
+          message: 'Giới hạn subscription chưa được thiết lập'
+        });
+      }
+
+      // Lấy tên feature từ request
+      let featureName = req.subscriptionLimit.feature;
       
       if (!featureName) {
         return res.status(500).json({
@@ -135,67 +233,24 @@ function checkDailyLimit(feature = null) {
 /**
  * Middleware tăng usage count sau khi xử lý thành công
  */
-function incrementUsage(feature = null) {
-  return async (req, res, next) => {
-    try {
-      const user = req.user;
-      const featureName = feature || req.featureName;
-      const today = req.today || getCurrentDate();
-      
-      if (!featureName) {
-        console.warn('Feature name not specified for usage increment');
-        return next();
-      }
-
-      // Tăng usage count
-      await incrementDailyUsage(user.user_id, featureName, today);
-      
-      // Log để debug
-      console.log(`Incremented usage for user ${user.user_id}, feature: ${featureName}, date: ${today}`);
-      
-      next();
-    } catch (error) {
-      console.error('Failed to increment usage:', error);
-      // Không block request nếu không tăng được usage
-      next();
+async function incrementUsage(req, res, next) {
+  try {
+    if (req.currentUsage !== undefined && req.featureName && req.today) {
+      await incrementDailyUsage(req.user.user_id, req.featureName, req.today);
     }
-  };
+    next();
+  } catch (error) {
+    console.error('Error incrementing usage:', error);
+    next(); // Không block request nếu lỗi increment
+  }
 }
 
-/**
- * Middleware kiểm tra quyền tạo flashcard (chỉ Premium)
- */
-function checkFlashcardPermission() {
-  return checkSubscription('flashcard');
-}
-
-/**
- * Middleware kiểm tra quyền HSK tests
- */
-function checkHSKPermission() {
-  return checkSubscription('hsk_tests');
-}
-
-/**
- * Middleware kiểm tra quyền speech practice
- */
-function checkSpeechPermission() {
-  return checkSubscription('speech_practice');
-}
-
-/**
- * Middleware kiểm tra quyền chat
- */
-function checkChatPermission() {
-  return checkSubscription('chat');
-}
-
-/**
- * Middleware kiểm tra quyền translate
- */
-function checkTranslatePermission() {
-  return checkSubscription('translate');
-}
+// Middleware functions cho từng feature
+const checkChatPermission = checkSubscription('chat');
+const checkTranslatePermission = checkSubscription('translate');
+const checkSpeechPermission = checkSubscription('speech_practice');
+const checkHSKPermission = checkSubscription('hsk_tests');
+const checkFlashcardPermission = checkSubscription('flashcard');
 
 module.exports = {
   checkSubscription,
@@ -205,5 +260,9 @@ module.exports = {
   checkHSKPermission,
   checkSpeechPermission,
   checkChatPermission,
-  checkTranslatePermission
+  checkTranslatePermission,
+  clearUserCache,
+  clearAllCache,
+  getCacheStats,
+  getUserFromDatabase
 };
