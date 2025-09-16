@@ -13,10 +13,11 @@ if (!process.env.NODE_ENV) {
 }
 
 const app = express();
-const { startCronJobs } = require("./app/services/cronjobs");
+const { startCronJobs } = require("./app/services/cronjobs"); // QUAN TRỌNG cho auto-expire
 
-// 🛡️ Security middleware (DISABLE FOR LAN DEVELOPMENT)
+// 🛡️ Security middleware (OPTIMIZED FOR LOW MEMORY)
 if (process.env.NODE_ENV === 'production') {
+  // Simplified helmet config for low memory environments
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -65,6 +66,7 @@ if (process.env.NODE_ENV === 'production') {
           "http://hoctiengtrung.click",
           "https://www.hoctiengtrung.click",
           "http://www.hoctiengtrung.click",
+          "https://cdn.jsdelivr.net",
           "http://localhost:3000",
           "https://localhost:3000",
           "http://127.0.0.1:3000",
@@ -101,11 +103,12 @@ if (process.env.NODE_ENV === 'production') {
 
 // Rate limiting
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 
-// API rate limiting (cho API endpoints - chỉ áp dụng cho /api/*)
+// API rate limiting (optimized for low memory)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 2000, // 2000 requests per 15 minutes
+  max: 200, // Further reduced for low memory hosting
   message: {
     error: 'API rate limit exceeded',
     message: 'Quá nhiều requests API, vui lòng thử lại sau 15 phút.'
@@ -135,32 +138,83 @@ const apiLimiter = rateLimit({
   }
 });
 
-app.use('/api/', apiLimiter);
+// Rate limiting cho các endpoint cụ thể cần bảo vệ (theo IP)
+const strictApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 10, // Strict limit cho các endpoint nhạy cảm
+  message: {
+    error: 'Too many attempts',
+    message: 'Quá nhiều lần thử, vui lòng thử lại sau 15 phút.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => `${ipKeyGenerator(req, res)}-${req.get('User-Agent') || 'unknown'}`
+});
 
-// Admin login rate limiting (chỉ cho /admin/login)
+app.use('/api/register', strictApiLimiter);
+app.use('/api/forgot-password', strictApiLimiter);
+app.use('/api/reset-password', strictApiLimiter);
+app.use('/api/auth/google', strictApiLimiter);
+app.use('/api/auth/facebook', strictApiLimiter);
+app.use('/api/momo/webhook', strictApiLimiter);
+
+// Rate limiting nhẹ cho các API khác (không ảnh hưởng đến người dùng khác)
+const generalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 1000, // Cao hơn cho các API thông thường
+  message: {
+    error: 'API rate limit exceeded',
+    message: 'Quá nhiều requests API, vui lòng thử lại sau 15 phút.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Bỏ qua rate limiting cho static files và admin
+    return req.path.startsWith('/admin') || 
+           req.path.startsWith('/dist/') ||
+           req.path.startsWith('/plugins/') ||
+           req.path.startsWith('/images/') ||
+           req.path.startsWith('/public/') ||
+           req.path.includes('.css') ||
+           req.path.includes('.js') ||
+           req.path.includes('.png') ||
+           req.path.includes('.jpg') ||
+           req.path.includes('.jpeg') ||
+           req.path.includes('.gif') ||
+           req.path.includes('.ico') ||
+           req.path.includes('.svg');
+  }
+});
+
+// Áp dụng cho các API còn lại
+app.use('/api/', generalApiLimiter);
+
+// Admin login rate limiting (riêng biệt, không ảnh hưởng đến user)
 const adminLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 10, // 10 login attempts per 15 minutes
+  max: 5, // Reduced to 5 login attempts per 15 minutes
   message: {
     error: 'Too many admin login attempts',
     message: 'Quá nhiều lần đăng nhập admin thất bại, vui lòng thử lại sau 15 phút.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: (req, res) => `admin-${ipKeyGenerator(req, res)}-${req.get('User-Agent') || 'unknown'}`
 });
 
 app.use('/admin/login', adminLoginLimiter);
 
-// User login rate limiting (chỉ cho /api/login)
+// User login rate limiting (riêng biệt, không ảnh hưởng đến admin)
 const userLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 10, // 10 login attempts per 15 minutes
+  max: 5, // Reduced to 5 login attempts per 15 minutes
   message: {
     error: 'Too many user login attempts',
     message: 'Quá nhiều lần đăng nhập thất bại, vui lòng thử lại sau 15 phút.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: (req, res) => `user-${ipKeyGenerator(req, res)}-${req.get('User-Agent') || 'unknown'}`
 });
 
 app.use('/api/login', userLoginLimiter);
@@ -190,29 +244,17 @@ app.use(
       if (!origin) return callback(null, true);
       
       const allowedOrigins = [
-        // Development
-        "http://localhost:3000",
+        // Development frontend
         "http://localhost:5173",
-        "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         
-        // Local network
-        "http://172.16.0.121",
-        "http://192.168.1.100",
-        "http://192.168.222.2:3000",
-        "http://192.168.222.2:5173",
+        // Admin panel
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
         
-        // Production domains
+        // Production domains only
         "https://hoctiengtrung.click",
-        "http://hoctiengtrung.click",
-        "https://www.hoctiengtrung.click",
-        "http://www.hoctiengtrung.click",
-        
-        // Local network patterns
-        /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,
-        /^http:\/\/172\.16\.\d+\.\d+(:\d+)?$/,
-        /^http:\/\/172\.20\.\d+\.\d+(:\d+)?$/,
-        /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/
+        "https://www.hoctiengtrung.click"
       ];
       
       // Kiểm tra origin có trong danh sách cho phép không
@@ -250,15 +292,11 @@ app.use(
   })
 );
 
-// Security logging middleware
+// Security logging middleware (SIMPLIFIED for low memory)
 app.use((req, res, next) => {
-  const userAgent = req.get('User-Agent') || '';
   const ip = req.ip || req.connection.remoteAddress;
   
-  // Log tất cả requests
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${ip} - UA: ${userAgent.substring(0, 100)}`);
-  
-  // Log các request đáng ngờ (chỉ các path thực sự nguy hiểm)
+  // Only log suspicious requests to save memory
   if (req.path.includes('..') || 
       req.path.includes('/wp-admin') || 
       req.path.includes('/wp-login') ||
@@ -266,7 +304,7 @@ app.use((req, res, next) => {
       req.path.includes('/.env') ||
       req.path.includes('/config') ||
       req.path.includes('/backup')) {
-    console.warn(`⚠️ [SECURITY] Suspicious request detected: ${req.method} ${req.path} from ${ip}`);
+    console.warn(`⚠️ [SECURITY] Suspicious request: ${req.method} ${req.path} from ${ip}`);
   }
   
   next();
@@ -350,6 +388,7 @@ app.use((req, res) => {
 
 
 app.listen(port, '0.0.0.0', () => {
+  // ✅ Start cron jobs - QUAN TRỌNG cho auto-expire premium
   startCronJobs();
   console.log(`🚀 Server đang chạy trên tất cả interfaces:`);
   console.log(`   - http://localhost:${port}`);

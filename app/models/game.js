@@ -5,7 +5,7 @@ module.exports = {
   async getAllGames(filters = {}) {
     try {
       let sqlQuery = `
-        SELECT * FROM Games
+        SELECT * FROM games
         WHERE 1=1
       `;
       
@@ -51,7 +51,7 @@ module.exports = {
   async getGameById(gameId) {
     try {
       const sqlQuery = `
-        SELECT * FROM Games
+        SELECT * FROM games
         WHERE game_id = ? AND is_active = TRUE
       `;
       
@@ -69,7 +69,7 @@ module.exports = {
       const { name, description, game_type, difficulty_level, thumbnail_url, is_active, created_at } = gameData;
       
       const sqlQuery = `
-        INSERT INTO Games (name, description, game_type, difficulty_level, thumbnail_url, is_active, created_at)
+        INSERT INTO games (name, description, game_type, difficulty_level, thumbnail_url, is_active, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
       
@@ -89,7 +89,7 @@ module.exports = {
       const { name, description, game_type, difficulty_level, thumbnail_url, is_active, updated_at } = gameData;
       
       let sqlQuery = `
-        UPDATE Games 
+        UPDATE games 
         SET name = ?, description = ?, game_type = ?, difficulty_level = ?, is_active = ?
       `;
       
@@ -114,12 +114,12 @@ module.exports = {
   async deleteGame(gameId) {
     try {
       // Xóa các dữ liệu liên quan trước
-      await pool.query('DELETE FROM GameSessions WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM gamesessions WHERE game_id = ?', [gameId]);
       await pool.query('DELETE FROM gameleaderboard WHERE game_id = ?', [gameId]);
-      await pool.query('DELETE FROM UserGameProgress WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM usergameprogress WHERE game_id = ?', [gameId]);
       
       // Xóa game
-      await pool.query('DELETE FROM Games WHERE game_id = ?', [gameId]);
+      await pool.query('DELETE FROM games WHERE game_id = ?', [gameId]);
     } catch (error) {
       console.error("Error deleting game:", error);
       throw error;
@@ -132,8 +132,8 @@ module.exports = {
       // Game 3 (Sentence Builder) - lấy từ bảng Grammar
       if (gameId === "3") {
         let sqlQuery = `
-          SELECT g.* FROM Grammar g
-          INNER JOIN GameGrammar gg ON g.grammar_id = gg.grammar_id
+          SELECT g.* FROM grammar g
+          INNER JOIN gamegrammar gg ON g.grammar_id = gg.grammar_id
           WHERE gg.game_id = ?
         `;
         
@@ -160,8 +160,8 @@ module.exports = {
       // Game 1 & 2 (Flashcard, Pinyin) - lấy từ bảng Vocabulary
       else {
         let sqlQuery = `
-          SELECT v.* FROM Vocabulary v
-          INNER JOIN GameVocabulary gv ON v.word_id = gv.word_id
+          SELECT v.* FROM vocabulary v
+          INNER JOIN gamevocabulary gv ON v.word_id = gv.word_id
           WHERE gv.game_id = ?
         `;
         
@@ -194,7 +194,7 @@ module.exports = {
   async getGameDataById(dataId) {
     try {
       const sqlQuery = `
-        SELECT * FROM HSKQuestions
+        SELECT * FROM hskquestions
         WHERE question_id = ?
       `;
       
@@ -212,7 +212,7 @@ module.exports = {
       const { game_id, question, answer, options, explanation, image_url, created_at } = gameData;
       
       const sqlQuery = `
-        INSERT INTO HSKQuestions (test_id, question_text, correct_answer, options, explanation, image_url, question_type, points, order_in_test)
+        INSERT INTO hskquestions (test_id, question_text, correct_answer, options, explanation, image_url, question_type, points, order_in_test)
         VALUES (?, ?, ?, ?, ?, ?, 'multiple_choice', 1, 0)
       `;
       
@@ -232,7 +232,7 @@ module.exports = {
       const { question, answer, options, explanation, image_url, updated_at } = gameData;
       
       let sqlQuery = `
-        UPDATE HSKQuestions 
+        UPDATE hskquestions 
         SET question_text = ?, correct_answer = ?, options = ?, explanation = ?
       `;
       
@@ -256,7 +256,7 @@ module.exports = {
   // Xóa dữ liệu game
   async deleteGameData(dataId) {
     try {
-      await pool.query('DELETE FROM HSKQuestions WHERE question_id = ?', [dataId]);
+      await pool.query('DELETE FROM hskquestions WHERE question_id = ?', [dataId]);
     } catch (error) {
       console.error("Error deleting game data:", error);
       throw error;
@@ -271,7 +271,7 @@ module.exports = {
       const { game_id, user_id, score, duration_seconds } = sessionData;
       
       const sqlQuery = `
-        INSERT INTO GameSessions (game_id, user_id, score, duration_seconds, start_time)
+        INSERT INTO gamesessions (game_id, user_id, score, duration_seconds, start_time)
         VALUES (?, ?, ?, ?, NOW())
       `;
       
@@ -289,7 +289,7 @@ module.exports = {
       const { score, duration_seconds, end_time } = sessionData;
       
       const sqlQuery = `
-        UPDATE GameSessions 
+        UPDATE gamesessions 
         SET score = ?, duration_seconds = ?, end_time = ?
         WHERE session_id = ?
       `;
@@ -305,7 +305,7 @@ module.exports = {
   async getGameIdFromSession(sessionId) {
     try {
       const sqlQuery = `
-        SELECT game_id FROM GameSessions
+        SELECT game_id FROM gamesessions
         WHERE session_id = ?
       `;
       
@@ -384,8 +384,8 @@ module.exports = {
     try {
       const sqlQuery = `
         SELECT ugp.*, g.name as game_name, g.thumbnail_url
-        FROM UserGameProgress ugp
-        JOIN Games g ON ugp.game_id = g.game_id
+        FROM usergameprogress ugp
+        JOIN games g ON ugp.game_id = g.game_id
         WHERE ugp.user_id = ?
         ORDER BY ugp.last_played DESC
       `;
@@ -404,7 +404,7 @@ module.exports = {
       const { level, current_xp, unlocked_rewards } = progressData;
       
       const sqlQuery = `
-        INSERT INTO UserGameProgress (user_id, game_id, level, current_xp, unlocked_rewards, last_played)
+        INSERT INTO usergameprogress (user_id, game_id, level, current_xp, unlocked_rewards, last_played)
         VALUES (?, ?, ?, ?, ?, NOW())
         ON DUPLICATE KEY UPDATE 
         level = VALUES(level),
@@ -431,7 +431,7 @@ module.exports = {
           MAX(gs.score) as best_score,
           SUM(gs.duration_seconds) as total_time,
           COUNT(gs.session_id) as total_sessions
-        FROM GameSessions gs
+        FROM gamesessions gs
         WHERE gs.user_id = ?
       `;
       
@@ -449,8 +449,8 @@ module.exports = {
   async getUserBadges(userId) {
     try {
       const sqlQuery = `        SELECT a.*, ua.unlocked_at
-        FROM UserAchievements ua
-        JOIN Achievements a ON ua.achievement_id = a.achievement_id
+        FROM userachievements ua
+        JOIN achievements a ON ua.achievement_id = a.achievement_id
         WHERE ua.user_id = ?
         ORDER BY ua.unlocked_at DESC
       `;
@@ -467,7 +467,7 @@ module.exports = {
   async getAllAchievements() {
     try {
       const sqlQuery = `
-        SELECT * FROM Achievements
+        SELECT * FROM achievements
         ORDER BY achievement_id ASC
       `;
       
@@ -483,7 +483,7 @@ module.exports = {
   async getGameRewards(gameId) {
     try {
       const sqlQuery = `
-        SELECT * FROM GameRewards
+        SELECT * FROM gamerewards
         WHERE game_id = ?
         ORDER BY reward_id ASC
       `;
@@ -507,7 +507,7 @@ module.exports = {
           COUNT(gs.session_id) as total_sessions,
           AVG(gs.score) as average_score,
           SUM(gs.duration_seconds) as total_playtime
-        FROM GameSessions gs
+        FROM gamesessions gs
       `;
       
       const [rows] = await pool.query(sqlQuery);

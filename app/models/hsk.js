@@ -88,7 +88,7 @@ module.exports = {
       SELECT question_id, test_id, skill_type, question_type, question_text, audio_url, image_url,
              options, correct_answer, explanation, difficulty_level, points, order_in_test,
              matching_pairs, ordering_items, rewrite_instruction
-      FROM HSKQuestions
+      FROM hskquestions
       WHERE test_id = ?
       ORDER BY order_in_test, question_id
     `;
@@ -130,7 +130,7 @@ module.exports = {
   },
 
   async getQuestionById(qid) {
-    const [r] = await pool.query("SELECT * FROM HSKQuestions WHERE question_id = ?", [
+    const [r] = await pool.query("SELECT * FROM hskquestions WHERE question_id = ?", [
       qid,
     ]);
     if (!r[0]) return null;
@@ -171,7 +171,7 @@ module.exports = {
 
      async createQuestion(testId, q) {
      const sql = `
-       INSERT INTO HSKQuestions (
+       INSERT INTO hskquestions (
          test_id, skill_type, question_type, question_text, audio_url, image_url,
          options, correct_answer, explanation, difficulty_level, points, order_in_test,
          matching_pairs, ordering_items, rewrite_instruction
@@ -197,7 +197,7 @@ module.exports = {
        data.matching_pairs = JSON.stringify(q.matching_pairs);
      if (Array.isArray(q.ordering_items))
        data.ordering_items = JSON.stringify(q.ordering_items);
-     const [result] = await pool.query("UPDATE HSKQuestions SET ? WHERE question_id = ?", [
+     const [result] = await pool.query("UPDATE hskquestions SET ? WHERE question_id = ?", [
        data,
        qid,
      ]);
@@ -205,13 +205,13 @@ module.exports = {
    },
 
   async deleteQuestion(qid) {
-    const [result] = await pool.query("DELETE FROM HSKQuestions WHERE question_id = ?", [qid]);
+    const [result] = await pool.query("DELETE FROM hskquestions WHERE question_id = ?", [qid]);
     return result.affectedRows; // Trả về số dòng bị xóa
   },
 
   async getQuestionCount(testId) {
     const [result] = await pool.query(
-      "SELECT COUNT(*) as count FROM HSKQuestions WHERE test_id = ?",
+      "SELECT COUNT(*) as count FROM hskquestions WHERE test_id = ?",
       [testId]
     );
     return result[0]?.count || 0;
@@ -220,7 +220,7 @@ module.exports = {
   async getDashboardStats() {
     try {
       const [totalTests] = await pool.query("SELECT COUNT(*) as count FROM hsktests");
-      const [totalQuestions] = await pool.query("SELECT COUNT(*) as count FROM HSKQuestions");
+      const [totalQuestions] = await pool.query("SELECT COUNT(*) as count FROM hskquestions");
       const [activeTests] = await pool.query("SELECT COUNT(*) as count FROM hsktests WHERE is_active = 1");
       const [totalAttempts] = await pool.query("SELECT COUNT(*) as count FROM hskresults");
       
@@ -233,7 +233,7 @@ module.exports = {
       
       const [skillTypes] = await pool.query(`
         SELECT skill_type, COUNT(*) as count 
-        FROM HSKQuestions 
+        FROM hskquestions 
         GROUP BY skill_type
       `);
       
@@ -277,7 +277,7 @@ module.exports = {
     if (!test[0]) return null;
     
     const [questions] = await pool.query(`
-      SELECT * FROM HSKQuestions 
+      SELECT * FROM hskquestions 
       WHERE test_id = ? 
       ORDER BY order_in_test, question_id
     `, [testId]);
@@ -295,7 +295,7 @@ module.exports = {
 
   async getRandomQuestions(testId, count) {
     const [questions] = await pool.query(`
-      SELECT * FROM HSKQuestions 
+      SELECT * FROM hskquestions 
       WHERE test_id = ? 
       ORDER BY RAND() 
       LIMIT ?
@@ -486,12 +486,11 @@ module.exports = {
     return result.insertId;
   },
 
-  // Lấy user answers theo result
   async getUserAnswersByResult(resultId) {
     const sql = `
       SELECT ua.*, q.*
       FROM hskuseranswers ua
-      JOIN HSKQuestions q ON ua.question_id = q.question_id
+      JOIN hskquestions q ON ua.question_id = q.question_id
       WHERE ua.result_id = ?
       ORDER BY ua.question_order ASC, ua.created_at ASC
     `;
@@ -511,7 +510,7 @@ module.exports = {
       // Cập nhật thứ tự cho từng câu hỏi
       for (const order of orders) {
         const sql = `
-          UPDATE HSKQuestions 
+          UPDATE hskquestions 
           SET order_in_test = ? 
           WHERE question_id = ? AND test_id = ?
         `;

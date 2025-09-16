@@ -63,7 +63,13 @@ router.get(
         // Nếu không có FRONTEND_URL, tự động detect từ request
         const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
         const host = req.get('host') || 'localhost:3000';
-        frontendUrl = `${protocol}://${host}`;
+        
+        // Trong production, loại bỏ port để redirect về frontend
+        if (host.includes(':3000')) {
+          frontendUrl = `${protocol}://${host.replace(':3000', '')}`;
+        } else {
+          frontendUrl = `${protocol}://${host}`;
+        }
       }
       const redirectUrl = `${frontendUrl}/auth-callback?accessToken=${accessToken}&user=${encodedUserInfo}`;
       console.log(`Redirecting to frontend: ${redirectUrl}`);
@@ -76,7 +82,13 @@ router.get(
         // Nếu không có FRONTEND_URL, tự động detect từ request
         const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
         const host = req.get('host') || 'localhost:3000';
-        frontendUrl = `${protocol}://${host}`;
+        
+        // Trong production, loại bỏ port để redirect về frontend
+        if (host.includes(':3000')) {
+          frontendUrl = `${protocol}://${host.replace(':3000', '')}`;
+        } else {
+          frontendUrl = `${protocol}://${host}`;
+        }
       }
       res.redirect(`${frontendUrl}/login`);
     }
@@ -142,7 +154,13 @@ router.get(
         // Nếu không có FRONTEND_URL, tự động detect từ request
         const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
         const host = req.get('host') || 'localhost:3000';
-        frontendUrl = `${protocol}://${host}`;
+        
+        // Trong production, loại bỏ port để redirect về frontend
+        if (host.includes(':3000')) {
+          frontendUrl = `${protocol}://${host.replace(':3000', '')}`;
+        } else {
+          frontendUrl = `${protocol}://${host}`;
+        }
       }
       const redirectUrl = `${frontendUrl}/auth-callback?accessToken=${accessToken}&user=${encodedUserInfo}`;
       console.log(`Redirecting to frontend: ${redirectUrl}`);
@@ -155,7 +173,13 @@ router.get(
         // Nếu không có FRONTEND_URL, tự động detect từ request
         const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
         const host = req.get('host') || 'localhost:3000';
-        frontendUrl = `${protocol}://${host}`;
+        
+        // Trong production, loại bỏ port để redirect về frontend
+        if (host.includes(':3000')) {
+          frontendUrl = `${protocol}://${host.replace(':3000', '')}`;
+        } else {
+          frontendUrl = `${protocol}://${host}`;
+        }
       }
       res.redirect(`${frontendUrl}/login`);
     }

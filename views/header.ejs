@@ -238,25 +238,35 @@
             <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
               <img
                 <% 
-                  let avatarUrl1 = user?.avatar;
-                  if (user?.avatar && !user.avatar.includes('cloudinary.com') && !user.avatar.startsWith('/')) {
-                    avatarUrl1 = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+                  let avatarUrl1 = '';
+                  if (typeof user !== 'undefined' && user?.avatar) {
+                    avatarUrl1 = user.avatar;
+                    if (!user.avatar.includes('cloudinary.com') && !user.avatar.startsWith('/')) {
+                      avatarUrl1 = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+                    }
+                  } else {
+                    avatarUrl1 = '/images/default-avatar.png';
                   }
                 %>
                 src="<%= avatarUrl1 %>"
                 class="user-image img-circle elevation-2"
                 alt="User Image"
               />
-              <span class="d-none d-md-inline"><%= user?.username %></span>
+              <span class="d-none d-md-inline"><%= typeof user !== 'undefined' ? user?.username : 'Admin' %></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
               <!-- User image -->
               <li class="user-header bg-primary">
                 <img
                   <% 
-                    let avatarUrl2 = user?.avatar;
-                    if (user?.avatar && !user.avatar.includes('cloudinary.com') && !user.avatar.startsWith('/')) {
-                      avatarUrl2 = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+                    let avatarUrl2 = '';
+                    if (typeof user !== 'undefined' && user?.avatar) {
+                      avatarUrl2 = user.avatar;
+                      if (!user.avatar.includes('cloudinary.com') && !user.avatar.startsWith('/')) {
+                        avatarUrl2 = `https://res.cloudinary.com/dviufwqfi/image/upload/${user.avatar}`;
+                      }
+                    } else {
+                      avatarUrl2 = '/images/default-avatar.png';
                     }
                   %>
                   src="<%= avatarUrl2 %>"
@@ -264,7 +274,7 @@
                   alt="User Image"
                 />
                 <p>
-                  <%= user?.full_name %>
+                  <%= typeof user !== 'undefined' ? user?.full_name : 'Admin' %>
                   <small>Đăng nhập gần đây</small>
                 </p>
               </li>
