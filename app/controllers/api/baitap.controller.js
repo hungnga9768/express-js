@@ -136,7 +136,7 @@ module.exports = {
       }
 
       // Kiểm tra trùng tiêu đề
-      const isDuplicate = await baitap.checkDuplicateTitle(exerciseSetData.title);
+      const isDuplicate = await baitap.checkDuplicateTitleForCreate(exerciseSetData.title);
       if (isDuplicate) {
         return res.status(400).json({
           success: false,
@@ -148,7 +148,7 @@ module.exports = {
       
       res.status(201).json({
         success: true,
-        data: { exercise_set_id: result.insertId },
+        data: { set_id: result.insertId },
         message: "Tạo bộ bài tập thành công"
       });
     } catch (error) {
@@ -166,10 +166,24 @@ module.exports = {
     try {
       const questionData = req.body;
       
-      if (!questionData.exercise_set_id || !questionData.question || !questionData.correct_answer) {
+      if (!questionData.set_id || !questionData.question || !questionData.correct_answer) {
         return res.status(400).json({
           success: false,
           message: "Bộ bài tập, câu hỏi và đáp án là bắt buộc"
+        });
+      }
+
+      // Validate exercise_type
+      const validTypes = [
+        'multiple_choice', 'true_false', 'fill_blank', 'matching',
+        'drag_drop', 'ordering', 'image_choice', 'dialog_cards',
+        'image_sequencing', 'memory_game', 'writing'
+      ];
+      
+      if (!questionData.exercise_type || !validTypes.includes(questionData.exercise_type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Loại câu hỏi không hợp lệ"
         });
       }
 
@@ -326,9 +340,9 @@ module.exports = {
   // Nộp bài tập và nhận kết quả
   async submitExercise(req, res) {
     try {
-      const { exerciseSetId, answers } = req.body;
+      const { setId, answers, userId } = req.body;
       
-      if (!exerciseSetId || !answers || !Array.isArray(answers)) {
+      if (!setId || !answers || !Array.isArray(answers)) {
         return res.status(400).json({
           success: false,
           message: "ID bài tập và danh sách đáp án là bắt buộc"
@@ -336,7 +350,7 @@ module.exports = {
       }
 
       // Lấy thông tin bài tập và câu hỏi
-      const exerciseSet = await baitap.getById(exerciseSetId);
+      const exerciseSet = await baitap.getById(setId);
       if (!exerciseSet) {
         return res.status(404).json({
           success: false,
@@ -344,17 +358,33 @@ module.exports = {
         });
       }
 
-      const questions = await baitap.getWithQuestions(exerciseSetId);
+      const questions = await baitap.getWithQuestions(setId);
       
-      // Kiểm tra từng đáp án
+      // Kiểm tra từng đáp án và lưu kết quả
       const results = [];
-      let correctCount = 0;
+      let totalScore = 0; // Tổng điểm thực tế (có thể là số thập phân)
+      let correctCount = 0; // Số câu được coi là đúng (>= 50%)
       let totalQuestions = questions.length;
 
       for (const answer of answers) {
         const question = questions.find(q => q.exercise_id == answer.questionId);
         if (question) {
           const result = await baitap.checkAnswer(answer.questionId, answer.userAnswer);
+          
+          // Tính điểm cho câu này (sử dụng partialScore nếu có)
+          const questionScore = result.partialScore || (result.isCorrect ? 1 : 0);
+          totalScore += questionScore;
+          
+          // Lưu kết quả vào database nếu có userId
+          if (userId) {
+            await baitap.saveExerciseResult({
+              exercise_id: answer.questionId,
+              user_id: userId,
+              user_answer: JSON.stringify(answer.userAnswer),
+              is_correct: result.isCorrect ? 1 : 0
+            });
+          }
+          
           results.push({
             questionId: answer.questionId,
             question: question.question,
@@ -362,7 +392,13 @@ module.exports = {
             correctAnswer: question.correct_answer,
             isCorrect: result.isCorrect,
             explanation: question.explanation,
-            options: question.options
+            options: question.options,
+            // Thêm thông tin điểm chi tiết
+            partialScore: questionScore,
+            scoreDetails: result.correctPairs && result.totalPairs ? 
+              `${result.correctPairs}/${result.totalPairs} cặp đúng` : 
+              result.correctItems && result.totalItems ?
+              `${result.correctItems}/${result.totalItems} mục đúng` : null
           });
           
           if (result.isCorrect) {
@@ -371,8 +407,8 @@ module.exports = {
         }
       }
 
-      // Tính điểm và kết quả tổng thể
-      const score = Math.round((correctCount / totalQuestions) * 100);
+      // Tính điểm tổng thể dựa trên tổng điểm thực tế
+      const score = Math.round((totalScore / totalQuestions) * 100);
       const grade = score >= 80 ? "Xuất sắc" : 
                    score >= 70 ? "Tốt" : 
                    score >= 60 ? "Khá" : 
@@ -382,7 +418,7 @@ module.exports = {
         success: true,
         data: {
           exerciseSet: {
-            exercise_set_id: exerciseSet.exercise_set_id,
+            set_id: exerciseSet.set_id,
             title: exerciseSet.title,
             description: exerciseSet.description
           },
@@ -390,11 +426,13 @@ module.exports = {
             totalQuestions,
             correctCount,
             incorrectCount: totalQuestions - correctCount,
+            totalScore: Math.round(totalScore * 100) / 100, // Làm tròn 2 chữ số thập phân
             score,
-            grade
+            grade,
+            averageScore: Math.round((totalScore / totalQuestions) * 100)
           },
           results,
-          message: `Bạn đã hoàn thành bài tập với ${correctCount}/${totalQuestions} câu đúng (${score}%)`
+          message: `Bạn đã hoàn thành bài tập với ${correctCount}/${totalQuestions} câu đúng. Điểm số: ${score}% (${Math.round(totalScore * 100) / 100}/${totalQuestions} điểm)`
         },
         message: "Đã nộp bài tập thành công"
       });
@@ -423,6 +461,285 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: "Lỗi server khi lấy thống kê",
+        error: error.message
+      });
+    }
+  },
+
+  // Lấy kết quả làm bài của user
+  async getUserResults(req, res) {
+    try {
+      const { userId } = req.params;
+      const { setId, limit = 50, offset = 0 } = req.query;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID là bắt buộc"
+        });
+      }
+
+      const results = await baitap.getUserResults(userId, setId, limit, offset);
+      
+      res.json({
+        success: true,
+        data: results,
+        message: "Đã tải kết quả làm bài thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy kết quả:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy kết quả",
+        error: error.message
+      });
+    }
+  },
+
+  // Lấy thống kê chi tiết của user
+  async getUserStats(req, res) {
+    try {
+      const { userId } = req.params;
+      const { setId } = req.query;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID là bắt buộc"
+        });
+      }
+
+      const stats = await baitap.getUserStats(userId, setId);
+      
+      res.json({
+        success: true,
+        data: stats,
+        message: "Đã tải thống kê user thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy thống kê user:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy thống kê user",
+        error: error.message
+      });
+    }
+  },
+
+  // Lấy bài tập theo loại
+  async getByType(req, res) {
+    try {
+      const { type } = req.params;
+      const { limit = 20, offset = 0 } = req.query;
+      
+      const validTypes = [
+        'multiple_choice', 'true_false', 'fill_blank', 'matching',
+        'drag_drop', 'ordering', 'image_choice', 'dialog_cards',
+        'image_sequencing', 'memory_game', 'writing'
+      ];
+      
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Loại câu hỏi không hợp lệ"
+        });
+      }
+
+      const exercises = await baitap.getByType(type, limit, offset);
+      
+      res.json({
+        success: true,
+        data: exercises,
+        message: `Đã tải bài tập loại ${type} thành công`
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy bài tập theo loại:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy bài tập theo loại",
+        error: error.message
+      });
+    }
+  },
+
+  // Nhân bản câu hỏi
+  async duplicateQuestion(req, res) {
+    try {
+      const { questionId } = req.params;
+      
+      if (!questionId) {
+        return res.status(400).json({
+          success: false,
+          message: "Question ID là bắt buộc"
+        });
+      }
+
+      const result = await baitap.duplicateQuestion(questionId);
+      
+      res.status(201).json({
+        success: true,
+        data: { exercise_id: result.insertId },
+        message: "Nhân bản câu hỏi thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi nhân bản câu hỏi:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi nhân bản câu hỏi",
+        error: error.message
+      });
+    }
+  },
+
+  // ===== LESSON-SPECIFIC APIS =====
+
+  // Lấy bài tập chưa hoàn thành của user trong lesson
+  async getIncompleteByLesson(req, res) {
+    try {
+      const { lessonId } = req.params;
+      const { userId } = req.query;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID là bắt buộc"
+        });
+      }
+
+      const incompleteExercises = await baitap.getIncompleteByLesson(lessonId, userId);
+      
+      res.json({
+        success: true,
+        data: incompleteExercises,
+        message: "Đã tải bài tập chưa hoàn thành thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy bài tập chưa hoàn thành:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy bài tập chưa hoàn thành",
+        error: error.message
+      });
+    }
+  },
+
+  // Gợi ý bài tập tiếp theo cho user trong lesson
+  async getRecommendedExercises(req, res) {
+    try {
+      const { lessonId } = req.params;
+      const { userId, limit = 5 } = req.query;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID là bắt buộc"
+        });
+      }
+
+      const recommendations = await baitap.getRecommendedExercises(lessonId, userId, limit);
+      
+      res.json({
+        success: true,
+        data: recommendations,
+        message: "Đã tải gợi ý bài tập thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy gợi ý bài tập:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy gợi ý bài tập",
+        error: error.message
+      });
+    }
+  },
+
+  // Lấy thống kê chi tiết của lesson
+  async getLessonStats(req, res) {
+    try {
+      const { lessonId } = req.params;
+      const { userId } = req.query;
+      
+      const stats = await baitap.getLessonStats(lessonId, userId);
+      
+      res.json({
+        success: true,
+        data: stats,
+        message: "Đã tải thống kê lesson thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy thống kê lesson:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy thống kê lesson",
+        error: error.message
+      });
+    }
+  },
+
+  // ===== HISTORY & RETRY APIS =====
+
+  // Lấy lịch sử làm bài của user (tất cả bài tập)
+  async getUserHistory(req, res) {
+    try {
+      const { userId } = req.params;
+      const { limit = 20, offset = 0 } = req.query;
+      
+      const history = await baitap.getUserHistory(userId, limit, offset);
+      
+      res.json({
+        success: true,
+        data: history,
+        message: "Đã tải lịch sử làm bài thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy lịch sử:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy lịch sử",
+        error: error.message
+      });
+    }
+  },
+
+  // Lấy lịch sử làm bài cụ thể 1 set
+  async getSetHistory(req, res) {
+    try {
+      const { userId, setId } = req.params;
+      
+      const history = await baitap.getSetHistory(userId, setId);
+      
+      res.json({
+        success: true,
+        data: history,
+        message: "Đã tải lịch sử bài tập thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy lịch sử bài tập:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy lịch sử bài tập",
+        error: error.message
+      });
+    }
+  },
+
+  // Lấy câu trả lời sai để làm lại
+  async getIncorrectAnswers(req, res) {
+    try {
+      const { userId, setId } = req.params;
+      
+      const incorrectAnswers = await baitap.getIncorrectAnswers(userId, setId);
+      
+      res.json({
+        success: true,
+        data: incorrectAnswers,
+        message: "Đã tải câu trả lời sai thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy câu sai:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy câu sai",
         error: error.message
       });
     }

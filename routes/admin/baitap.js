@@ -10,6 +10,15 @@ router.get("/edit/:id", baitapCtrl.showEditForm);
 router.post("/edit/:id", baitapCtrl.update);
 router.post("/delete/:id", baitapCtrl.remove);
 router.post("/cauhoi/add", baitapCtrl.createcauhoi);
+router.get("/cauhoi/edit/:id", baitapCtrl.showEditCauhoiForm);
+router.post("/cauhoi/edit/:id", baitapCtrl.updatecauhoi);
 router.post("/cauhoi/delete/:id", baitapCtrl.removecauhoi);
+
+// ========================================
+// API ROUTES FOR AJAX OPERATIONS
+// ========================================
+router.post("/api/create", baitapCtrl.createViaAjax);
+router.get("/api/:id", baitapCtrl.getExerciseDetails);
+router.post("/api/:id/delete", baitapCtrl.deleteViaAjax);
 
 module.exports = router;

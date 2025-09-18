@@ -9,6 +9,9 @@ router.get("/", baihocCtrl.index);
 router.get("/:id", baihocCtrl.getLessonById);
 router.get("/course/:courseId", baihocCtrl.getLessonsByCourse);
 
+// Quản lý từ vựng bài học
+router.get("/:id/vocabulary", baihocCtrl.getVocabularyByLesson);
+
 // ==================== PROTECTED ROUTES (Cần đăng nhập) ====================
 // Theo dõi tiến độ học tập
 router.post("/:id/start", authenticateTokenUser, baihocCtrl.startLesson);

@@ -22,8 +22,28 @@
   <section class="content">
     <!-- Default box -->
     <div class="box">
+      <!-- Nav tabs -->
+      <div class="box-header">
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#course-info-tab" role="tab">
+              <i class="fa fa-edit"></i> Thông tin khóa học
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#lessons-tab" role="tab">
+              <i class="fa fa-book"></i> Quản lý bài học
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Tab content -->
       <div class="box-body">
-        <form method="POST" action="/admin/khoahoc/edit-khoahoc/<%= course.course_id %>" enctype="multipart/form-data">
+        <div class="tab-content">
+          <!-- Course Info Tab -->
+          <div class="tab-pane fade show active" id="course-info-tab" role="tabpanel">
+            <form method="POST" action="/admin/khoahoc/edit-khoahoc/<%= course.course_id %>" enctype="multipart/form-data">
           <div class="form-group">
             <label for="title">Tên khóa học</label>
             <input
@@ -174,121 +194,308 @@
             </a>
           </div>
         </form>
-        
-      </div>
-    </div>
-  </section>
-  <section class="content">
-     <div class="box">
-      <div class="box-body">
-<table class="table table-bordered table-sm">
-  <thead>
-    <tr>
-      <th>STT</th>
-      <th style="width: 5%;">Thứ tự hiển thị</th>
-      <th style="width: 40%;">Tiêu đề</th>
-      <th>Loại</th>
-      <th>URL Nội dung</th>
-      <th style="width: 5%;">Thời lượng (phút)</th>
-      <th>Xem trước</th>
-      <th>Hành Động</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% Object.keys(groupedLessons).sort((a, b) => a - b).forEach((moduleNum) => {
-         groupedLessons[moduleNum].forEach((lesson, index) => { %>
-      <tr>
-        <td><%= lesson.lesson_id %></td>
-        <td>
-          <input type="number" class="form-control form-control-sm" name="display_order" value="<%= lesson.display_order %>" data-id="<%= lesson.lesson_id %>">
-        </td>
-        <td>
-          <input type="text" class="form-control form-control-sm" name="title" value="<%= lesson.title %>" data-id="<%= lesson.lesson_id %>">
-        </td>
-        <td>
-          <select class="form-control form-control-sm" name="content_type" data-id="<%= lesson.lesson_id %>">
-            <option value="video" <%= lesson.content_type === 'video' ? 'selected' : '' %>>Video</option>
-            <option value="text" <%= lesson.content_type === 'text' ? 'selected' : '' %>>Text</option>
-            <option value="quiz" <%= lesson.content_type === 'quiz' ? 'selected' : '' %>>Quiz</option>
-            <option value="interactive" <%= lesson.content_type === 'interactive' ? 'selected' : '' %>>Interactive</option>
-          </select>
-        </td>
-        <td>
-          <input type="text" class="form-control form-control-sm" name="content_url" value="<%= lesson.content_url %>" data-id="<%= lesson.lesson_id %>">
-        </td>
-        <td>
-          <input type="number" class="form-control form-control-sm" name="duration" value="<%= lesson.duration %>" data-id="<%= lesson.lesson_id %>">
-        </td>
-        <td>
-          <select class="form-control form-control-sm" name="is_preview" data-id="<%= lesson.lesson_id %>">
-                                    <option value="1" <%= lesson.is_preview ? 'selected' : '' %>><i class="fas fa-check text-success"></i></option>
-                        <option value="0" <%= !lesson.is_preview ? 'selected' : '' %>><i class="fas fa-times text-danger"></i></option>
-          </select>
-        </td>
-          <td>
-                <a
-                  href="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>"
-                  class="btn btn-sm btn-warning"
-                >
-                  <i class="fa fa-edit"></i> Sửa
+          </div>
+
+          <!-- Lessons Tab -->
+          <div class="tab-pane fade" id="lessons-tab" role="tabpanel">
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <h4><i class="fa fa-book"></i> Bài học của khóa học: <strong><%= course.title %></strong></h4>
+              </div>
+              <div class="col-md-4 text-right">
+                <button id="add-lesson-btn" class="btn btn-success">
+                  <i class="fa fa-plus"></i> Thêm bài học mới
+                </button>
+                <a href="/admin/baihoc/add?course_id=<%= course.course_id %>" class="btn btn-outline-success">
+                  <i class="fa fa-external-link"></i> Form đầy đủ
                 </a>
-                <form
-                  action="/admin/baihoc/delete-baihoc/<%= lesson.lesson_id %>"
-                  method="POST"
-                  style="display: inline-block"
-                  onsubmit="return confirm('Bạn có chắc muốn xóa bài học này không?');"
-                >
-                  <button class="btn btn-sm btn-danger" type="submit">
-                    <i class="fa fa-trash"></i> Xóa
-                  </button>
-                </form>
-              </td>
-      </tr>
-    <% })}) %>
-  </tbody>
-</table>
-
+              </div>
+            </div>
+            
+            <div id="lessons-content">
+              <div class="text-center">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Đang tải danh sách bài học...</p>
+              </div>
+            </div>
+            
+            <button id="saveAllLessons" class="btn btn-success mb-3" style="display: none;">
+              <i class="fa fa-save"></i> Lưu tất cả thay đổi
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
-  <button id="saveAllLessons" class="btn btn-success mb-3">💾 Lưu tất cả</button>
-
 </div>
+
 <%- include('modalimage')%>
 <%- include('footer')%>
+
 <script>
-  document.getElementById('saveAllLessons').addEventListener('click', () => {
-    const rows = document.querySelectorAll('tbody tr');
-    const data = [];
+const courseId = '<%= course.course_id %>';
 
-    rows.forEach(row => {
-      const lesson_id = row.querySelector('input[name="title"]').dataset.id;
-      const lesson = {
-        lesson_id,
-        title: row.querySelector('input[name="title"]').value,
-        content_type: row.querySelector('select[name="content_type"]').value,
-        content_url: row.querySelector('input[name="content_url"]').value,
-        duration: row.querySelector('input[name="duration"]').value,
-        display_order: row.querySelector('input[name="display_order"]').value,
-        is_preview: row.querySelector('select[name="is_preview"]').value
-      };
-      data.push(lesson);
-    });
+// Tải bài học khi click vào tab
+$('a[href="#lessons-tab"]').on('shown.bs.tab', function () {
+  loadLessons();
+});
 
-    fetch('/admin/baihoc/bulk-update', {
+// Tải danh sách bài học
+function loadLessons() {
+  console.log('Loading lessons for course:', courseId);
+  
+  $('#lessons-content').html(`
+    <div class="text-center">
+      <i class="fa fa-spinner fa-spin fa-2x"></i>
+      <p>Đang tải danh sách bài học...</p>
+    </div>
+  `);
+
+  $.ajax({
+    url: `/admin/khoahoc/course/${courseId}/lessons`,
+    method: 'GET',
+    success: function (res) {
+      console.log('Lessons response:', res);
+      if (res.success && res.data) {
+        let html = '';
+        
+        if (res.data.length > 0) {
+          html = '<div class="table-responsive">';
+          html += '<table class="table table-bordered table-hover">';
+          html += '<thead class="thead-light">';
+          html += '<tr><th>ID</th><th>Thứ tự</th><th>Tiêu đề</th><th>Loại</th><th>Thời lượng</th><th>Xem trước</th><th>Hành động</th></tr>';
+          html += '</thead><tbody>';
+
+          res.data.forEach(lesson => {
+            html += `<tr>
+              <td>${lesson.lesson_id}</td>
+              <td>
+                <input type="number" class="form-control form-control-sm lesson-field" 
+                       name="display_order" value="${lesson.display_order}" data-id="${lesson.lesson_id}">
+              </td>
+              <td>
+                <input type="text" class="form-control form-control-sm lesson-field" 
+                       name="title" value="${lesson.title}" data-id="${lesson.lesson_id}">
+              </td>
+              <td>
+                <select class="form-control form-control-sm lesson-field" name="content_type" data-id="${lesson.lesson_id}">
+                  <option value="video" ${lesson.content_type === 'video' ? 'selected' : ''}>Video</option>
+                  <option value="text" ${lesson.content_type === 'text' ? 'selected' : ''}>Text</option>
+                  <option value="quiz" ${lesson.content_type === 'quiz' ? 'selected' : ''}>Quiz</option>
+                  <option value="interactive" ${lesson.content_type === 'interactive' ? 'selected' : ''}>Interactive</option>
+                </select>
+              </td>
+              <td>
+                <input type="number" class="form-control form-control-sm lesson-field" 
+                       name="duration" value="${lesson.duration || ''}" data-id="${lesson.lesson_id}">
+              </td>
+              <td>
+                <select class="form-control form-control-sm lesson-field" name="is_preview" data-id="${lesson.lesson_id}">
+                  <option value="1" ${lesson.is_preview ? 'selected' : ''}>Có</option>
+                  <option value="0" ${!lesson.is_preview ? 'selected' : ''}>Không</option>
+                </select>
+              </td>
+              <td>
+                <a href="/admin/baihoc/edit-baihoc/${lesson.lesson_id}" class="btn btn-sm btn-warning">
+                  <i class="fa fa-edit"></i> Sửa
+                </a>
+                <button class="btn btn-sm btn-danger delete-lesson" data-id="${lesson.lesson_id}">
+                  <i class="fa fa-trash"></i> Xóa
+                </button>
+              </td>
+            </tr>`;
+          });
+
+          html += '</tbody></table></div>';
+          $('#saveAllLessons').show();
+        } else {
+          html = `
+            <div class="alert alert-info text-center">
+              <i class="fa fa-info-circle"></i> 
+              Chưa có bài học nào cho khóa học này.
+              <br><br>
+              <button id="add-lesson-btn" class="btn btn-success">
+                <i class="fa fa-plus"></i> Tạo bài học đầu tiên
+              </button>
+            </div>
+          `;
+          $('#saveAllLessons').hide();
+        }
+
+        $('#lessons-content').html(html);
+      } else {
+        console.log('No lessons data or failed response:', res);
+        $('#lessons-content').html('<div class="alert alert-warning">Không thể tải danh sách bài học</div>');
+      }
+    },
+    error: function (xhr, status, error) {
+      console.error('Lessons AJAX Error:', xhr, status, error);
+      console.error('Response Text:', xhr.responseText);
+      $('#lessons-content').html(`<div class="alert alert-danger">Lỗi khi tải danh sách bài học: ${error}</div>`);
+    }
+  });
+}
+
+// Thêm bài học mới
+$(document).on('click', '#add-lesson-btn', function () {
+  const modalHtml = `
+    <div class="modal fade" id="addLessonModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Thêm bài học mới</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="add-lesson-form">
+              <div class="form-group">
+                <label for="lesson-title">Tiêu đề bài học <span class="text-danger">*</span></label>
+                <input type="text" id="lesson-title" class="form-control" placeholder="Nhập tiêu đề bài học..." required>
+              </div>
+              <div class="form-group">
+                <label for="lesson-description">Mô tả (tùy chọn)</label>
+                <textarea id="lesson-description" class="form-control" rows="3" placeholder="Mô tả ngắn về bài học..."></textarea>
+              </div>
+              <div class="form-group">
+                <label for="lesson-content-type">Loại nội dung</label>
+                <select id="lesson-content-type" class="form-control">
+                  <option value="video">Video</option>
+                  <option value="text">Text</option>
+                  <option value="quiz">Quiz</option>
+                  <option value="interactive">Interactive</option>
+                </select>
+              </div>
+              <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 
+                Sau khi tạo bài học, bạn có thể thêm nội dung chi tiết bằng cách click "Sửa".
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+            <button type="button" id="save-lesson-btn" class="btn btn-success">
+              <i class="fa fa-save"></i> Tạo bài học
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('body').append(modalHtml);
+  $('#addLessonModal').modal('show');
+
+  // Xử lý tạo bài học
+  $('#save-lesson-btn').click(function () {
+    const title = $('#lesson-title').val().trim();
+    const description = $('#lesson-description').val().trim();
+    const contentType = $('#lesson-content-type').val();
+
+    if (!title) {
+      alert('Vui lòng nhập tiêu đề bài học');
+      return;
+    }
+
+    $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang tạo...');
+
+    $.ajax({
+      url: '/admin/khoahoc/lesson/api/create',
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+      contentType: 'application/json',
+      data: JSON.stringify({
+        title: title,
+        course_id: courseId,
+        description: description,
+        content_type: contentType
+      }),
+      success: function (res) {
+        if (res.success) {
+          alert('Đã tạo bài học thành công!');
+          $('#addLessonModal').modal('hide');
+          loadLessons();
+        } else {
+          alert('Lỗi: ' + res.message);
+        }
       },
-      body: JSON.stringify({ lessons: data })
-    })
-    .then(res => res.json())
-    .then(response => {
-      alert('Đã cập nhật thành công!');
-    })
-    .catch(error => {
-      console.error('Lỗi khi cập nhật:', error);
-      alert('Có lỗi xảy ra.');
+      error: function (xhr) {
+        const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Không thể tạo bài học';
+        alert('Lỗi: ' + errorMsg);
+      },
+      complete: function () {
+        $('#save-lesson-btn').prop('disabled', false).html('<i class="fa fa-save"></i> Tạo bài học');
+      }
     });
   });
+
+  $('#addLessonModal').on('hidden.bs.modal', function () {
+    $(this).remove();
+  });
+});
+
+// Xóa bài học
+$(document).on('click', '.delete-lesson', function () {
+  const lessonId = $(this).data('id');
+  
+  if (!confirm('Bạn có chắc muốn xóa bài học này? Tất cả nội dung liên quan cũng sẽ bị xóa.')) {
+    return;
+  }
+
+  $.ajax({
+    url: `/admin/khoahoc/lesson/api/${lessonId}/delete`,
+    method: 'POST',
+    success: function (res) {
+      if (res.success) {
+        alert('Đã xóa bài học thành công');
+        loadLessons();
+      } else {
+        alert('Lỗi: ' + res.message);
+      }
+    },
+    error: function (xhr) {
+      const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Không thể xóa bài học';
+      alert('Lỗi: ' + errorMsg);
+    }
+  });
+});
+
+// Lưu tất cả thay đổi
+$(document).on('click', '#saveAllLessons', function () {
+  const rows = document.querySelectorAll('#lessons-content tbody tr');
+  const data = [];
+
+  rows.forEach(row => {
+    const lesson_id = row.querySelector('input[name="title"]').dataset.id;
+    const lesson = {
+      lesson_id,
+      title: row.querySelector('input[name="title"]').value,
+      content_type: row.querySelector('select[name="content_type"]').value,
+      duration: row.querySelector('input[name="duration"]').value,
+      display_order: row.querySelector('input[name="display_order"]').value,
+      is_preview: row.querySelector('select[name="is_preview"]').value
+    };
+    data.push(lesson);
+  });
+
+  $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang lưu...');
+
+  fetch('/admin/baihoc/bulk-update', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ lessons: data })
+  })
+  .then(res => res.json())
+  .then(response => {
+    alert('Đã cập nhật thành công!');
+    loadLessons(); // Reload để cập nhật
+  })
+  .catch(error => {
+    console.error('Lỗi khi cập nhật:', error);
+    alert('Có lỗi xảy ra.');
+  })
+  .finally(() => {
+    $('#saveAllLessons').prop('disabled', false).html('<i class="fa fa-save"></i> Lưu tất cả thay đổi');
+  });
+});
 </script>

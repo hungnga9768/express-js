@@ -242,18 +242,19 @@ CREATE TABLE `courses` (
 -- Table structure for table `coursevocabulary`
 --
 
-DROP TABLE IF EXISTS `coursevocabulary`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `coursevocabulary` (
-  `course_id` int NOT NULL,
+
+-- Tạo bảng liên kết từ vựng với từng bài học
+CREATE TABLE `lessonvocabulary` (
+  `lesson_id` int NOT NULL,
   `word_id` int NOT NULL,
-  PRIMARY KEY (`course_id`,`word_id`),
+  PRIMARY KEY (`lesson_id`,`word_id`),
   KEY `word_id` (`word_id`),
-  CONSTRAINT `coursevocabulary_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
-  CONSTRAINT `coursevocabulary_ibfk_2` FOREIGN KEY (`word_id`) REFERENCES `vocabulary` (`word_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Bảng liên kết từ vựng với khóa học';
-/*!40101 SET character_set_client = @saved_cs_client */;
+  CONSTRAINT `lessonvocabulary_ibfk_1` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`lesson_id`) ON DELETE CASCADE,
+  CONSTRAINT `lessonvocabulary_ibfk_2` FOREIGN KEY (`word_id`) REFERENCES `vocabulary` (`word_id`) ON DELETE CASCADE
+) ENGINE=InnoDB 
+  DEFAULT CHARSET=utf8mb4 
+  COLLATE=utf8mb4_0900_ai_ci 
+  COMMENT='Bảng liên kết từ vựng với bài học';
 
 --
 -- Table structure for table `exercises`

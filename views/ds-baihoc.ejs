@@ -48,67 +48,67 @@
       </div>
 
       <div class="box-body">
-        <table class="table table-bordered table-hover">
-          <thead class="thead-light">
-            <tr>
-              <th>ID</th>
-              <th>Tiêu đề</th>
-              <th>Loại nội dung</th>
-              <th>Thời lượng</th>
-              <th>Xem trước</th>
-              <th>Thứ tự</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-  <% if (data && data.length > 0) { %>
-    <% data.forEach(function(lesson) { %>
-      <tr data-id="<%= lesson.lesson_id %>">
-        <td><%= lesson.lesson_id %></td>
-        <td><input type="text" class="form-control title" value="<%= lesson.title %>"></td>
-        <td>
-          <select class="form-control content_type">
-      <option value="video" <%= lesson.content_type === 'video' ? 'selected' : '' %>>Video</option>
-      <option value="text" <%= lesson.content_type === 'text' ? 'selected' : '' %>>Văn bản</option>
-      <option value="quiz" <%= lesson.content_type === 'quiz' ? 'selected' : '' %>>Bài kiểm tra</option>
-      <option value="interactive" <%= lesson.content_type === 'interactive' ? 'selected' : '' %>>Tương tác</option>
-    </select>
-        </td>
-        <td><input type="number" class="form-control duration" value="<%= lesson.duration %>"></td>
-        <td>
-          <select class="form-control is_preview">
-            <option value="1" <%= lesson.is_preview ? 'selected' : '' %>>Có</option>
-            <option value="0" <%= !lesson.is_preview ? 'selected' : '' %>>Không</option>
-          </select>
-        </td>
-        <td><input type="number" class="form-control display_order" value="<%= lesson.display_order %>"></td>
-                  <td>
-                <a
-                  href="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>"
-                  class="btn btn-sm btn-warning"
-                >
-                  <i class="fa fa-edit"></i> Sửa
-                </a>
-                <form
-                  action="/admin/baihoc/delete-baihoc/<%= lesson.lesson_id %>"
-                  method="POST"
-                  style="display: inline-block"
-                  onsubmit="return confirm('Bạn có chắc muốn xóa bài học này không?');"
-                >
-                  <button class="btn btn-sm btn-danger" type="submit">
-                    <i class="fa fa-trash"></i> Xóa
-                  </button>
-                </form>
-              </td>
-        
-      </tr>
-    <% }) %>
-  <% } else { %>
-    <tr><td colspan="7" class="text-center">Không có bài học nào.</td></tr>
-  <% } %>
-</tbody>
- 
-        </table>
+            <table class="table table-bordered table-hover">
+              <thead class="thead-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Tiêu đề</th>
+                  <th>Loại nội dung</th>
+                  <th>Thời lượng</th>
+                  <th>Xem trước</th>
+                  <th>Thứ tự</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+      <% if (data && data.length > 0) { %>
+        <% data.forEach(function(lesson) { %>
+          <tr data-id="<%= lesson.lesson_id %>">
+            <td><%= lesson.lesson_id %></td>
+            <td><input type="text" class="form-control title" value="<%= lesson.title %>"></td>
+            <td>
+              <select class="form-control content_type">
+          <option value="video" <%= lesson.content_type === 'video' ? 'selected' : '' %>>Video</option>
+          <option value="text" <%= lesson.content_type === 'text' ? 'selected' : '' %>>Văn bản</option>
+          <option value="quiz" <%= lesson.content_type === 'quiz' ? 'selected' : '' %>>Bài kiểm tra</option>
+          <option value="interactive" <%= lesson.content_type === 'interactive' ? 'selected' : '' %>>Tương tác</option>
+        </select>
+            </td>
+            <td><input type="number" class="form-control duration" value="<%= lesson.duration %>"></td>
+            <td>
+              <select class="form-control is_preview">
+                <option value="1" <%= lesson.is_preview ? 'selected' : '' %>>Có</option>
+                <option value="0" <%= !lesson.is_preview ? 'selected' : '' %>>Không</option>
+              </select>
+            </td>
+            <td><input type="number" class="form-control display_order" value="<%= lesson.display_order %>"></td>
+                      <td>
+                    <a
+                      href="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>"
+                      class="btn btn-sm btn-warning"
+                    >
+                      <i class="fa fa-edit"></i> Sửa
+                    </a>
+                    <form
+                      action="/admin/baihoc/delete-baihoc/<%= lesson.lesson_id %>"
+                      method="POST"
+                      style="display: inline-block"
+                      onsubmit="return confirm('Bạn có chắc muốn xóa bài học này không?');"
+                    >
+                      <button class="btn btn-sm btn-danger" type="submit">
+                        <i class="fa fa-trash"></i> Xóa
+                      </button>
+                    </form>
+                  </td>
+            
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="7" class="text-center">Không có bài học nào.</td></tr>
+      <% } %>
+    </tbody>
+     
+            </table>
       </div>
 
       <div class="box-footer text-center">
@@ -155,7 +155,9 @@
   </section>
 </div>
 <%- include('footer')%>
+
 <script>
+// Lưu tất cả bài học
 $('#saveAll').click(function () {
   const lessons = [];
   $('tbody tr').removeClass('table-danger').find('.error-msg').remove(); // reset màu & lỗi cũ
@@ -205,5 +207,4 @@ $('#saveAll').click(function () {
     }
   });
 });
-
 </script>

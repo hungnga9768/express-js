@@ -23,8 +23,33 @@
   <section class="content">
     <!-- Default box -->
     <div class="box">
+      <!-- Nav tabs -->
+      <div class="box-header">
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#lesson-info-tab" role="tab">
+              <i class="fa fa-edit"></i> Thông tin bài học
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#exercises-tab" role="tab">
+              <i class="fa fa-tasks"></i> Quản lý bài tập
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#vocabulary-tab" role="tab">
+              <i class="fa fa-language"></i> Quản lý từ vựng
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Tab content -->
       <div class="box-body">
-        <form method="POST" action="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>">
+        <div class="tab-content">
+          <!-- Lesson Info Tab -->
+          <div class="tab-pane fade show active" id="lesson-info-tab" role="tabpanel">
+            <form method="POST" action="/admin/baihoc/edit-baihoc/<%= lesson.lesson_id %>">
           <!-- Các trường thông tin khóa học -->
           <div class="form-group">
             <label for="course_id">Khóa học</label>
@@ -118,18 +143,468 @@
             </select>
           </div>
     
-          <div class="box-footer">
-            <button type="submit" class="btn btn-primary">
-              <i class="fa fa-save"></i> Lưu thay đổi
-            </button>
-            <a href="/quanlykhoahoc" class="btn btn-default pull-right">
-              <i class="fa fa-reply"></i> Quay lại
-            </a>
+              <div class="box-footer">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fa fa-save"></i> Lưu thay đổi
+                </button>
+                <a href="/admin/baihoc/danhsach" class="btn btn-default pull-right">
+                  <i class="fa fa-reply"></i> Quay lại
+                </a>
+              </div>
+            </form>
           </div>
-        </form>
+
+          <!-- Exercises Tab -->
+          <div class="tab-pane fade" id="exercises-tab" role="tabpanel">
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <h4><i class="fa fa-tasks"></i> Bài tập của bài học: <strong><%= lesson.title %></strong></h4>
+              </div>
+              <div class="col-md-4 text-right">
+                <button id="add-exercise-btn" class="btn btn-success">
+                  <i class="fa fa-plus"></i> Thêm bài tập mới
+                </button>
+                <a href="/admin/baitap/add?lesson_id=<%= lesson.lesson_id %>" class="btn btn-outline-success">
+                  <i class="fa fa-external-link"></i> Form đầy đủ
+                </a>
+              </div>
+            </div>
+            
+            <div id="exercises-content">
+              <div class="text-center">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Đang tải danh sách bài tập...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vocabulary Tab -->
+          <div class="tab-pane fade" id="vocabulary-tab" role="tabpanel">
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <h4><i class="fa fa-language"></i> Từ vựng của bài học: <strong><%= lesson.title %></strong></h4>
+              </div>
+              <div class="col-md-4 text-right">
+                <button id="add-vocabulary-btn" class="btn btn-success">
+                  <i class="fa fa-plus"></i> Thêm từ vựng
+                </button>
+              </div>
+            </div>
+            
+            <div id="vocabulary-content">
+              <div class="text-center">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Đang tải danh sách từ vựng...</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     
   </section>
 </div>
 <%- include('footer')%>
+
+<script>
+const lessonId = '<%= lesson.lesson_id %>';
+
+// Tải bài tập khi click vào tab
+$('a[href="#exercises-tab"]').on('shown.bs.tab', function () {
+  loadExercises();
+});
+
+// Tải từ vựng khi click vào tab
+$('a[href="#vocabulary-tab"]').on('shown.bs.tab', function () {
+  loadVocabulary();
+});
+
+// Tải danh sách bài tập
+function loadExercises() {
+  console.log('Loading exercises for lesson:', lessonId);
+  
+  $('#exercises-content').html(`
+    <div class="text-center">
+      <i class="fa fa-spinner fa-spin fa-2x"></i>
+      <p>Đang tải danh sách bài tập...</p>
+    </div>
+  `);
+
+  $.ajax({
+    url: `/admin/baihoc/lesson/${lessonId}/exercises`,
+    method: 'GET',
+    success: function (res) {
+      console.log('Exercises response:', res);
+      if (res.success && res.data) {
+        let html = '';
+        
+        if (res.data.length > 0) {
+          html = '<div class="table-responsive">';
+          html += '<table class="table table-bordered table-hover">';
+          html += '<thead class="thead-light">';
+          html += '<tr><th>ID</th><th>Tiêu đề</th><th>Loại</th><th>Số câu hỏi</th><th>Hành động</th></tr>';
+          html += '</thead><tbody>';
+
+          res.data.forEach(exercise => {
+            html += `<tr>
+              <td>${exercise.set_id}</td>
+              <td>${exercise.title}</td>
+              <td><span class="badge badge-info">${exercise.exercise_type || 'Hỗn hợp'}</span></td>
+              <td>${exercise.question_count || 0} câu</td>
+              <td>
+                <a href="/admin/baitap/edit/${exercise.set_id}" class="btn btn-sm btn-warning">
+                  <i class="fa fa-edit"></i> Sửa
+                </a>
+                <a href="/admin/baitap/edit/${exercise.set_id}" class="btn btn-sm btn-info">
+                  <i class="fa fa-eye"></i> Xem
+                </a>
+                <button class="btn btn-sm btn-danger delete-exercise" data-id="${exercise.set_id}">
+                  <i class="fa fa-trash"></i> Xóa
+                </button>
+              </td>
+            </tr>`;
+          });
+
+          html += '</tbody></table></div>';
+        } else {
+          html = `
+            <div class="alert alert-info text-center">
+              <i class="fa fa-info-circle"></i> 
+              Chưa có bài tập nào cho bài học này.
+              <br><br>
+              <button id="add-exercise-btn" class="btn btn-success">
+                <i class="fa fa-plus"></i> Tạo bài tập đầu tiên
+              </button>
+            </div>
+          `;
+        }
+
+        $('#exercises-content').html(html);
+      } else {
+        console.log('No exercises data or failed response:', res);
+        $('#exercises-content').html('<div class="alert alert-warning">Không thể tải danh sách bài tập</div>');
+      }
+    },
+    error: function (xhr, status, error) {
+      console.error('Exercises AJAX Error:', xhr, status, error);
+      console.error('Response Text:', xhr.responseText);
+      $('#exercises-content').html(`<div class="alert alert-danger">Lỗi khi tải danh sách bài tập: ${error}</div>`);
+    }
+  });
+}
+
+// Tải danh sách từ vựng
+function loadVocabulary() {
+  console.log('Loading vocabulary for lesson:', lessonId);
+  
+  $('#vocabulary-content').html(`
+    <div class="text-center">
+      <i class="fa fa-spinner fa-spin fa-2x"></i>
+      <p>Đang tải danh sách từ vựng...</p>
+    </div>
+  `);
+
+  $.ajax({
+    url: `/admin/baihoc/lesson/${lessonId}/vocabulary`,
+    method: 'GET',
+    success: function (res) {
+      console.log('Vocabulary response:', res);
+      if (res.success && res.data) {
+        let html = '';
+        
+        if (res.data.length > 0) {
+          html = '<div class="table-responsive">';
+          html += '<table class="table table-bordered table-hover">';
+          html += '<thead class="thead-light">';
+          html += '<tr><th>ID</th><th>Từ tiếng Trung</th><th>Pinyin</th><th>Nghĩa</th><th>HSK</th><th>Hành động</th></tr>';
+          html += '</thead><tbody>';
+
+          res.data.forEach(word => {
+            html += `<tr>
+              <td>${word.word_id}</td>
+              <td><strong>${word.chinese_word}</strong></td>
+              <td><em>${word.pinyin}</em></td>
+              <td>${word.vietnamese_meaning}</td>
+              <td><span class="badge badge-primary">HSK ${word.hsk_level || 'N/A'}</span></td>
+              <td>
+                <button class="btn btn-sm btn-danger remove-vocabulary" data-word-id="${word.word_id}">
+                  <i class="fa fa-trash"></i> Xóa
+                </button>
+              </td>
+            </tr>`;
+          });
+
+          html += '</tbody></table></div>';
+        } else {
+          html = `
+            <div class="alert alert-info text-center">
+              <i class="fa fa-info-circle"></i> 
+              Chưa có từ vựng nào cho bài học này.
+              <br><br>
+              <button id="add-vocabulary-btn" class="btn btn-success">
+                <i class="fa fa-plus"></i> Thêm từ vựng đầu tiên
+              </button>
+            </div>
+          `;
+        }
+
+        $('#vocabulary-content').html(html);
+      } else {
+        console.log('No vocabulary data or failed response:', res);
+        $('#vocabulary-content').html('<div class="alert alert-warning">Không thể tải danh sách từ vựng</div>');
+      }
+    },
+    error: function (xhr, status, error) {
+      console.error('AJAX Error:', xhr, status, error);
+      console.error('Response Text:', xhr.responseText);
+      $('#vocabulary-content').html(`<div class="alert alert-danger">Lỗi khi tải danh sách từ vựng: ${error}</div>`);
+    }
+  });
+}
+
+// Xóa từ vựng khỏi lesson
+$(document).on('click', '.remove-vocabulary', function () {
+  const wordId = $(this).data('word-id');
+  
+  if (!confirm('Bạn có chắc muốn xóa từ vựng này khỏi bài học?')) {
+    return;
+  }
+
+  $.ajax({
+    url: `/admin/baihoc/lesson/${lessonId}/vocabulary/${wordId}`,
+    method: 'DELETE',
+    success: function (res) {
+      if (res.success) {
+        alert('Đã xóa từ vựng khỏi bài học');
+        loadVocabulary(); // Reload danh sách
+      } else {
+        alert('Lỗi: ' + res.message);
+      }
+    },
+    error: function () {
+      alert('Không thể xóa từ vựng');
+    }
+  });
+});
+
+// Thêm từ vựng vào lesson
+$(document).on('click', '#add-vocabulary-btn', function () {
+  // Tạo modal để chọn từ vựng
+  const modalHtml = `
+    <div class="modal fade" id="addVocabularyModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Thêm từ vựng vào bài học</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <input type="text" id="search-vocabulary" class="form-control" placeholder="Tìm kiếm từ vựng...">
+            </div>
+            <div id="vocabulary-list" style="max-height: 400px; overflow-y: auto;">
+              <p class="text-muted">Nhập từ khóa để tìm kiếm từ vựng</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('body').append(modalHtml);
+  $('#addVocabularyModal').modal('show');
+
+  // Xử lý tìm kiếm từ vựng
+  $('#search-vocabulary').on('input', function () {
+    const keyword = $(this).val().trim();
+    if (keyword.length < 2) {
+      $('#vocabulary-list').html('<p class="text-muted">Nhập ít nhất 2 ký tự để tìm kiếm</p>');
+      return;
+    }
+
+    $.ajax({
+      url: `/admin/baihoc/vocabulary/search?q=${encodeURIComponent(keyword)}`,
+      method: 'GET',
+      success: function (res) {
+        console.log('Search response:', res);
+        if (res.success && res.data) {
+          let html = '';
+          if (res.data.length > 0) {
+            res.data.forEach(word => {
+              html += `
+                <div class="card mb-2">
+                  <div class="card-body p-2">
+                    <div class="row">
+                      <div class="col-md-8">
+                        <strong>${word.chinese_word}</strong> - <em>${word.pinyin}</em><br>
+                        <small>${word.vietnamese_meaning}</small>
+                        <span class="badge badge-primary ml-2">HSK ${word.hsk_level || 'N/A'}</span>
+                      </div>
+                      <div class="col-md-4 text-right">
+                        <button class="btn btn-sm btn-success add-word-to-lesson" data-word-id="${word.word_id}">
+                          <i class="fa fa-plus"></i> Thêm
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            html = '<p class="text-muted">Không tìm thấy từ vựng nào</p>';
+          }
+          $('#vocabulary-list').html(html);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('Search error:', xhr, status, error);
+        $('#vocabulary-list').html('<p class="text-danger">Lỗi tìm kiếm từ vựng</p>');
+      }
+    });
+  });
+
+  // Thêm từ vào lesson
+  $(document).on('click', '.add-word-to-lesson', function () {
+    const wordId = $(this).data('word-id');
+    
+    $.ajax({
+      url: `/admin/baihoc/lesson/${lessonId}/vocabulary/${wordId}`,
+      method: 'POST',
+      success: function (res) {
+        if (res.success) {
+          alert('Đã thêm từ vựng vào bài học');
+          $('#addVocabularyModal').modal('hide');
+          loadVocabulary(); // Reload danh sách
+        } else {
+          alert('Lỗi: ' + res.message);
+        }
+      },
+      error: function () {
+        alert('Không thể thêm từ vựng');
+      }
+    });
+  });
+
+  // Cleanup modal khi đóng
+  $('#addVocabularyModal').on('hidden.bs.modal', function () {
+    $(this).remove();
+  });
+});
+
+// Thêm bài tập mới
+$(document).on('click', '#add-exercise-btn', function () {
+  // Tạo modal để thêm bài tập
+  const modalHtml = `
+    <div class="modal fade" id="addExerciseModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Thêm bài tập mới</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="add-exercise-form">
+              <div class="form-group">
+                <label for="exercise-title">Tiêu đề bài tập <span class="text-danger">*</span></label>
+                <input type="text" id="exercise-title" class="form-control" placeholder="Nhập tiêu đề bài tập..." required>
+              </div>
+              <div class="form-group">
+                <label for="exercise-description">Mô tả (tùy chọn)</label>
+                <textarea id="exercise-description" class="form-control" rows="3" placeholder="Mô tả ngắn về bài tập..."></textarea>
+              </div>
+              <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> 
+                Sau khi tạo bài tập, bạn có thể thêm câu hỏi bằng cách click "Sửa" hoặc "Xem".
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+            <button type="button" id="save-exercise-btn" class="btn btn-success">
+              <i class="fa fa-save"></i> Tạo bài tập
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('body').append(modalHtml);
+  $('#addExerciseModal').modal('show');
+
+  // Xử lý tạo bài tập
+  $('#save-exercise-btn').click(function () {
+    const title = $('#exercise-title').val().trim();
+    const description = $('#exercise-description').val().trim();
+
+    if (!title) {
+      alert('Vui lòng nhập tiêu đề bài tập');
+      return;
+    }
+
+    // Disable button để tránh double click
+    $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang tạo...');
+
+    $.ajax({
+      url: '/admin/baitap/api/create',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        title: title,
+        lesson_id: lessonId,
+        description: description
+      }),
+      success: function (res) {
+        if (res.success) {
+          alert('Đã tạo bài tập thành công!');
+          $('#addExerciseModal').modal('hide');
+          loadExercises(); // Reload danh sách
+        } else {
+          alert('Lỗi: ' + res.message);
+        }
+      },
+      error: function (xhr) {
+        const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Không thể tạo bài tập';
+        alert('Lỗi: ' + errorMsg);
+      },
+      complete: function () {
+        $('#save-exercise-btn').prop('disabled', false).html('<i class="fa fa-save"></i> Tạo bài tập');
+      }
+    });
+  });
+
+  // Cleanup modal khi đóng
+  $('#addExerciseModal').on('hidden.bs.modal', function () {
+    $(this).remove();
+  });
+});
+
+// Xóa bài tập
+$(document).on('click', '.delete-exercise', function () {
+  const exerciseId = $(this).data('id');
+  
+  if (!confirm('Bạn có chắc muốn xóa bài tập này? Tất cả câu hỏi trong bài tập cũng sẽ bị xóa.')) {
+    return;
+  }
+
+  $.ajax({
+    url: `/admin/baitap/api/${exerciseId}/delete`,
+    method: 'POST',
+    success: function (res) {
+      if (res.success) {
+        alert('Đã xóa bài tập thành công');
+        loadExercises(); // Reload danh sách
+      } else {
+        alert('Lỗi: ' + res.message);
+      }
+    },
+    error: function (xhr) {
+      const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Không thể xóa bài tập';
+      alert('Lỗi: ' + errorMsg);
+    }
+  });
+});
+</script>

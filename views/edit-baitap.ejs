@@ -25,7 +25,7 @@
           <div class="card-body">
 
             <!-- Form Tạo/Sửa Bài Tập Lớn -->
-            <form method="POST" action="/admin/baitap/edit/<%= baitap.exercise_set_id%>">
+            <form method="POST" action="/admin/baitap/edit/<%= baitap.set_id%>">
               <div class="form-group">
                 <label for="lesson_id">bai hoc</label>
                 <select
@@ -67,9 +67,19 @@
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
                         <strong>Câu <%= index + 1 %> - 
-                          <%= cauhoi.exercise_type === 'multiple_choice' ? 'Trắc nghiệm' :
-                              cauhoi.exercise_type === 'fill_blank' ? 'Điền chỗ trống' :
-                              cauhoi.exercise_type === 'matching' ? 'Ghép đôi' : 'Viết' %>
+                          <%= (
+                            cauhoi.exercise_type === 'multiple_choice' ? 'Trắc nghiệm' :
+                            cauhoi.exercise_type === 'true_false' ? 'Đúng/Sai' :
+                            cauhoi.exercise_type === 'fill_blank' ? 'Điền chỗ trống' :
+                            cauhoi.exercise_type === 'matching' ? 'Ghép đôi' :
+                            cauhoi.exercise_type === 'drag_drop' ? 'Kéo thả' :
+                            cauhoi.exercise_type === 'ordering' ? 'Sắp xếp' :
+                            cauhoi.exercise_type === 'image_choice' ? 'Chọn ảnh' :
+                            cauhoi.exercise_type === 'dialog_cards' ? 'Thẻ hội thoại' :
+                            cauhoi.exercise_type === 'image_sequencing' ? 'Sắp xếp ảnh' :
+                            cauhoi.exercise_type === 'memory_game' ? 'Ghi nhớ' :
+                            'Viết'
+                          ) %>
                         </strong>
                       </div>
                       <div class="card-body">
@@ -83,10 +93,24 @@
                               </li>
                             <% }) %>
                           </ul>
+                        <% } else if (cauhoi.exercise_type === 'true_false') { %>
+                          <p class="text-muted"><em>(Câu hỏi Đúng/Sai)</em></p>
                         <% } else if (cauhoi.exercise_type === 'fill_blank') { %>
                           <p class="text-muted"><em>(Người học sẽ điền từ vào chỗ trống)</em></p>
                         <% } else if (cauhoi.exercise_type === 'matching') { %>
                           <p class="text-muted"><em>(Hiển thị cặp ghép dựa vào dữ liệu JSON)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'drag_drop') { %>
+                          <p class="text-muted"><em>(Kéo thả các mục vào chỗ trống)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'ordering') { %>
+                          <p class="text-muted"><em>(Sắp xếp các mục theo thứ tự đúng)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'image_choice') { %>
+                          <p class="text-muted"><em>(Chọn đáp án bằng hình ảnh)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'dialog_cards') { %>
+                          <p class="text-muted"><em>(Thẻ hội thoại/flashcards)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'image_sequencing') { %>
+                          <p class="text-muted"><em>(Sắp xếp các hình ảnh)</em></p>
+                        <% } else if (cauhoi.exercise_type === 'memory_game') { %>
+                          <p class="text-muted"><em>(Trò chơi ghi nhớ - ghép cặp)</em></p>
                         <% } else if (cauhoi.exercise_type === 'writing') { %>
                           <p class="text-muted"><em>(Người học sẽ viết câu trả lời)</em></p>
                         <% } %>
@@ -97,9 +121,16 @@
                           <p><strong> Giải thích:</strong> <%= cauhoi.explanation %></p>
                         <% } %>
                       </div>
-                      <form method="POST" action="/admin/baitap/cauhoi/delete/<%= cauhoi.exercise_id %>" onsubmit="return confirm('Bạn có chắc muốn xoá câu hỏi này?')" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
-                      </form>
+                      <div class="card-footer">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="editQuestion('<%= cauhoi.exercise_id %>', '<%= cauhoi.exercise_type %>')">
+                          <i class="fas fa-edit"></i> Sửa
+                        </button>
+                        <form method="POST" action="/admin/baitap/cauhoi/delete/<%= cauhoi.exercise_id %>" onsubmit="return confirm('Bạn có chắc muốn xoá câu hỏi này?')" style="display:inline;">
+                          <button type="submit" class="btn btn-sm btn-danger ml-2">
+                            <i class="fas fa-trash"></i> Xoá
+                          </button>
+                        </form>
+                      </div>
                       
                     </div>
                   <% }) %>
@@ -109,54 +140,843 @@
             
             <hr />
             <h4>➕ Thêm Câu Hỏi Mới Cho Bài Tập: "<%= baitap.title %>"</h4>
-              <form method="POST" action="/admin/baitap/cauhoi/add">
-  <input type="hidden" name="exercise_set_id" value="<%= baitap.exercise_set_id %>">
+              <form id="form-add-question" method="POST" action="/admin/baitap/cauhoi/add">
+  <input type="hidden" name="set_id" value="<%= baitap.set_id %>">
 
   <div class="form-group">
     <label>Loại câu hỏi</label>
-    <select name="exercise_type" class="form-control" required>
+    <select id="exercise_type" name="exercise_type" class="form-control" required>
       <option value="multiple_choice">Trắc nghiệm</option>
+      <option value="true_false">Đúng/Sai</option>
       <option value="fill_blank">Điền vào chỗ trống</option>
       <option value="matching">Ghép đôi</option>
+      <option value="drag_drop">Kéo thả</option>
+      <option value="ordering">Sắp xếp</option>
+      <option value="image_choice">Chọn ảnh</option>
+      <option value="dialog_cards">Thẻ hội thoại</option>
+      <option value="image_sequencing">Sắp xếp ảnh</option>
+      <option value="memory_game">Ghi nhớ</option>
       <option value="writing">Viết</option>
     </select>
   </div>
 
   <div class="form-group">
     <label>Câu hỏi</label>
-    <textarea name="question" class="form-control" rows="3" required></textarea>
+    <textarea name="question" class="form-control" rows="3" required placeholder="Nhập nội dung câu hỏi..."></textarea>
   </div>
 
-  <div class="form-group">
-    <label>Đáp án đúng</label>
-    <input type="text" name="correct_answer" class="form-control" required>
+  <!-- Trường ẩn chuẩn hoá để gửi về server -->
+  <input type="hidden" name="options" id="options_json">
+  <input type="hidden" name="correct_answer" id="correct_answer_value">
+
+  <!-- MULTIPLE CHOICE -->
+  <div class="type-block" id="type_multiple_choice" style="display:none;">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Lựa chọn A</label>
+        <input type="text" id="mc_optionA" name="optionA" class="form-control" placeholder="Đáp án A">
+      </div>
+      <div class="form-group">
+        <label>Lựa chọn B</label>
+        <input type="text" id="mc_optionB" name="optionB" class="form-control" placeholder="Đáp án B">
+      </div>
+      <div class="form-group">
+        <label>Lựa chọn C</label>
+        <input type="text" id="mc_optionC" name="optionC" class="form-control" placeholder="Đáp án C">
+      </div>
+      <div class="form-group">
+        <label>Lựa chọn D</label>
+        <input type="text" id="mc_optionD" name="optionD" class="form-control" placeholder="Đáp án D">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Đáp án đúng</label>
+      <select id="mc_correct" class="form-control">
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+    </div>
   </div>
 
-  <!-- Các lựa chọn: Option A -> D -->
-  <div class="form-group">
-    <label>Lựa chọn A</label>
-    <input type="text" name="optionA" class="form-control">
+  <!-- TRUE/FALSE -->
+  <div class="type-block" id="type_true_false" style="display:none;">
+    <div class="form-group">
+      <label>Đáp án</label>
+      <select id="tf_correct" class="form-control">
+        <option value="true">Đúng</option>
+        <option value="false">Sai</option>
+      </select>
+    </div>
   </div>
-  <div class="form-group">
-    <label>Lựa chọn B</label>
-    <input type="text" name="optionB" class="form-control">
+
+  <!-- FILL BLANK -->
+  <div class="type-block" id="type_fill_blank" style="display:none;">
+    <div class="alert alert-info">
+      <strong>💡 Hướng dẫn:</strong> Sử dụng ký hiệu <code>*từ*</code> để đánh dấu đáp án. 
+      <br>Ví dụ: "Tôi thích *học* tiếng Anh vì nó rất *dễ*"
+      <br>→ Hệ thống sẽ tự động tạo: "Tôi thích ___ tiếng Anh vì nó rất ___" và đáp án ["học", "dễ"]
+    </div>
+    <div class="form-group">
+      <label>Đáp án được trích xuất tự động:</label>
+      <div id="fb_extracted_answers" class="form-control" style="background-color: #f8f9fa; min-height: 38px; padding: 8px;">
+        <em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để xem đáp án...</em>
+      </div>
+    </div>
   </div>
-  <div class="form-group">
-    <label>Lựa chọn C</label>
-    <input type="text" name="optionC" class="form-control">
+
+  <!-- MATCHING -->
+  <div class="type-block" id="type_matching" style="display:none;">
+    <div class="alert alert-info">
+      <strong>💡 Hướng dẫn:</strong> Nhập riêng các mục bên trái và bên phải. Hệ thống sẽ tự động trộn để học viên không đoán được thứ tự.
+    </div>
+    <div class="row">
+      <div class="col-md-5">
+        <label><strong>Cột bên trái</strong></label>
+        <div id="match_left_items">
+          <div class="input-group mb-2">
+            <input type="text" class="form-control match-left" placeholder="Mục trái 1">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMatchItem(this, 'left')">×</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMatchItem('left')">+ Thêm mục trái</button>
+      </div>
+      <div class="col-md-7">
+        <label><strong>Cột bên phải</strong></label>
+        <div id="match_right_items">
+          <div class="input-group mb-2">
+            <input type="text" class="form-control match-right" placeholder="Mục phải 1">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMatchItem(this, 'right')">×</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMatchItem('right')">+ Thêm mục phải</button>
+      </div>
+    </div>
+    <div class="mt-3">
+      <label><strong>Thiết lập cặp ghép đúng:</strong></label>
+      <div id="match_mapping_setup" class="border p-3 bg-light">
+        <em class="text-muted">Nhập các mục ở trên để thiết lập mapping...</em>
+      </div>
+    </div>
   </div>
-  <div class="form-group">
-    <label>Lựa chọn D</label>
-    <input type="text" name="optionD" class="form-control">
+
+  <!-- ORDERING -->
+  <div class="type-block" id="type_ordering" style="display:none;">
+    <p class="text-muted">Nhập các mục (mỗi dòng một mục) theo thứ tự đúng.</p>
+    <textarea id="ordering_items" class="form-control" rows="4" placeholder="Mục 1\nMục 2\nMục 3"></textarea>
+  </div>
+
+  <!-- DRAG & DROP -->
+  <div class="type-block" id="type_drag_drop" style="display:none;">
+    <p class="text-muted">Tạo các mục có thể kéo thả vào các vùng đích.</p>
+    <div class="row">
+      <div class="col-md-6">
+        <label>Các mục có thể kéo</label>
+        <div id="drag_items_container">
+          <div class="input-group mb-2">
+            <input type="text" class="form-control drag-item" placeholder="Mục kéo 1">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDragItem(this)">×</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDragItem()">+ Thêm mục kéo</button>
+      </div>
+      <div class="col-md-6">
+        <label>Các vùng đích</label>
+        <div id="drop_targets_container">
+          <div class="input-group mb-2">
+            <input type="text" class="form-control drop-target" placeholder="Vùng đích 1">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDropTarget(this)">×</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDropTarget()">+ Thêm vùng đích</button>
+      </div>
+    </div>
+    <div class="form-group mt-3">
+      <label>Cặp ghép đúng (Mục kéo → Vùng đích)</label>
+      <div id="drag_drop_mapping"></div>
+    </div>
+  </div>
+
+  <!-- IMAGE CHOICE -->
+  <div class="type-block" id="type_image_choice" style="display:none;">
+    <p class="text-muted">Tạo câu hỏi chọn đáp án bằng hình ảnh.</p>
+    <div class="form-group">
+      <label>Loại câu hỏi ảnh</label>
+      <select id="image_choice_type" class="form-control">
+        <option value="single">Chọn 1 ảnh đúng</option>
+        <option value="multiple">Chọn nhiều ảnh đúng</option>
+      </select>
+    </div>
+    <div id="image_options_container">
+      <div class="image-option-item border p-3 mb-3">
+        <div class="row">
+          <div class="col-md-8">
+            <input type="text" class="form-control image-url" placeholder="URL ảnh hoặc đường dẫn">
+            <input type="text" class="form-control mt-2 image-caption" placeholder="Mô tả ảnh (tùy chọn)">
+          </div>
+          <div class="col-md-4">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input image-correct">
+              <label class="form-check-label">Đáp án đúng</label>
+            </div>
+            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeImageOption(this)">Xóa</button>
+          </div>
+        </div>
+        <div class="image-preview mt-2" style="max-width: 200px; max-height: 150px; overflow: hidden;"></div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addImageOption()">+ Thêm ảnh</button>
+  </div>
+
+  <!-- DIALOG CARDS -->
+  <div class="type-block" id="type_dialog_cards" style="display:none;">
+    <p class="text-muted">Tạo thẻ hội thoại/flashcards với mặt trước và mặt sau.</p>
+    <div class="form-group">
+      <label>Loại thẻ hội thoại</label>
+      <select id="dialog_type" class="form-control">
+        <option value="flashcard">Flashcard (mặt trước/sau)</option>
+        <option value="conversation">Hội thoại (câu hỏi/trả lời)</option>
+        <option value="vocabulary">Từ vựng (từ/nghĩa)</option>
+      </select>
+    </div>
+    <div id="dialog_cards_container">
+      <div class="card-item border p-3 mb-3">
+        <div class="row">
+          <div class="col-md-6">
+            <label>Mặt trước/Câu hỏi</label>
+            <textarea class="form-control card-front" rows="2" placeholder="Nội dung mặt trước"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label>Mặt sau/Câu trả lời</label>
+            <textarea class="form-control card-back" rows="2" placeholder="Nội dung mặt sau"></textarea>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeDialogCard(this)">Xóa thẻ</button>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDialogCard()">+ Thêm thẻ</button>
+  </div>
+
+  <!-- IMAGE SEQUENCING -->
+  <div class="type-block" id="type_image_sequencing" style="display:none;">
+    <p class="text-muted">Sắp xếp các hình ảnh theo thứ tự đúng.</p>
+    <div id="image_sequence_container">
+      <div class="sequence-item border p-3 mb-3" data-order="1">
+        <div class="row">
+          <div class="col-md-8">
+            <input type="text" class="form-control sequence-image-url" placeholder="URL ảnh">
+            <input type="text" class="form-control mt-2 sequence-caption" placeholder="Mô tả ảnh">
+          </div>
+          <div class="col-md-4">
+            <label>Thứ tự đúng:</label>
+            <input type="number" class="form-control sequence-order" value="1" min="1">
+            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeSequenceItem(this)">Xóa</button>
+          </div>
+        </div>
+        <div class="sequence-preview mt-2" style="max-width: 200px; max-height: 150px; overflow: hidden;"></div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSequenceItem()">+ Thêm ảnh</button>
+  </div>
+
+  <!-- MEMORY GAME -->
+  <div class="type-block" id="type_memory_game" style="display:none;">
+    <p class="text-muted">Tạo trò chơi ghi nhớ - ghép các cặp thẻ giống nhau.</p>
+    <div class="form-group">
+      <label>Loại memory game</label>
+      <select id="memory_type" class="form-control">
+        <option value="text_pairs">Cặp từ giống nhau</option>
+        <option value="image_pairs">Cặp ảnh giống nhau</option>
+        <option value="text_image">Ghép từ với ảnh</option>
+      </select>
+    </div>
+    <div id="memory_pairs_container">
+      <div class="memory-pair border p-3 mb-3">
+        <div class="row">
+          <div class="col-md-6">
+            <label>Thẻ 1</label>
+            <input type="text" class="form-control memory-card1" placeholder="Nội dung thẻ 1">
+          </div>
+          <div class="col-md-6">
+            <label>Thẻ 2 (cặp)</label>
+            <input type="text" class="form-control memory-card2" placeholder="Nội dung thẻ 2">
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeMemoryPair(this)">Xóa cặp</button>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMemoryPair()">+ Thêm cặp</button>
   </div>
 
   <div class="form-group">
     <label>Giải thích</label>
-    <textarea name="explanation" class="form-control" rows="2"></textarea>
+    <textarea name="explanation" class="form-control" rows="2" placeholder="Giải thích (không bắt buộc)"></textarea>
   </div>
 
   <button type="submit" class="btn btn-success">💾 Lưu Câu Hỏi</button>
                 </form>
+
+            <style>
+              .type-block {
+                border: 1px solid #e3e6f0;
+                border-radius: 0.35rem;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                background-color: #f8f9fc;
+              }
+              
+              .image-option-item, .card-item, .sequence-item, .memory-pair {
+                transition: all 0.3s ease;
+              }
+              
+              .image-option-item:hover, .card-item:hover, .sequence-item:hover, .memory-pair:hover {
+                box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+              }
+              
+              .drag-drop-mapping select {
+                margin-bottom: 0.5rem;
+              }
+              
+              .image-preview img, .sequence-preview img {
+                border-radius: 0.25rem;
+                border: 1px solid #d1d3e2;
+              }
+              
+              .form-check-input:checked {
+                background-color: #5a5c69;
+                border-color: #5a5c69;
+              }
+              
+              .btn-outline-primary:hover {
+                background-color: #4e73df;
+                border-color: #4e73df;
+              }
+              
+              .input-group .btn {
+                border-left: 0;
+              }
+            </style>
+
+            <script>
+              (function(){
+                const typeSelect = document.getElementById('exercise_type');
+                const typeBlocks = {
+                  multiple_choice: document.getElementById('type_multiple_choice'),
+                  true_false: document.getElementById('type_true_false'),
+                  fill_blank: document.getElementById('type_fill_blank'),
+                  matching: document.getElementById('type_matching'),
+                  ordering: document.getElementById('type_ordering'),
+                  drag_drop: document.getElementById('type_drag_drop'),
+                  image_choice: document.getElementById('type_image_choice'),
+                  dialog_cards: document.getElementById('type_dialog_cards'),
+                  image_sequencing: document.getElementById('type_image_sequencing'),
+                  memory_game: document.getElementById('type_memory_game'),
+                  writing: null
+                };
+
+                function renderBlocks(){
+                  Object.values(typeBlocks).forEach(el => { if(el) el.style.display = 'none'; });
+                  const t = typeSelect.value;
+                  if(typeBlocks[t]){
+                    typeBlocks[t].style.display = '';
+                  }
+                  // Với writing chỉ cần câu hỏi, correct có thể bỏ trống
+                }
+
+                typeSelect.addEventListener('change', renderBlocks);
+                renderBlocks();
+
+                // Matching helpers - New separated approach
+                window.addMatchItem = function(side){
+                  const container = document.getElementById(`match_${side}_items`);
+                  const count = container.children.length + 1;
+                  const div = document.createElement('div');
+                  div.className = 'input-group mb-2';
+                  div.innerHTML = `
+                    <input type="text" class="form-control match-${side}" placeholder="Mục ${side === 'left' ? 'trái' : 'phải'} ${count}">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMatchItem(this, '${side}')">×</button>
+                  `;
+                  container.appendChild(div);
+                  updateMatchMapping();
+                }
+
+                window.removeMatchItem = function(btn, side){
+                  btn.parentElement.remove();
+                  updateMatchMapping();
+                }
+
+                function updateMatchMapping(){
+                  const leftItems = [...document.querySelectorAll('.match-left')].map(el => el.value.trim()).filter(Boolean);
+                  const rightItems = [...document.querySelectorAll('.match-right')].map(el => el.value.trim()).filter(Boolean);
+                  const mappingDiv = document.getElementById('match_mapping_setup');
+                  
+                  if (leftItems.length === 0 || rightItems.length === 0) {
+                    mappingDiv.innerHTML = '<em class="text-muted">Nhập các mục ở trên để thiết lập mapping...</em>';
+                    return;
+                  }
+
+                  if (leftItems.length !== rightItems.length) {
+                    mappingDiv.innerHTML = '<em class="text-warning">⚠️ Số lượng mục trái và phải phải bằng nhau!</em>';
+                    return;
+                  }
+
+                  // Create dropdown mapping interface
+                  let mappingHTML = '<div class="row">';
+                  leftItems.forEach((leftItem, index) => {
+                    mappingHTML += `
+                      <div class="col-md-6 mb-3">
+                        <div class="form-group">
+                          <label class="font-weight-bold text-primary">${leftItem}</label>
+                          <select class="form-control match-mapping-select" data-left="${leftItem}">
+                            <option value="">-- Chọn đáp án đúng --</option>
+                            ${rightItems.map(rightItem => 
+                              `<option value="${rightItem}">${rightItem}</option>`
+                            ).join('')}
+                          </select>
+                        </div>
+                      </div>
+                    `;
+                  });
+                  mappingHTML += '</div>';
+                  mappingHTML += '<div class="alert alert-success mt-2" id="mapping_preview" style="display:none;"></div>';
+                  mappingDiv.innerHTML = mappingHTML;
+
+                  // Add event listeners to mapping selects
+                  document.querySelectorAll('.match-mapping-select').forEach(select => {
+                    select.addEventListener('change', updateMappingPreview);
+                  });
+                }
+
+                function updateMappingPreview() {
+                  const mappingSelects = document.querySelectorAll('.match-mapping-select');
+                  const preview = document.getElementById('mapping_preview');
+                  const mappings = {};
+                  let allSelected = true;
+
+                  mappingSelects.forEach(select => {
+                    const leftItem = select.dataset.left;
+                    const rightItem = select.value;
+                    if (rightItem) {
+                      mappings[leftItem] = rightItem;
+                    } else {
+                      allSelected = false;
+                    }
+                  });
+
+                  if (allSelected && Object.keys(mappings).length > 0) {
+                    let previewHTML = '<strong>✓ Cặp ghép đã thiết lập:</strong><br>';
+                    Object.entries(mappings).forEach(([left, right]) => {
+                      previewHTML += `<span class="badge badge-primary mr-1">${left}</span> → <span class="badge badge-success mr-2">${right}</span>`;
+                    });
+                    preview.innerHTML = previewHTML;
+                    preview.style.display = 'block';
+                  } else {
+                    preview.style.display = 'none';
+                  }
+                }
+
+                // Initialize default matching items
+                addMatchItem('left'); addMatchItem('left');
+                addMatchItem('right'); addMatchItem('right');
+
+                // Drag & Drop helpers
+                window.addDragItem = function(){
+                  const container = document.getElementById('drag_items_container');
+                  const count = container.children.length + 1;
+                  const div = document.createElement('div');
+                  div.className = 'input-group mb-2';
+                  div.innerHTML = `
+                    <input type="text" class="form-control drag-item" placeholder="Mục kéo ${count}">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDragItem(this)">×</button>
+                  `;
+                  container.appendChild(div);
+                  updateDragDropMapping();
+                }
+
+                window.removeDragItem = function(btn){
+                  btn.parentElement.remove();
+                  updateDragDropMapping();
+                }
+
+                window.addDropTarget = function(){
+                  const container = document.getElementById('drop_targets_container');
+                  const count = container.children.length + 1;
+                  const div = document.createElement('div');
+                  div.className = 'input-group mb-2';
+                  div.innerHTML = `
+                    <input type="text" class="form-control drop-target" placeholder="Vùng đích ${count}">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDropTarget(this)">×</button>
+                  `;
+                  container.appendChild(div);
+                  updateDragDropMapping();
+                }
+
+                window.removeDropTarget = function(btn){
+                  btn.parentElement.remove();
+                  updateDragDropMapping();
+                }
+
+                function updateDragDropMapping(){
+                  const dragItems = [...document.querySelectorAll('.drag-item')].map(el => el.value || el.placeholder);
+                  const dropTargets = [...document.querySelectorAll('.drop-target')].map(el => el.value || el.placeholder);
+                  const mappingDiv = document.getElementById('drag_drop_mapping');
+                  
+                  mappingDiv.innerHTML = '';
+                  dragItems.forEach((item, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    div.innerHTML = `
+                      <label>${item} → </label>
+                      <select class="form-control drag-mapping" data-drag-index="${i}">
+                        <option value="">Chọn vùng đích...</option>
+                        ${dropTargets.map((target, j) => `<option value="${j}">${target}</option>`).join('')}
+                      </select>
+                    `;
+                    mappingDiv.appendChild(div);
+                  });
+                }
+
+                // Image Choice helpers
+                window.addImageOption = function(){
+                  const container = document.getElementById('image_options_container');
+                  const count = container.children.length + 1;
+                  const div = document.createElement('div');
+                  div.className = 'image-option-item border p-3 mb-3';
+                  div.innerHTML = `
+                    <div class="row">
+                      <div class="col-md-8">
+                        <input type="text" class="form-control image-url" placeholder="URL ảnh hoặc đường dẫn">
+                        <input type="text" class="form-control mt-2 image-caption" placeholder="Mô tả ảnh (tùy chọn)">
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input type="checkbox" class="form-check-input image-correct">
+                          <label class="form-check-label">Đáp án đúng</label>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeImageOption(this)">Xóa</button>
+                      </div>
+                    </div>
+                    <div class="image-preview mt-2" style="max-width: 200px; max-height: 150px; overflow: hidden;"></div>
+                  `;
+                  container.appendChild(div);
+                }
+
+                window.removeImageOption = function(btn){
+                  btn.closest('.image-option-item').remove();
+                }
+
+                // Dialog Cards helpers
+                window.addDialogCard = function(){
+                  const container = document.getElementById('dialog_cards_container');
+                  const div = document.createElement('div');
+                  div.className = 'card-item border p-3 mb-3';
+                  div.innerHTML = `
+                    <div class="row">
+                      <div class="col-md-6">
+                        <label>Mặt trước/Câu hỏi</label>
+                        <textarea class="form-control card-front" rows="2" placeholder="Nội dung mặt trước"></textarea>
+                      </div>
+                      <div class="col-md-6">
+                        <label>Mặt sau/Câu trả lời</label>
+                        <textarea class="form-control card-back" rows="2" placeholder="Nội dung mặt sau"></textarea>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeDialogCard(this)">Xóa thẻ</button>
+                  `;
+                  container.appendChild(div);
+                }
+
+                window.removeDialogCard = function(btn){
+                  btn.closest('.card-item').remove();
+                }
+
+                // Image Sequencing helpers
+                window.addSequenceItem = function(){
+                  const container = document.getElementById('image_sequence_container');
+                  const count = container.children.length + 1;
+                  const div = document.createElement('div');
+                  div.className = 'sequence-item border p-3 mb-3';
+                  div.setAttribute('data-order', count);
+                  div.innerHTML = `
+                    <div class="row">
+                      <div class="col-md-8">
+                        <input type="text" class="form-control sequence-image-url" placeholder="URL ảnh">
+                        <input type="text" class="form-control mt-2 sequence-caption" placeholder="Mô tả ảnh">
+                      </div>
+                      <div class="col-md-4">
+                        <label>Thứ tự đúng:</label>
+                        <input type="number" class="form-control sequence-order" value="${count}" min="1">
+                        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeSequenceItem(this)">Xóa</button>
+                      </div>
+                    </div>
+                    <div class="sequence-preview mt-2" style="max-width: 200px; max-height: 150px; overflow: hidden;"></div>
+                  `;
+                  container.appendChild(div);
+                }
+
+                window.removeSequenceItem = function(btn){
+                  btn.closest('.sequence-item').remove();
+                }
+
+                // Memory Game helpers
+                window.addMemoryPair = function(){
+                  const container = document.getElementById('memory_pairs_container');
+                  const div = document.createElement('div');
+                  div.className = 'memory-pair border p-3 mb-3';
+                  div.innerHTML = `
+                    <div class="row">
+                      <div class="col-md-6">
+                        <label>Thẻ 1</label>
+                        <input type="text" class="form-control memory-card1" placeholder="Nội dung thẻ 1">
+                      </div>
+                      <div class="col-md-6">
+                        <label>Thẻ 2 (cặp)</label>
+                        <input type="text" class="form-control memory-card2" placeholder="Nội dung thẻ 2">
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeMemoryPair(this)">Xóa cặp</button>
+                  `;
+                  container.appendChild(div);
+                }
+
+                window.removeMemoryPair = function(btn){
+                  btn.closest('.memory-pair').remove();
+                }
+
+                // Initialize default items
+                addDragItem(); addDropTarget();
+                addImageOption(); addImageOption();
+                addDialogCard();
+                addSequenceItem();
+                addMemoryPair();
+
+                // Add event listeners for dynamic updates
+                document.addEventListener('input', function(e) {
+                  if (e.target.classList.contains('drag-item') || e.target.classList.contains('drop-target')) {
+                    updateDragDropMapping();
+                  }
+                  
+                  // Update matching mapping when left/right items change
+                  if (e.target.classList.contains('match-left') || e.target.classList.contains('match-right')) {
+                    updateMatchMapping();
+                  }
+                  
+                  // Preview images when URL is entered
+                  if (e.target.classList.contains('image-url') || e.target.classList.contains('sequence-image-url')) {
+                    const url = e.target.value.trim();
+                    const previewDiv = e.target.closest('.image-option-item, .sequence-item').querySelector('.image-preview, .sequence-preview');
+                    if (url && previewDiv) {
+                      previewDiv.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: cover;" onerror="this.style.display='none'">`;
+                    } else if (previewDiv) {
+                      previewDiv.innerHTML = '';
+                    }
+                  }
+
+                  // Auto-extract fill blank answers from question
+                  if (e.target.name === 'question' && typeSelect.value === 'fill_blank') {
+                    extractFillBlankAnswers();
+                  }
+                });
+
+                // Function to extract fill blank answers from question text
+                function extractFillBlankAnswers() {
+                  const questionText = document.querySelector('textarea[name="question"]').value;
+                  const extractedDiv = document.getElementById('fb_extracted_answers');
+                  
+                  if (!questionText.trim()) {
+                    extractedDiv.innerHTML = '<em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để xem đáp án...</em>';
+                    return;
+                  }
+
+                  // Extract answers between * symbols
+                  const answerMatches = questionText.match(/\*([^*]+)\*/g);
+                  
+                  if (answerMatches && answerMatches.length > 0) {
+                    const answers = answerMatches.map(match => match.replace(/\*/g, '').trim());
+                    extractedDiv.innerHTML = `
+                      <div class="d-flex flex-wrap gap-2">
+                        ${answers.map((answer, index) => 
+                          `<span class="badge badge-primary">${index + 1}. ${answer}</span>`
+                        ).join('')}
+                      </div>
+                      <small class="text-success mt-1 d-block">✓ Tìm thấy ${answers.length} đáp án</small>
+                    `;
+                  } else {
+                    extractedDiv.innerHTML = '<em class="text-warning">Không tìm thấy đáp án. Hãy sử dụng ký hiệu *từ* trong câu hỏi.</em>';
+                  }
+                }
+
+                // Submit handler: build options & correct_answer
+                document.getElementById('form-add-question').addEventListener('submit', function(e){
+                  const t = typeSelect.value;
+                  const optionsField = document.getElementById('options_json');
+                  const correctField = document.getElementById('correct_answer_value');
+                  let options = null;
+                  let correct = '';
+
+                  try {
+                    if(t === 'multiple_choice'){
+                      const A = document.getElementById('mc_optionA').value || '';
+                      const B = document.getElementById('mc_optionB').value || '';
+                      const C = document.getElementById('mc_optionC').value || '';
+                      const D = document.getElementById('mc_optionD').value || '';
+                      options = [A,B,C,D].filter(v=>v!== '');
+                      correct = document.getElementById('mc_correct').value;
+                    } else if(t === 'true_false'){
+                      correct = document.getElementById('tf_correct').value; // 'true' | 'false'
+                      options = ['true','false'];
+                    } else if(t === 'fill_blank'){
+                      // Extract answers from question text using * symbols
+                      const questionText = document.querySelector('textarea[name="question"]').value;
+                      const answerMatches = questionText.match(/\*([^*]+)\*/g);
+                      
+                      if (answerMatches && answerMatches.length > 0) {
+                        const answers = answerMatches.map(match => match.replace(/\*/g, '').trim());
+                        correct = answers;
+                        
+                        // Also update the question to replace *word* with ___
+                        const cleanQuestion = questionText.replace(/\*([^*]+)\*/g, '___');
+                        document.querySelector('textarea[name="question"]').value = cleanQuestion;
+                      } else {
+                        correct = [];
+                      }
+                    } else if(t === 'matching'){
+                      const leftItems = [...document.querySelectorAll('.match-left')].map(el => el.value.trim()).filter(Boolean);
+                      const rightItems = [...document.querySelectorAll('.match-right')].map(el => el.value.trim()).filter(Boolean);
+                      
+                      if (leftItems.length !== rightItems.length) {
+                        alert('Số lượng mục trái và phải phải bằng nhau!');
+                        e.preventDefault();
+                        return;
+                      }
+                      
+                      // Get mapping from dropdowns
+                      const mappingSelects = document.querySelectorAll('.match-mapping-select');
+                      const correctMapping = {};
+                      let allMapped = true;
+                      
+                      mappingSelects.forEach(select => {
+                        const leftItem = select.dataset.left;
+                        const rightItem = select.value;
+                        if (rightItem) {
+                          correctMapping[leftItem] = rightItem;
+                        } else {
+                          allMapped = false;
+                        }
+                      });
+                      
+                      if (!allMapped) {
+                        alert('Vui lòng thiết lập đầy đủ cặp ghép cho tất cả mục!');
+                        e.preventDefault();
+                        return;
+                      }
+                      
+                      // Create pairs for backward compatibility
+                      const pairs = [];
+                      Object.entries(correctMapping).forEach(([left, right]) => {
+                        pairs.push({ left, right });
+                      });
+                      
+                      options = { 
+                        leftItems: leftItems,
+                        rightItems: rightItems,
+                        pairs: pairs // For backward compatibility
+                      };
+                      correct = correctMapping; // Custom mapping from admin
+                    } else if(t === 'ordering'){
+                      const items = (document.getElementById('ordering_items').value || '').split('\n').map(s=>s.trim()).filter(Boolean);
+                      options = { items };
+                      correct = items; // thứ tự đúng
+                    } else if(t === 'drag_drop'){
+                      const dragItems = [...document.querySelectorAll('.drag-item')].map(el => el.value.trim()).filter(Boolean);
+                      const dropTargets = [...document.querySelectorAll('.drop-target')].map(el => el.value.trim()).filter(Boolean);
+                      const mappings = {};
+                      [...document.querySelectorAll('.drag-mapping')].forEach(select => {
+                        const dragIndex = parseInt(select.dataset.dragIndex);
+                        const targetIndex = parseInt(select.value);
+                        if(!isNaN(targetIndex) && dragItems[dragIndex] && dropTargets[targetIndex]){
+                          mappings[dragItems[dragIndex]] = dropTargets[targetIndex];
+                        }
+                      });
+                      options = { dragItems, dropTargets };
+                      correct = mappings;
+                    } else if(t === 'image_choice'){
+                      const imageOptions = [];
+                      const correctAnswers = [];
+                      [...document.querySelectorAll('.image-option-item')].forEach((item, index) => {
+                        const url = item.querySelector('.image-url').value.trim();
+                        const caption = item.querySelector('.image-caption').value.trim();
+                        const isCorrect = item.querySelector('.image-correct').checked;
+                        if(url){
+                          imageOptions.push({ url, caption, index });
+                          if(isCorrect) correctAnswers.push(index);
+                        }
+                      });
+                      const choiceType = document.getElementById('image_choice_type').value;
+                      options = { type: choiceType, images: imageOptions };
+                      correct = choiceType === 'single' ? correctAnswers[0] : correctAnswers;
+                    } else if(t === 'dialog_cards'){
+                      const cards = [];
+                      [...document.querySelectorAll('.card-item')].forEach(item => {
+                        const front = item.querySelector('.card-front').value.trim();
+                        const back = item.querySelector('.card-back').value.trim();
+                        if(front && back){
+                          cards.push({ front, back });
+                        }
+                      });
+                      const dialogType = document.getElementById('dialog_type').value;
+                      options = { type: dialogType, cards };
+                      correct = cards; // Tất cả các thẻ đều là đáp án đúng
+                    } else if(t === 'image_sequencing'){
+                      const sequences = [];
+                      [...document.querySelectorAll('.sequence-item')].forEach(item => {
+                        const url = item.querySelector('.sequence-image-url').value.trim();
+                        const caption = item.querySelector('.sequence-caption').value.trim();
+                        const order = parseInt(item.querySelector('.sequence-order').value);
+                        if(url && !isNaN(order)){
+                          sequences.push({ url, caption, order });
+                        }
+                      });
+                      sequences.sort((a, b) => a.order - b.order);
+                      options = { sequences };
+                      correct = sequences.map(s => s.order);
+                    } else if(t === 'memory_game'){
+                      const pairs = [];
+                      [...document.querySelectorAll('.memory-pair')].forEach(item => {
+                        const card1 = item.querySelector('.memory-card1').value.trim();
+                        const card2 = item.querySelector('.memory-card2').value.trim();
+                        if(card1 && card2){
+                          pairs.push({ card1, card2 });
+                        }
+                      });
+                      const memoryType = document.getElementById('memory_type').value;
+                      options = { type: memoryType, pairs };
+                      correct = pairs; // Tất cả các cặp đều là đáp án đúng
+                    } else if(t === 'writing'){
+                      // không có options; correct có thể để trống hoặc gợi ý
+                      options = null;
+                      correct = '';
+                    }
+                  } catch(err){
+                    alert('Dữ liệu không hợp lệ: ' + err.message);
+                    e.preventDefault();
+                    return;
+                  }
+
+                  // Gán về hidden fields
+                  optionsField.value = options != null ? JSON.stringify(options) : '';
+                  correctField.value = (typeof correct === 'string') ? correct : JSON.stringify(correct);
+                });
+
+                // Edit question function
+                window.editQuestion = function(exerciseId, exerciseType) {
+                  if (confirm('Bạn có muốn sửa câu hỏi này không?')) {
+                    window.location.href = `/admin/baitap/cauhoi/edit/${exerciseId}`;
+                  }
+                };
+              })();
+            </script>
 
           </div>
         </div>

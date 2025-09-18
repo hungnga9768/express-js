@@ -1,5 +1,6 @@
 const Lesson = require("../../models/baihoc");
 const Course = require("../../models/khoahoc");
+const lessonVocabulary = require("../../models/lesson-vocabulary");
 const { listItems } = require("../../utils/listItemsAPI");
 
 module.exports = {
@@ -83,6 +84,44 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra khi lấy danh sách bài học'
+      });
+    }
+  },
+
+  // Lấy từ vựng theo bài học
+  async getVocabularyByLesson(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Lesson ID là bắt buộc"
+        });
+      }
+
+      // Kiểm tra bài học có tồn tại không
+      const lesson = await Lesson.getById(id);
+      if (!lesson) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy bài học'
+        });
+      }
+
+      const vocabulary = await lessonVocabulary.getVocabularyByLesson(id);
+      
+      res.json({
+        success: true,
+        data: vocabulary,
+        message: "Đã tải từ vựng theo bài học thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy từ vựng theo bài học:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy từ vựng",
+        error: error.message
       });
     }
   },

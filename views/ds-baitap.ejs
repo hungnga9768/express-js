@@ -56,7 +56,7 @@
             <% if (data && data.length > 0) { %>
               <% data.forEach(function(baitap) { %>
                 <tr>
-                  <td><%= baitap.exercise_set_id %></td>
+                  <td><%= baitap.set_id %></td>
                   <td>
                     <%= (listbaihoc.find(baihoc => baihoc.lesson_id === baitap.lesson_id) || {}).title || "Không rõ" %>
                   </td>
@@ -64,14 +64,14 @@
                   <td><%= baitap.description || '' %></td>
                   <td>
                     <a
-                      href="/admin/baitap/edit/<%= baitap.exercise_set_id %>"
+                      href="/admin/baitap/edit/<%= baitap.set_id %>"
                       class="btn btn-sm btn-warning"
                       title="Sửa bộ bài tập và câu hỏi"
                     >
                       <i class="fa fa-edit"></i> Sửa
                     </a>
                     <form
-                      action="/admin/baitap/delete/<%= baitap.exercise_set_id %>"
+                      action="/admin/baitap/delete/<%= baitap.set_id %>"
                       method="POST"
                       style="display: inline-block"
                       onsubmit="return confirm('Bạn có chắc muốn xóa bộ bài tập này không?');"

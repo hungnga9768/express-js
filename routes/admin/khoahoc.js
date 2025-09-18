@@ -15,4 +15,11 @@ router.post("/edit-khoahoc/:id", uploadThumbnail, courseCtrl.update);
 router.post("/delete-khoahoc/:id", courseCtrl.remove);
 router.post("/update-multiple", courseCtrl.updateMultipleCourses);
 
+// ========================================
+// API ROUTES FOR LESSONS MANAGEMENT
+// ========================================
+router.get("/course/:courseId/lessons", courseCtrl.getLessonsByCourse);
+router.post("/lesson/api/create", courseCtrl.createLessonViaAjax);
+router.post("/lesson/api/:id/delete", courseCtrl.deleteLessonViaAjax);
+
 module.exports = router;

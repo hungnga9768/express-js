@@ -229,4 +229,116 @@ module.exports = {
 
     res.json({ success: true, results });
   },
+
+  // ========================================
+  // API ENDPOINTS FOR LESSONS MANAGEMENT
+  // ========================================
+
+  // Lấy danh sách bài học theo khóa học
+  async getLessonsByCourse(req, res) {
+    try {
+      const { courseId } = req.params;
+      
+      if (!courseId) {
+        return res.status(400).json({
+          success: false,
+          message: "Course ID là bắt buộc"
+        });
+      }
+
+      const lessons = await Lessons.getcourseId(courseId);
+      
+      res.json({
+        success: true,
+        data: lessons,
+        message: "Đã tải bài học theo khóa học thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy bài học theo khóa học:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy bài học",
+        error: error.message
+      });
+    }
+  },
+
+  // Tạo bài học mới qua AJAX
+  async createLessonViaAjax(req, res) {
+    try {
+      const { title, course_id, description, content_type } = req.body;
+      
+      if (!title || !course_id) {
+        return res.status(400).json({
+          success: false,
+          message: "Tiêu đề và Course ID là bắt buộc"
+        });
+      }
+
+      // Lấy display_order tiếp theo
+      const existingLessons = await Lessons.getcourseId(course_id);
+      const nextDisplayOrder = existingLessons.length > 0 
+        ? Math.max(...existingLessons.map(l => l.display_order || 0)) + 1 
+        : 1;
+
+      const newLesson = {
+        title,
+        course_id,
+        description: description || '',
+        content_type: content_type || 'video',
+        display_order: nextDisplayOrder,
+        is_preview: 0
+      };
+
+      const result = await Lessons.create(newLesson);
+      
+      res.status(201).json({
+        success: true,
+        data: { lesson_id: result.insertId, ...newLesson },
+        message: "Đã tạo bài học thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi tạo bài học:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi tạo bài học",
+        error: error.message
+      });
+    }
+  },
+
+  // Xóa bài học qua AJAX
+  async deleteLessonViaAjax(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Lesson ID là bắt buộc"
+        });
+      }
+
+      const result = await Lessons.delete(id);
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy bài học"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Đã xóa bài học thành công"
+      });
+    } catch (error) {
+      console.error("Lỗi khi xóa bài học:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi xóa bài học",
+        error: error.message
+      });
+    }
+  }
 };
