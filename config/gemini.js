@@ -9,6 +9,6 @@ if (!GEMINI_API_KEY) {
 module.exports = {
   GEMINI_API_KEY,
 
-  DEFAULT_GEMINI_MODEL: "gemini-2.0-flash",
-  MAX_OUTPUT_TOKENS: 500,
+  DEFAULT_GEMINI_MODEL: "gemini-2.0-flash-lite",
+  MAX_OUTPUT_TOKENS: 4000, // Tăng lên để đủ chỗ cho nhiều câu hỏi
 };

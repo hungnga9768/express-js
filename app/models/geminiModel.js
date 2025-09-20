@@ -15,11 +15,11 @@ class GeminiModel {
    * @param {string} systemInstructionContent - Chuỗi hướng dẫn hệ thống cho AI (initial_prompt).
    * @returns {object} - Đối tượng chat session của Gemini.
    */
-  startChatSession(historyForGemini = [], systemInstructionContent = null) {
+  startChatSession(historyForGemini = [], systemInstructionContent = null, maxOutputTokens = null) {
     const chatOptions = {
       history: historyForGemini, // Lịch sử này chỉ chứa user/model messages
       generationConfig: {
-        maxOutputTokens: config.MAX_OUTPUT_TOKENS,
+        maxOutputTokens: maxOutputTokens || config.MAX_OUTPUT_TOKENS,
       },
     };
 
@@ -68,12 +68,13 @@ startTranslationSession(sourceLang, targetLang, systemInstructionContent = null)
     const response = await result.response;
     return response.text();
   }
- async generateSingleResponse(promptTextForUserRole, systemInstructionText = null) {
+ async generateSingleResponse(promptTextForUserRole, systemInstructionText = null, maxOutputTokens = null) {
   const history = promptTextForUserRole
     ? [{ role: "user", parts: [{ text: promptTextForUserRole }] }]
     : [];
 
-  const chatSessionToUse = this.startChatSession(history, systemInstructionText);
+  // Use custom maxOutputTokens if provided, otherwise use default
+  const chatSessionToUse = this.startChatSession(history, systemInstructionText, maxOutputTokens);
 
   let messageToSend = " "; // Mặc định
 

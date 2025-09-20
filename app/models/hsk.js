@@ -79,8 +79,28 @@ module.exports = {
   },
 
   async deleteTest(id) {
-    const [result] = await pool.query("DELETE FROM hsktests WHERE test_id = ?", [id]);
-    return result.affectedRows; // Trả về số dòng bị xóa
+    try {
+      // Bắt đầu transaction để đảm bảo tính toàn vẹn dữ liệu
+      await pool.query('START TRANSACTION');
+      
+      // Xóa tất cả kết quả thi liên quan trước
+      await pool.query("DELETE FROM hskresults WHERE test_id = ?", [id]);
+      
+      // Xóa tất cả câu hỏi liên quan
+      await pool.query("DELETE FROM hskquestions WHERE test_id = ?", [id]);
+      
+      // Cuối cùng xóa đề thi
+      const [result] = await pool.query("DELETE FROM hsktests WHERE test_id = ?", [id]);
+      
+      // Commit transaction
+      await pool.query('COMMIT');
+      
+      return result.affectedRows; // Trả về số dòng bị xóa
+    } catch (error) {
+      // Rollback nếu có lỗi
+      await pool.query('ROLLBACK');
+      throw error;
+    }
   },
 
   async getQuestionsByTest(testId) {
@@ -237,13 +257,14 @@ module.exports = {
         GROUP BY skill_type
       `);
       
+      // Kiểm tra xem column duration_seconds có tồn tại không
       const [timeStats] = await pool.query(`
         SELECT 
-          AVG(duration_seconds) as avg_duration,
-          MIN(duration_seconds) as min_duration,
-          MAX(duration_seconds) as max_duration
+          AVG(TIMESTAMPDIFF(SECOND, start_time, end_time)) as avg_duration,
+          MIN(TIMESTAMPDIFF(SECOND, start_time, end_time)) as min_duration,
+          MAX(TIMESTAMPDIFF(SECOND, start_time, end_time)) as max_duration
         FROM hskresults 
-        WHERE duration_seconds > 0
+        WHERE start_time IS NOT NULL AND end_time IS NOT NULL
       `);
 
       return {
@@ -256,16 +277,36 @@ module.exports = {
         timeStats: timeStats[0] || {}
       };
     } catch (error) {
-      console.error("Error getting dashboard stats:", error);
-      return {
-        totalTests: 0,
-        totalQuestions: 0,
-        activeTests: 0,
-        totalAttempts: 0,
-        hskLevels: [],
-        skillTypes: [],
-        timeStats: {}
-      };
+      console.error('Error getting dashboard stats:', error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách bài thi gần đây
+  async getRecentTests(limit = 10) {
+    try {
+      const [tests] = await pool.query(`
+        SELECT 
+          t.test_id,
+          t.title,
+          t.hsk_level,
+          t.time_limit,
+          t.is_active,
+          t.created_at,
+          COUNT(q.question_id) as question_count,
+          COUNT(r.result_id) as attempt_count
+        FROM hsktests t
+        LEFT JOIN hskquestions q ON t.test_id = q.test_id
+        LEFT JOIN hskresults r ON t.test_id = r.test_id
+        GROUP BY t.test_id
+        ORDER BY t.created_at DESC
+        LIMIT ?
+      `, [limit]);
+      
+      return tests;
+    } catch (error) {
+      console.error('Error getting recent tests:', error);
+      throw error;
     }
   },
 

@@ -1,5 +1,7 @@
 const dsBaitap = require("../../models/baitap");
+const dsKhoahoc = require("../../models/khoahoc");
 const dsBaihoc = require("../../models/baihoc");
+const geminiModel = require("../../models/geminiModel");
 const db = require("../../../connect-mysql");
 
 // Helper: normalize and validate exercise payload from form/API
@@ -150,6 +152,7 @@ function processExercisePayload(body, files) {
       processedCorrectAnswer = JSON.stringify(arr);
     }
   }
+
 
   // Media files (generic, stored as JSON)
   const media = {};
@@ -512,5 +515,385 @@ module.exports = {
         error: error.message
       });
     }
+  },
+
+  // ========================================
+  // AI QUESTION GENERATION METHODS
+  // ========================================
+
+  // Tạo câu hỏi bằng AI
+  async generateAIQuestions(req, res) {
+    try {
+      const { topic, questionType, count, difficulty, additional, setId } = req.body;
+      
+      if (!topic || !questionType || !count || !setId) {
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu thông tin bắt buộc: topic, questionType, count, setId"
+        });
+      }
+
+      // Tạo prompt cho AI
+      const prompt = createAIPrompt(topic, questionType, count, difficulty, additional);
+      
+      console.log("AI Prompt:", prompt);
+      
+      // Gọi AI để tạo câu hỏi với dynamic max tokens
+      const estimatedTokens = Math.max(1000, count * 400); // ~400 tokens per question
+      const maxTokens = Math.min(estimatedTokens, 8000); // Cap at 8000
+      
+      console.log(`Estimated tokens needed: ${estimatedTokens}, using: ${maxTokens}`);
+      
+      const aiResponse = await geminiModel.generateSingleResponse(prompt, null, maxTokens);
+      
+      console.log("AI Response:", aiResponse);
+      
+      // Parse JSON response từ AI
+      let questions;
+      try {
+        // Clean up AI response - remove markdown code blocks if any
+        let cleanResponse = aiResponse.trim();
+        if (cleanResponse.startsWith('```json')) {
+          cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+        }
+        if (cleanResponse.startsWith('```')) {
+          cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/```\s*$/, '');
+        }
+        
+        // Tìm JSON trong response (có thể có text khác xung quanh)
+        const jsonMatch = cleanResponse.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          let jsonStr = jsonMatch[0];
+          
+          // Try to fix incomplete JSON by finding the last complete object
+          if (!jsonStr.endsWith(']')) {
+            const lastCompleteObject = jsonStr.lastIndexOf('},');
+            if (lastCompleteObject > -1) {
+              jsonStr = jsonStr.substring(0, lastCompleteObject + 1) + ']';
+            }
+          }
+          
+          questions = JSON.parse(jsonStr);
+        } else {
+          throw new Error("Không tìm thấy JSON trong response");
+        }
+      } catch (parseError) {
+        console.error("Lỗi parse JSON từ AI:", parseError);
+        console.error("AI Response:", aiResponse);
+        
+        // Try alternative parsing - extract individual objects
+        try {
+          const objectMatches = aiResponse.match(/\{[^{}]*"exercise_type"[^{}]*\}/g);
+          if (objectMatches && objectMatches.length > 0) {
+            questions = objectMatches.map(match => {
+              try {
+                return JSON.parse(match);
+              } catch (e) {
+                return null;
+              }
+            }).filter(q => q !== null);
+            
+            if (questions.length === 0) {
+              throw new Error("Không thể parse được câu hỏi nào");
+            }
+          } else {
+            throw new Error("Không tìm thấy câu hỏi hợp lệ");
+          }
+        } catch (altParseError) {
+          return res.status(500).json({
+            success: false,
+            message: "AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.",
+            error: parseError.message,
+            aiResponse: aiResponse.substring(0, 500) + "..." // Limit response size
+          });
+        }
+      }
+
+      // Validate và chuẩn hóa câu hỏi
+      const validatedQuestions = validateAndNormalizeQuestions(questions, questionType);
+      
+      if (validatedQuestions.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "Không có câu hỏi hợp lệ nào được tạo"
+        });
+      }
+
+      res.json({
+        success: true,
+        data: validatedQuestions,
+        message: `Đã tạo thành công ${validatedQuestions.length} câu hỏi`
+      });
+
+    } catch (error) {
+      console.error("Lỗi khi tạo câu hỏi AI:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi tạo câu hỏi AI",
+        error: error.message
+      });
+    }
+  },
+
+  // Lưu câu hỏi AI vào database
+  async saveAIQuestions(req, res) {
+    try {
+      const { questions, setId } = req.body;
+      
+      if (!questions || !Array.isArray(questions) || questions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Danh sách câu hỏi không hợp lệ"
+        });
+      }
+
+      if (!setId) {
+        return res.status(400).json({
+          success: false,
+          message: "Set ID là bắt buộc"
+        });
+      }
+
+      let savedCount = 0;
+      const errors = [];
+
+      // Lưu từng câu hỏi
+      for (let i = 0; i < questions.length; i++) {
+        try {
+          const question = questions[i];
+          
+          // Validate câu hỏi
+          if (!question.question_text || !question.exercise_type) {
+            errors.push(`Câu ${i + 1}: Thiếu thông tin bắt buộc`);
+            continue;
+          }
+
+          // Chuẩn bị dữ liệu để lưu
+          const processedOptions = question.options ? JSON.stringify(question.options) : null;
+          const processedCorrectAnswer = typeof question.correct_answer === 'object' 
+            ? JSON.stringify(question.correct_answer) 
+            : question.correct_answer;
+          const exerciseData = {
+            set_id: setId,
+            exercise_type: question.exercise_type,
+            question: question.question_text,
+            options: processedOptions,
+            correct_answer: processedCorrectAnswer,
+            explanation: question.explanation || null
+          };
+
+          // Lưu vào database
+          await dsBaitap.createcauhoi(exerciseData);
+          savedCount++;
+
+        } catch (saveError) {
+          console.error(`Lỗi lưu câu hỏi ${i + 1}:`, saveError);
+          errors.push(`Câu ${i + 1}: ${saveError.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        saved: savedCount,
+        total: questions.length,
+        errors: errors.length > 0 ? errors : null,
+        message: `Đã lưu thành công ${savedCount}/${questions.length} câu hỏi`
+      });
+
+    } catch (error) {
+      console.error("Lỗi khi lưu câu hỏi AI:", error);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lưu câu hỏi",
+        error: error.message
+      });
+    }
   }
 };
+
+// ========================================
+// AI HELPER FUNCTIONS
+// ========================================
+
+function createAIPrompt(topic, questionType, count, difficulty, additional) {
+  const difficultyMap = {
+    beginner: "cơ bản, dễ hiểu",
+    intermediate: "trung bình, vừa phải", 
+    advanced: "nâng cao, khó"
+  };
+
+  const typeMap = {
+    multiple_choice: "trắc nghiệm với 4 lựa chọn A, B, C, D",
+    true_false: "đúng/sai",
+    fill_blank: "điền vào chỗ trống",
+    matching: "ghép đôi",
+    writing: "tự luận"
+  };
+
+  let prompt = `Bạn là một chuyên gia giáo dục tiếng Trung. Hãy tạo ${count} câu hỏi ${typeMap[questionType]} về chủ đề "${topic}" với độ khó ${difficultyMap[difficulty]}.
+
+${additional ? `Yêu cầu bổ sung: ${additional}` : ''}
+
+QUAN TRỌNG: Chỉ trả về JSON array hoàn chỉnh, không thêm text hay markdown nào khác.
+
+Định dạng JSON cần trả về:
+
+[`;
+
+  for (let i = 0; i < count; i++) {
+    if (i > 0) prompt += ',';
+    
+    prompt += `
+  {
+    "exercise_type": "${questionType}",
+    "question_text": "Câu hỏi ${i + 1}",`;
+
+    if (questionType === 'multiple_choice') {
+      prompt += `
+    "options": ["A. Đáp án 1", "B. Đáp án 2", "C. Đáp án 3", "D. Đáp án 4"],
+    "correct_answer": "A",`;
+    } else if (questionType === 'true_false') {
+      prompt += `
+    "options": ["true", "false"],
+    "correct_answer": "true",`;
+    } else if (questionType === 'fill_blank') {
+      prompt += `
+    "options": ["từ1", "từ2", "từ3", "từ4"],
+    "correct_answer": ["từ1", "từ2", "từ3"],`;
+    } else if (questionType === 'matching') {
+      prompt += `
+    "options": {
+      "pairs": [{"left": "item1", "right": "match1"}, {"left": "item2", "right": "match2"}],
+      "leftItems": ["item1", "item2"],
+      "rightItems": ["match1", "match2"]
+    },
+    "correct_answer": {"item1": "match1", "item2": "match2"},`;
+    } else {
+      prompt += `
+    "correct_answer": "Đáp án mẫu",`;
+    }
+
+    prompt += `
+    "explanation": "Giải thích chi tiết"
+  }`;
+  }
+
+  prompt += `
+]
+
+QUAN TRỌNG - Tuân thủ nghiêm ngặt:
+1. CHỈ trả về JSON array hoàn chỉnh như trên
+2. KHÔNG thêm markdown, backticks, hoặc text giải thích
+3. Câu hỏi phải về tiếng Trung (từ vựng, ngữ pháp, văn hóa)
+4. Đáp án chính xác với giải thích rõ ràng
+5. Trắc nghiệm: correct_answer là "A", "B", "C" hoặc "D"
+6. Đúng/sai: 
+   - options PHẢI là ["true", "false"] (KHÔNG được dùng "Đúng", "Sai")
+   - correct_answer là "true" hoặc "false" (KHÔNG được dùng "Đúng", "Sai")
+7. Điền chỗ trống: 
+   - question_text có dạng: "我______想去______的地方看看，______是去遥远的中国。" (dùng ______ cho mỗi chỗ trống)
+   - options là array các từ để chọn (có thể nhiều hơn số chỗ trống)
+   - correct_answer là array các từ đúng theo thứ tự chỗ trống
+8. Ghép đôi: 
+   - options có format: {"pairs": [{"left": "item1", "right": "match1"}], "leftItems": ["item1"], "rightItems": ["match1"]}
+   - correct_answer là object mapping: {"item1": "match1"}
+
+VÍ DỤ ĐÚNG cho câu hỏi true/false:
+{
+  "exercise_type": "true_false",
+  "question_text": "Từ '你好' có nghĩa là 'xin chào' trong tiếng Trung.",
+  "options": ["true", "false"],
+  "correct_answer": "true",
+  "explanation": "Từ '你好' (nǐ hǎo) có nghĩa là 'xin chào' trong tiếng Trung."
+}
+
+Bắt đầu JSON ngay bây giờ:`;
+
+  return prompt;
+}
+
+function validateAndNormalizeQuestions(questions, expectedType) {
+  if (!Array.isArray(questions)) {
+    return [];
+  }
+
+  return questions.filter(q => {
+    // Kiểm tra các field bắt buộc
+    if (!q.question_text || !q.exercise_type || !q.correct_answer) {
+      return false;
+    }
+
+    // Kiểm tra type khớp
+    if (q.exercise_type !== expectedType) {
+      q.exercise_type = expectedType; // Sửa type nếu cần
+    }
+
+    // Validate theo từng loại
+    try {
+      switch (q.exercise_type) {
+        case 'multiple_choice':
+          if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+            return false;
+          }
+          if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
+            return false;
+          }
+          break;
+
+        case 'true_false':
+          if (!['true', 'false'].includes(q.correct_answer)) {
+            return false;
+          }
+          if (!q.options || !Array.isArray(q.options) || q.options.length !== 2) {
+            return false;
+          }
+          break;
+
+        case 'fill_blank':
+          if (typeof q.correct_answer === 'string') {
+            q.correct_answer = [q.correct_answer]; // Chuyển thành array
+          }
+          if (!Array.isArray(q.correct_answer)) {
+            return false;
+          }
+          break;
+
+        case 'matching':
+          if (typeof q.correct_answer !== 'object' || Array.isArray(q.correct_answer)) {
+            return false;
+          }
+          // Validate matching options format
+          if (!q.options || !q.options.pairs || !q.options.leftItems || !q.options.rightItems) {
+            // Try to convert old format to new format
+            if (q.options && q.options.left && q.options.right) {
+              const pairs = [];
+              const leftItems = q.options.left;
+              const rightItems = q.options.right;
+              
+              // Create pairs from left-right mapping in correct_answer
+              Object.keys(q.correct_answer).forEach(leftItem => {
+                pairs.push({
+                  left: leftItem,
+                  right: q.correct_answer[leftItem]
+                });
+              });
+              
+              q.options = {
+                pairs: pairs,
+                leftItems: leftItems,
+                rightItems: rightItems
+              };
+            } else {
+              return false;
+            }
+          }
+          break;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Validation error:', error);
+      return false;
+    }
+  });
+}

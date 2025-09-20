@@ -101,14 +101,14 @@
               <!-- FILL BLANK -->
               <div class="type-block" id="type_fill_blank" style="display:none;">
                 <div class="alert alert-info">
-                  <strong>💡 Hướng dẫn:</strong> Sử dụng ký hiệu <code>*từ*</code> để đánh dấu đáp án. 
-                  <br>Ví dụ: "Tôi thích *học* tiếng Anh vì nó rất *dễ*"
-                  <br>→ Hệ thống sẽ tự động tạo: "Tôi thích ___ tiếng Anh vì nó rất ___" và đáp án ["học", "dễ"]
+                  <strong>💡 Hướng dẫn:</strong> Sử dụng ký hiệu <code>*từ*</code> để đánh dấu đáp án trong câu hỏi. 
+                  <br>Ví dụ: "我*最*想去*特别*的地方看看，*尤其*是去遥远的中国。"
+                  <br><small class="text-muted">Hệ thống sẽ tự động trích xuất đáp án và chuyển *từ* thành ______ (6 gạch chân)</small>
                 </div>
                 <div class="form-group">
                   <label>Đáp án được trích xuất tự động:</label>
                   <div id="fb_extracted_answers" class="form-control" style="background-color: #f8f9fa; min-height: 38px; padding: 8px;">
-                    <em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để xem đáp án...</em>
+                    <em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để trích xuất đáp án...</em>
                   </div>
                 </div>
               </div>
@@ -645,7 +645,7 @@
       const extractedDiv = document.getElementById('fb_extracted_answers');
       
       if (!questionText.trim()) {
-        extractedDiv.innerHTML = '<em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để xem đáp án...</em>';
+        extractedDiv.innerHTML = '<em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để trích xuất đáp án...</em>';
         return;
       }
 
@@ -661,6 +661,7 @@
             ).join('')}
           </div>
           <small class="text-success mt-1 d-block">✓ Tìm thấy ${answers.length} đáp án</small>
+          <small class="text-info mt-1 d-block">💡 Khi lưu, *từ* sẽ được chuyển thành ______ (6 gạch chân)</small>
         `;
       } else {
         extractedDiv.innerHTML = '<em class="text-warning">Không tìm thấy đáp án. Hãy sử dụng ký hiệu *từ* trong câu hỏi.</em>';
@@ -1131,12 +1132,15 @@
           if (answerMatches && answerMatches.length > 0) {
             const answers = answerMatches.map(match => match.replace(/\*/g, '').trim());
             correct = answers;
+            options = answers; // Just use the extracted answers as options
             
-            // Also update the question to replace *word* with ___
-            const cleanQuestion = questionText.replace(/\*([^*]+)\*/g, '___');
+            // Convert *word* to ______ (6 underscores) in question text
+            const cleanQuestion = questionText.replace(/\*([^*]+)\*/g, '______');
             document.querySelector('textarea[name="question"]').value = cleanQuestion;
           } else {
-            correct = [];
+            alert('Vui lòng sử dụng ký hiệu *từ* để đánh dấu đáp án trong câu hỏi');
+            e.preventDefault();
+            return;
           }
         } else if(t === 'matching'){
           const leftItems = [...document.querySelectorAll('.match-left')].map(el => el.value.trim()).filter(Boolean);

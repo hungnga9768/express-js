@@ -139,7 +139,12 @@
             </div>
             
             <hr />
-            <h4>➕ Thêm Câu Hỏi Mới Cho Bài Tập: "<%= baitap.title %>"</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4>➕ Thêm Câu Hỏi Mới Cho Bài Tập: "<%= baitap.title %>"</h4>
+              <button type="button" class="btn btn-success" id="btn-create-with-ai">
+                <i class="fas fa-robot"></i> Tạo bằng AI
+              </button>
+            </div>
               <form id="form-add-question" method="POST" action="/admin/baitap/cauhoi/add">
   <input type="hidden" name="set_id" value="<%= baitap.set_id %>">
 
@@ -214,14 +219,14 @@
   <!-- FILL BLANK -->
   <div class="type-block" id="type_fill_blank" style="display:none;">
     <div class="alert alert-info">
-      <strong>💡 Hướng dẫn:</strong> Sử dụng ký hiệu <code>*từ*</code> để đánh dấu đáp án. 
-      <br>Ví dụ: "Tôi thích *học* tiếng Anh vì nó rất *dễ*"
-      <br>→ Hệ thống sẽ tự động tạo: "Tôi thích ___ tiếng Anh vì nó rất ___" và đáp án ["học", "dễ"]
+      <strong>💡 Hướng dẫn:</strong> Sử dụng ký hiệu <code>*từ*</code> để đánh dấu đáp án trong câu hỏi. 
+      <br>Ví dụ: "我*最*想去*特别*的地方看看，*尤其*是去遥远的中国。"
+      <br><small class="text-muted">Hệ thống sẽ tự động trích xuất đáp án và chuyển *từ* thành ______ (6 gạch chân)</small>
     </div>
     <div class="form-group">
       <label>Đáp án được trích xuất tự động:</label>
       <div id="fb_extracted_answers" class="form-control" style="background-color: #f8f9fa; min-height: 38px; padding: 8px;">
-        <em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để xem đáp án...</em>
+        <em class="text-muted">Nhập câu hỏi với ký hiệu ____ để xem đáp án...</em>
       </div>
     </div>
   </div>
@@ -785,7 +790,7 @@
                   const extractedDiv = document.getElementById('fb_extracted_answers');
                   
                   if (!questionText.trim()) {
-                    extractedDiv.innerHTML = '<em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để xem đáp án...</em>';
+                    extractedDiv.innerHTML = '<em class="text-muted">Nhập câu hỏi với ký hiệu *từ* để trích xuất đáp án...</em>';
                     return;
                   }
 
@@ -801,6 +806,7 @@
                         ).join('')}
                       </div>
                       <small class="text-success mt-1 d-block">✓ Tìm thấy ${answers.length} đáp án</small>
+                      <small class="text-info mt-1 d-block">💡 Khi lưu, *từ* sẽ được chuyển thành ______ (6 gạch chân)</small>
                     `;
                   } else {
                     extractedDiv.innerHTML = '<em class="text-warning">Không tìm thấy đáp án. Hãy sử dụng ký hiệu *từ* trong câu hỏi.</em>';
@@ -834,12 +840,15 @@
                       if (answerMatches && answerMatches.length > 0) {
                         const answers = answerMatches.map(match => match.replace(/\*/g, '').trim());
                         correct = answers;
+                        options = answers; // Just use the extracted answers as options
                         
-                        // Also update the question to replace *word* with ___
-                        const cleanQuestion = questionText.replace(/\*([^*]+)\*/g, '___');
+                        // Convert *word* to ______ in question text
+                        const cleanQuestion = questionText.replace(/\*([^*]+)\*/g, '______');
                         document.querySelector('textarea[name="question"]').value = cleanQuestion;
                       } else {
-                        correct = [];
+                        alert('Vui lòng sử dụng ký hiệu *từ* để đánh dấu đáp án trong câu hỏi');
+                        e.preventDefault();
+                        return;
                       }
                     } else if(t === 'matching'){
                       const leftItems = [...document.querySelectorAll('.match-left')].map(el => el.value.trim()).filter(Boolean);
@@ -975,6 +984,292 @@
                     window.location.href = `/admin/baitap/cauhoi/edit/${exerciseId}`;
                   }
                 };
+
+                // AI Question Generation
+                document.getElementById('btn-create-with-ai').addEventListener('click', function() {
+                  showAIModal();
+                });
+
+                function showAIModal() {
+                  const modalHtml = `
+                    <div class="modal fade" id="aiQuestionModal" tabindex="-1" role="dialog">
+                      <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h4 class="modal-title">
+                              <i class="fas fa-robot text-success"></i> 
+                              Tạo Câu Hỏi Bằng AI
+                            </h4>
+                            <button type="button" class="close" data-dismiss="modal">
+                              <span>&times;</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                            <form id="ai-form">
+                              <div class="form-group">
+                                <label for="ai-topic">
+                                  <i class="fas fa-lightbulb"></i> Chủ đề/Nội dung:
+                                </label>
+                                <input type="text" id="ai-topic" class="form-control" 
+                                       placeholder="VD: Từ vựng HSK1, Ngữ pháp quá khứ, Số đếm..." required>
+                              </div>
+                              
+                              <div class="form-group">
+                                <label for="ai-question-type">
+                                  <i class="fas fa-cogs"></i> Loại câu hỏi:
+                                </label>
+                                <select id="ai-question-type" class="form-control" required>
+                                  <option value="multiple_choice">Trắc nghiệm</option>
+                                  <option value="true_false">Đúng/Sai</option>
+                                  <option value="fill_blank">Điền vào chỗ trống</option>
+                                  <option value="matching">Ghép đôi</option>
+                                  <option value="writing">Tự luận</option>
+                                </select>
+                              </div>
+                              
+                              <div class="form-group">
+                                <label for="ai-count">
+                                  <i class="fas fa-hashtag"></i> Số lượng câu hỏi:
+                                </label>
+                                <select id="ai-count" class="form-control" required>
+                                  <option value="1">1 câu</option>
+                                  <option value="3" selected>3 câu</option>
+                                  <option value="5">5 câu</option>
+                                  <option value="10">10 câu</option>
+                                </select>
+                              </div>
+                              
+                              <div class="form-group">
+                                <label for="ai-difficulty">
+                                  <i class="fas fa-chart-line"></i> Độ khó:
+                                </label>
+                                <select id="ai-difficulty" class="form-control" required>
+                                  <option value="beginner">Cơ bản</option>
+                                  <option value="intermediate" selected>Trung bình</option>
+                                  <option value="advanced">Nâng cao</option>
+                                </select>
+                              </div>
+                              
+                              <div class="form-group">
+                                <label for="ai-additional">
+                                  <i class="fas fa-plus-circle"></i> Yêu cầu bổ sung (tùy chọn):
+                                </label>
+                                <textarea id="ai-additional" class="form-control" rows="3" 
+                                          placeholder="VD: Tập trung vào từ vựng về gia đình, có giải thích chi tiết..."></textarea>
+                              </div>
+                            </form>
+                            
+                            <div id="ai-progress" style="display: none;">
+                              <div class="text-center">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                <p class="mt-2">AI đang tạo câu hỏi... Vui lòng đợi</p>
+                                <div class="progress">
+                                  <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                       style="width: 100%"></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div id="ai-results" style="display: none;">
+                              <h5><i class="fas fa-check-circle text-success"></i> Câu hỏi đã tạo:</h5>
+                              <div id="ai-questions-preview"></div>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                            <button type="button" id="btn-generate-ai" class="btn btn-primary">
+                              <i class="fas fa-magic"></i> Tạo câu hỏi
+                            </button>
+                            <button type="button" id="btn-save-ai-questions" class="btn btn-success" style="display: none;">
+                              <i class="fas fa-save"></i> Lưu tất cả câu hỏi
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                  
+                  // Remove existing modal if any
+                  $('#aiQuestionModal').remove();
+                  
+                  // Add modal to body
+                  $('body').append(modalHtml);
+                  
+                  // Show modal
+                  $('#aiQuestionModal').modal('show');
+                  
+                  // Bind events
+                  bindAIModalEvents();
+                }
+
+                function bindAIModalEvents() {
+                  $('#btn-generate-ai').click(function() {
+                    generateAIQuestions();
+                  });
+                  
+                  $('#btn-save-ai-questions').click(function() {
+                    saveAIQuestions();
+                  });
+                  
+                  // Clean up when modal is hidden
+                  $('#aiQuestionModal').on('hidden.bs.modal', function() {
+                    $(this).remove();
+                  });
+                }
+
+                async function generateAIQuestions() {
+                  const topic = $('#ai-topic').val().trim();
+                  const questionType = $('#ai-question-type').val();
+                  const count = $('#ai-count').val();
+                  const difficulty = $('#ai-difficulty').val();
+                  const additional = $('#ai-additional').val().trim();
+                  
+                  if (!topic) {
+                    alert('Vui lòng nhập chủ đề/nội dung');
+                    return;
+                  }
+                  
+                  // Show progress
+                  $('#ai-form').hide();
+                  $('#ai-progress').show();
+                  $('#btn-generate-ai').prop('disabled', true);
+                  
+                  try {
+                    const response = await fetch('/admin/baitap/ai/generate', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        topic,
+                        questionType,
+                        count: parseInt(count),
+                        difficulty,
+                        additional,
+                        setId: '<%= baitap.set_id %>'
+                      })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                      displayAIResults(result.data);
+                    } else {
+                      throw new Error(result.message || 'Có lỗi xảy ra');
+                    }
+                  } catch (error) {
+                    console.error('Error generating AI questions:', error);
+                    alert('Lỗi khi tạo câu hỏi: ' + error.message);
+                    
+                    // Reset form
+                    $('#ai-progress').hide();
+                    $('#ai-form').show();
+                    $('#btn-generate-ai').prop('disabled', false);
+                  }
+                }
+
+                function displayAIResults(questions) {
+                  $('#ai-progress').hide();
+                  
+                  let html = '';
+                  questions.forEach((q, index) => {
+                    html += `
+                      <div class="card mb-3" data-question-index="${index}">
+                        <div class="card-header">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <strong>Câu ${index + 1}: ${q.exercise_type}</strong>
+                            <div>
+                              <button type="button" class="btn btn-sm btn-warning edit-ai-question" data-index="${index}">
+                                <i class="fas fa-edit"></i> Sửa
+                              </button>
+                              <button type="button" class="btn btn-sm btn-danger remove-ai-question" data-index="${index}">
+                                <i class="fas fa-trash"></i> Xóa
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="card-body">
+                          <p><strong>Câu hỏi:</strong> ${q.question_text}</p>
+                          ${q.options ? '<p><strong>Lựa chọn:</strong> ' + JSON.stringify(q.options) + '</p>' : ''}
+                          <p><strong>Đáp án:</strong> ${q.correct_answer}</p>
+                          ${q.explanation ? '<p><strong>Giải thích:</strong> ' + q.explanation + '</p>' : ''}
+                        </div>
+                      </div>
+                    `;
+                  });
+                  
+                  $('#ai-questions-preview').html(html);
+                  $('#ai-results').show();
+                  $('#btn-save-ai-questions').show();
+                  
+                  // Store questions data
+                  window.aiGeneratedQuestions = questions;
+                  
+                  // Bind edit/remove events
+                  $('.edit-ai-question').click(function() {
+                    const index = $(this).data('index');
+                    editAIQuestion(index);
+                  });
+                  
+                  $('.remove-ai-question').click(function() {
+                    const index = $(this).data('index');
+                    removeAIQuestion(index);
+                  });
+                }
+
+                function editAIQuestion(index) {
+                  // Simple inline editing - you can enhance this
+                  const question = window.aiGeneratedQuestions[index];
+                  const newText = prompt('Sửa câu hỏi:', question.question_text);
+                  if (newText && newText.trim()) {
+                    window.aiGeneratedQuestions[index].question_text = newText.trim();
+                    displayAIResults(window.aiGeneratedQuestions);
+                  }
+                }
+
+                function removeAIQuestion(index) {
+                  if (confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
+                    window.aiGeneratedQuestions.splice(index, 1);
+                    displayAIResults(window.aiGeneratedQuestions);
+                  }
+                }
+
+                async function saveAIQuestions() {
+                  if (!window.aiGeneratedQuestions || window.aiGeneratedQuestions.length === 0) {
+                    alert('Không có câu hỏi nào để lưu');
+                    return;
+                  }
+                  
+                  $('#btn-save-ai-questions').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang lưu...');
+                  
+                  try {
+                    const response = await fetch('/admin/baitap/ai/save-questions', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        questions: window.aiGeneratedQuestions,
+                        setId: '<%= baitap.set_id %>'
+                      })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                      alert('Đã lưu thành công ' + result.saved + ' câu hỏi!');
+                      $('#aiQuestionModal').modal('hide');
+                      location.reload(); // Reload to show new questions
+                    } else {
+                      throw new Error(result.message || 'Có lỗi xảy ra khi lưu');
+                    }
+                  } catch (error) {
+                    console.error('Error saving AI questions:', error);
+                    alert('Lỗi khi lưu câu hỏi: ' + error.message);
+                  } finally {
+                    $('#btn-save-ai-questions').prop('disabled', false).html('<i class="fas fa-save"></i> Lưu tất cả câu hỏi');
+                  }
+                }
               })();
             </script>
 

@@ -19,6 +19,12 @@ router.post("/cauhoi/delete/:id", baitapCtrl.removecauhoi);
 // ========================================
 router.post("/api/create", baitapCtrl.createViaAjax);
 router.get("/api/:id", baitapCtrl.getExerciseDetails);
-router.post("/api/:id/delete", baitapCtrl.deleteViaAjax);
+// router.post("/bulk-update", baitapCtrl.updateMultipleExercises); // TODO: Implement this method
+
+// ========================================
+// AI QUESTION GENERATION ROUTES
+// ========================================
+router.post("/ai/generate", baitapCtrl.generateAIQuestions);
+router.post("/ai/save-questions", baitapCtrl.saveAIQuestions);
 
 module.exports = router;
